@@ -1,0 +1,148 @@
+# Domain: Event Management & Coordination
+# Problem Statement: Event execution and post event analytics
+# Last Updated: <YYYY-MM-DD>
+
+Terms:
+  - term: Event
+    definition: >
+      - A planned gathering such as a webinar, fest, conference, or exhibition that has a defined agenda, participants, execution team, and measurable outcomes 
+    examples:
+      - A one-day technical fest
+      - A corporate webinar
+    aliases:
+      - Program
+      - function
+
+  - term: Client
+    definition: >
+      - The organization or representative that requests the event and provides requirements but does not manage day-to-day execution.   
+    examples:
+      - A company requesting a product launch event
+    aliases:
+      - Host
+
+  - term: Event Manager
+    definition: >
+      - The person responsible for planning, coordinating, executing, and evaluating the event on behalf of the client
+    examples:
+      - Planning session schedules
+      - Preparing post-event performance reports
+    aliases:
+      - Event Lead
+
+  - term: Attendee
+    definition: >
+      - A participant who registers for and takes part in the event activities, sessions, and interactions.
+    examples:
+      - Audience member attending sessions
+      - Participant responding to polls
+    aliases:
+      - Participant
+      -	Audience
+
+  - term: On-site Coordinator
+    definition: >
+      - A supervisor present at the event venue who manages entry, movement, and operational issues during execution.
+    examples:
+      - Managing check-in counters
+      - Handling crowd flow between sessions
+    aliases:
+      - Floor Manager
+      - Venue Supervisor
+
+  - term:  Agenda
+    definition: >
+      - The structured plan of sessions, speakers, topics, and timings that defines how the event will run
+    examples:
+      - Session timeline shared with speakers
+    aliases:
+      - Schedule
+      - Program Flow
+
+  - term: RSVP
+    definition: >
+      - An indication from an invited attendee confirming their intent to attend the event
+    examples:
+      - 300 people confirmed attendance before the event
+    aliases:
+      - Registration Confirmation
+      - Attendance Confirmation
+
+  - term:  Check-In
+    definition: >
+      - The process of verifying and recording the physical presence of an attendee at the event.
+    examples:
+      - QR scanning at entry
+      - Manual name verification at the gate
+    aliases:
+      - Entry Verification
+      - Attendance Marking
+
+  - term: Engagement
+    definition: >
+      - The level and quality of active participation shown by attendees during event sessions.
+    examples:
+      - Poll participation
+      - Questions asked during sessions
+    aliases:
+      - Interaction
+      - Participation
+
+  - term: Engagement Activity
+    definition: >
+      - An intentional action designed to encourage attendee participation during the event
+    examples:
+      - Live polls
+      - Q&A sessions
+    aliases:
+      - Participation Activity
+
+  - term: Attendance
+    definition: >
+      - The actual presence of an attendee at the event or specific sessions, measured over time.
+    examples:
+      - Attendee stayed for 80% of the event duration
+      - Drop-off after lunch session
+    aliases:
+      - Presence
+
+  - term: Issue
+    definition: >
+      - Any operational problem that affects event flow, attendee experience, or execution quality
+    examples:
+      - Audio failure
+      - Delayed session start
+    aliases:
+      - Problem
+
+  - term: Event Performance
+    definition: >
+      - An overall assessment of how well the event met its objectives based on participation, engagement, and feedback.
+    examples:
+      - Comparing RSVPs vs actual attendance
+      - Identifying most engaging sessions
+    aliases:
+      - Event Outcome
+      - Event Effectiveness
+
+  - term: Success Metrics
+    definition: >
+      - Quantifiable measures used to evaluate the effectiveness of an event.
+    examples:
+      - Engagement rate per session
+      - Attendance percentage
+    aliases:
+      - Performance Indicators
+      - Evaluation Metrics
+
+  - term: Post-Event Analysis
+    definition: >
+      - The activity of reviewing attendance, engagement, and feedback after the event to generate insights
+    examples:
+      - Identifying sessions with highest participation
+      - Understanding attendee drop-off patterns
+    aliases:
+      - Event Evaluation
+      - Event Review
+
+
