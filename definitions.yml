@@ -1,11 +1,11 @@
 # Domain: Event Management & Coordination
 # Problem Statement: Event execution and post event analytics
-# Last Updated: <YYYY-MM-DD>
+# Last Updated: <2026-01-31>
 
 Terms:
   - term: Event
     definition: >
-      - A planned gathering such as a webinar, fest, conference, or exhibition that has a defined agenda, participants, execution team, and measurable outcomes 
+      - A planned gathering such as a webinar, fest, conference, or Product launch that has a defined agenda, participants, execution team, and measurable outcomes 
     examples:
       - A one-day technical fest
       - A corporate webinar
@@ -144,5 +144,6 @@ Terms:
     aliases:
       - Event Evaluation
       - Event Review
+
 
 
