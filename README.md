@@ -21,8 +21,8 @@ There is a need for a structured way to support event execution and post-event e
 
 | Actor / Role   | Description                                                                  |
 |---------------|------------------------------------------------------------------------------|
-| **Client / Organization**         | The party that requests and funds an event; defines high-level objectives and reviews post-event outcomes|
-| **Event Manager**         | Responsible for planning, coordinating, and delivering the event end-to-end, and preparing post-event reports      |
+| **Client**         | The party that requests and funds an event; defines high-level objectives and reviews post-event outcomes|
+| **Event Manager**         | Responsible for planning, managing, coordinating, and delivering the event end-to-end, and preparing post-event reports      |
 | **On - Site Event Co - Ordinator** | Handles on-ground execution, check-ins, crowd flow, and immediate operational issues during the event        |
 | **Administrator**     | Platform/system actor who manages requests, assignments, access control, and overall platform governance         |
 | **Attendee**    | Participant of the event who RSVPs to an event, attends sessions, engages with content, and provides feedback     |
@@ -33,7 +33,7 @@ There is a need for a structured way to support event execution and post-event e
 
 # Actor-wise Features:
  
-## Client / Organization
+## Client 
 - Register on the platform
 - Request an event
 - Provide event requirements to the assigned event manager
@@ -50,7 +50,7 @@ There is a need for a structured way to support event execution and post-event e
 ---
  
 ## Event Manager
-- Structure attendee engagement strategies (polls, Q&A, networking)
+- Manage attendee engagement strategies (polls, Q&A, networking)
 - Monitor live event execution
 - Track RSVP versus actual attendance
 - Analyze session-wise attendee engagement
@@ -69,7 +69,7 @@ There is a need for a structured way to support event execution and post-event e
  
 ---
  
-## On-site Event Coordinator / Supervisor
+## On-site Event Coordinator 
 - Verify attendee check-in
 - Manage entry, exit, and crowd flow
 - Coordinate session transitions
