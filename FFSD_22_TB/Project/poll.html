@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wevents – Poll Activity</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      .poll-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .pstat {
+        background: white;
+        border-radius: 16px;
+        padding: 18px 20px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      .pstat p {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 4px;
+      }
+      .pstat h2 {
+        font-size: 26px;
+        font-weight: 700;
+      }
+      .poll-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+      .poll-card {
+        background: #f8f9fb;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+      }
+      .poll-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .poll-left {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .poll-badge {
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+        background: #10b981;
+      }
+      .poll-badge.closed {
+        background: #64748b;
+      }
+      .poll-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 6px 0 2px;
+      }
+      .poll-meta {
+        font-size: 12px;
+        color: #94a3b8;
+        margin-bottom: 12px;
+      }
+      .poll-option {
+        margin-bottom: 10px;
+      }
+      .poll-option-top {
+        display: flex;
+        justify-content: space-between;
+        font-size: 13px;
+        margin-bottom: 5px;
+      }
+      .poll-bar {
+        height: 8px;
+        background: #f1d7c3;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .poll-fill {
+        height: 100%;
+        background: #f97316;
+        border-radius: 999px;
+      }
+      /* chart wrapper prevents grow on scroll */
+      .poll-chart-wrap {
+        position: relative;
+        width: 100%;
+        height: 160px;
+      }
+      .poll-chart-wrap canvas {
+        position: absolute;
+        inset: 0;
+        width: 100% !important;
+        height: 100% !important;
+      }
+      .new-poll-box {
+        background: #f8f9fb;
+        border-radius: 16px;
+        padding: 22px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+        margin-bottom: 20px;
+      }
+      .option-row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+        align-items: center;
+      }
+      .option-row input {
+        flex: 1;
+        padding: 8px 12px;
+        border-radius: 9px;
+        border: 1.5px solid #e5e7eb;
+        font-size: 13px;
+        outline: none;
+      }
+      .option-row input:focus {
+        border-color: #2563eb;
+      }
+      .rm-opt {
+        background: transparent;
+        border: 1px solid #ef4444;
+        color: #ef4444;
+        border-radius: 7px;
+        padding: 5px 8px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="one-unit">
+      <div class="app">
+        <aside>
+          
+          <button class="back-btn" onclick="location.href = 'home.html'">
+            ← Back to Events
+          </button>
+          <ul class="menu">
+            <li data-page="dashboard">
+              <i class="fa-solid fa-table-columns"></i>Dashboard
+            </li>
+            <li data-page="event_agenda">
+              <i class="fa-solid fa-calendar"></i>Event Agenda
+            </li>
+            <li data-page="sessions">
+              <i class="fa-solid fa-desktop"></i>Sessions
+            </li>
+            <li data-page="attendance">
+              <i class="fa-solid fa-users"></i>Attendance
+            </li>
+            <li data-page="engagement">
+              <i class="fa-solid fa-chart-line"></i>Engagement
+            </li>
+            <li data-page="live">
+              <i class="fa-solid fa-comments"></i>Live Q&A
+            </li>
+            <li data-page="poll" class="active">
+              <i class="fa-solid fa-chart-bar"></i>Poll Activity
+            </li>
+            <li data-page="reports">
+              <i class="fa-solid fa-file-lines"></i>Reports
+            </li>
+            <li data-page="settings">
+              <i class="fa-solid fa-gear"></i>Settings
+            </li>
+          </ul>
+        </aside>
+
+        <div class="main">
+          <div class="navbar" style="position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #e2e8f0; border-radius: 0;">
+            <div style="display:flex; align-items:center; gap:10px; color:var(--primary); font-size: 18px; font-weight: 700; margin-left: 10px;">
+              <div style="width: 32px; height: 32px; background: var(--primary); color: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center;"><i class="fa-regular fa-calendar"></i></div> Wevents.com
+            </div>
+            <div></div>
+            <div class="nav-right">
+              <i class="fa-regular fa-bell" style="cursor: pointer"></i>
+              <div class="profile-wrapper">
+                <div class="profile" id="profileBtn">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                  <div class="ph">
+                    <div>
+                      <div style="font-weight: 600; font-size: 15px">
+                        Alex Thompson
+                      </div>
+                      <div style="font-size: 12px; opacity: 0.8">
+                        Lead Coordinator
+                      </div>
+                    </div>
+                    <div class="av">AT</div>
+                  </div>
+                  <div class="pb">
+                    <h4>My Account</h4>
+                    <div class="pi">
+                      <i class="fa-regular fa-user"></i>Alex Thompson
+                    </div>
+                    <div class="pi">
+                      <i class="fa-regular fa-envelope"></i>alex.t@evnt.com
+                    </div>
+                  </div>
+                  <div class="pf">
+                    <button class="logout-btn">
+                      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ev-header">
+            <div>
+              <h2>Tech Mumbai Innovation Summit 2026</h2>
+              <p>March 15–17, 2026 · Jio World Convention Centre, Mumbai</p>
+            </div>
+            <div class="live-pill"><span class="dot"></span>Event Live</div>
+          </div>
+
+          <div class="content">
+            <h2>Poll Activity</h2>
+            <p class="subtext">
+              Create and manage live polls for your event sessions
+            </p>
+
+            <div class="poll-stats" id="poll-stats"></div>
+
+            <div class="new-poll-box">
+              <div class="topbar" style="margin-bottom: 14px">
+                <span style="font-weight: 700; font-size: 16px"
+                  ><i class="fa-solid fa-plus" style="color: #2563eb"></i>
+                  Create New Poll</span
+                >
+              </div>
+              <div class="fg">
+                <label>Poll Question</label
+                ><input
+                  id="np-question"
+                  placeholder="Which cloud platform do you prefer?"
+                />
+              </div>
+              <div class="frow">
+                <div class="fg">
+                  <label>Topic / Session</label
+                  ><input id="np-topic" placeholder="Cloud Computing" />
+                </div>
+                <div></div>
+              </div>
+              <label
+                style="
+                  font-size: 12px;
+                  color: #64748b;
+                  font-weight: 600;
+                  text-transform: uppercase;
+                  letter-spacing: 0.4px;
+                  display: block;
+                  margin-bottom: 8px;
+                "
+                >Answer Options</label
+              >
+              <div id="options-container"></div>
+              <div style="display: flex; gap: 8px; margin-top: 4px">
+                <button class="btn btn-edit" onclick="addOption()">
+                  <i class="fa-solid fa-plus"></i>Add Option
+                </button>
+                <button class="btn btn-primary" onclick="createPoll()">
+                  <i class="fa-solid fa-paper-plane"></i>Launch Poll
+                </button>
+              </div>
+            </div>
+
+            <div class="topbar">
+              <span class="sec-title" style="margin: 0">Active Polls</span>
+            </div>
+            <div
+              class="poll-grid"
+              id="poll-container"
+              style="margin-top: 12px"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="toast"></div>
+      <script src="shared.js"></script>
+      <script src="poll.js"></script>
+    </div>
+  </body>
+</html>

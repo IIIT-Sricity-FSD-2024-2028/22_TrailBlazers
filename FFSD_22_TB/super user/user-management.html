@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Management | Super User Dashboard | Wevents.com</title>
+    <meta name="description" content="Full CRUD control over platform users">
+    <link rel="stylesheet" href="su-global.css">
+    <link rel="stylesheet" href="user-management.css">
+</head>
+<body>
+    <!-- ── SIDEBAR ── -->
+    <aside class="su-sidebar"><div class="sidebar-label"><span class="sidebar-label-dot"></span> SUPER USER</div><ul class="sidebar-nav"><li><a class="sidebar-nav-item" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> Dashboard</a></li><li><a class="sidebar-nav-item active" href="user-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> User Management</a></li><li><a class="sidebar-nav-item" href="event-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Event Management</a></li><li><a class="sidebar-nav-item" href="database-control.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> Database Control</a></li><li><a class="sidebar-nav-item" href="platform-analytics.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Platform Analytics</a></li><li><a class="sidebar-nav-item" href="system-health.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> System Health</a></li><li><a class="sidebar-nav-item" href="audit-logs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Audit Logs</a></li><li><a class="sidebar-nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Settings</a></li></ul></aside>
+
+    <!-- ── HEADER ── -->
+    <header class="su-header">        <div class="header-left" style="display:flex; align-items:center;">
+            <div style="display:flex; align-items:center; gap:8px; margin-right:24px;">
+                <div style="background:var(--accent); color:white; width:30px; height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><rect x="8" y="14" width="3" height="3" fill="currentColor"/></svg>
+                </div>
+                <span style="font-weight:700; font-size:16px; color:var(--text-primary);">Wevents.com</span>
+            </div>
+            <div class="header-title-group">
+                <span class="header-title">Super User Control Panel</span>
+            </div>
+        </div><div class="header-right"><div class="header-status"><span class="header-status-dot"></span> All systems operational</div><div class="header-notif" id="notif-bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="header-notif-badge">3</span></div><div class="header-user" id="header-user"><div class="header-user-info"><span class="header-user-name">Amanda Phillips</span><span class="header-user-role">Super Admin</span></div><div class="header-avatar">AP</div><span class="header-user-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span><div class="header-dropdown" id="header-dropdown"><div class="dd-header">My Account</div><div class="dd-body"><div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Amanda Phillips</div><div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 7 10-7"/></svg> amanda@wevents.com</div><div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Super Admin</div></div><button class="dd-logout" id="logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</button></div></div></div></header>
+
+    <!-- ── MAIN ── -->
+    <main class="su-main">
+        <div class="page-header">
+            <div class="page-header-row">
+                <div>
+                    <h1>User Management</h1>
+                    <p>Full CRUD control over platform users</p>
+                </div>
+                <button class="btn btn-primary" id="create-user-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Create User</button>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid cols-5" id="user-stats">
+            <div class="stat-card"><div class="stat-card-value" id="stat-all">10</div><div class="stat-card-sub">All Users</div></div>
+            <div class="stat-card"><div class="stat-card-value" id="stat-admin">2</div><div class="stat-card-sub">Super Admin</div></div>
+            <div class="stat-card"><div class="stat-card-value" id="stat-em">2</div><div class="stat-card-sub">Event Manager</div></div>
+            <div class="stat-card"><div class="stat-card-value" id="stat-coord">2</div><div class="stat-card-sub">Coordinator</div></div>
+            <div class="stat-card"><div class="stat-card-value" id="stat-client">2</div><div class="stat-card-sub">Client</div></div>
+        </div>
+        <div class="stats-grid" style="grid-template-columns: 160px; margin-bottom:20px;">
+            <div class="stat-card"><div class="stat-card-value" id="stat-attendee">2</div><div class="stat-card-sub">Attendee</div></div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="section-card">
+            <div class="toolbar">
+                <div class="search-bar">
+                    <span class="search-bar-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+                    <input type="text" id="user-search" placeholder="Search users by name or email...">
+                </div>
+                <div class="toolbar-right">
+                    <select class="filter-select" id="role-filter">
+                        <option value="all">All Roles</option>
+                        <option value="Super Admin">Super Admin</option>
+                        <option value="Event Manager">Event Manager</option>
+                        <option value="Coordinator">Coordinator</option>
+                        <option value="Client">Client</option>
+                        <option value="Attendee">Attendee</option>
+                    </select>
+                    <span class="user-count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg> <span id="user-count-num">10</span> users</span>
+                </div>
+            </div>
+
+            <table class="data-table">
+                <thead>
+                    <tr><th>User</th><th>Email</th><th>Role</th><th>Availability</th><th>Status</th><th>Active Toggle</th><th>Joined</th><th>Actions</th></tr>
+                </thead>
+                <tbody id="users-tbody"></tbody>
+            </table>
+            
+            <div class="pagination-container" id="pagination-controls" style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid var(--border-light);">
+                <div style="font-size: 13px; color: var(--text-secondary);">Showing <span id="page-start">1</span> to <span id="page-end">10</span> of <span id="page-total">10</span> entries</div>
+                <div style="display: flex; gap: 4px;">
+                    <button class="btn btn-secondary btn-sm" id="prev-page" style="padding: 6px 12px; font-size: 13px;">Previous</button>
+                    <div id="page-numbers" style="display: flex; gap: 4px;"></div>
+                    <button class="btn btn-secondary btn-sm" id="next-page" style="padding: 6px 12px; font-size: 13px;">Next</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Create User Modal -->
+    <div class="modal-overlay" id="create-user-modal">
+        <div class="modal-card">
+            <button class="modal-close">✕</button>
+            <div class="modal-title">Create New User</div>
+            <div class="modal-subtitle">Add a new user to the platform</div>
+            <form id="create-user-form" style="display:flex;flex-direction:column;gap:14px;">
+                <div class="form-grid cols-2">
+                    <div class="form-group"><label class="form-label" for="new-fname">First Name</label><input class="form-input" type="text" id="new-fname" required></div>
+                    <div class="form-group"><label class="form-label" for="new-lname">Last Name</label><input class="form-input" type="text" id="new-lname" required></div>
+                </div>
+                <div class="form-group"><label class="form-label" for="new-email">Email</label><input class="form-input" type="email" id="new-email" required></div>
+                <div class="form-group"><label class="form-label" for="new-role">Role</label>
+                    <select class="form-input" id="new-role"><option>Super Admin</option><option>Event Manager</option><option>Coordinator</option><option>Client</option><option>Attendee</option></select>
+                </div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="document.getElementById('create-user-modal').classList.remove('active')">Cancel</button><button type="submit" class="btn btn-primary">Create User</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Role Modal -->
+    <div class="modal-overlay" id="edit-modal">
+        <div class="modal-card" style="width: 440px;">
+            <button class="modal-close" id="close-edit-modal">✕</button>
+            <div class="modal-title">Edit Role</div>
+            <div class="modal-subtitle">Change the role for this user</div>
+            
+            <div class="form-grid" style="margin-top: 20px;">
+                <div class="form-group" style="margin-bottom: 12px; grid-column: span 2;">
+                    <label class="form-label" style="text-transform: uppercase; font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">USER</label>
+                    <div id="edit-user-name" style="font-weight: 600; font-size: 16px; color: var(--text-primary); margin-top: 4px;">Priya Sharma</div>
+                </div>
+                <div class="form-group" style="margin-bottom: 20px; grid-column: span 2;">
+                    <label class="form-label" style="text-transform: uppercase; font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">EMAIL</label>
+                    <div id="edit-user-email" style="font-size: 15px; color: var(--text-secondary); margin-top: 4px;">priya.s@example.com</div>
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label class="form-label" style="text-transform: uppercase; font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px;">NEW ROLE</label>
+                    <select class="form-select filter-select" id="edit-user-role" style="font-size: 15px; padding: 12px 14px; width: 100%;">
+                        <option value="Super Admin">Super Admin</option>
+                        <option value="Event Manager">Event Manager</option>
+                        <option value="Coordinator">Coordinator</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="modal-footer" style="margin-top: 28px;">
+                <button class="btn btn-secondary" id="cancel-edit-btn" style="padding: 10px 20px;">Cancel</button>
+                <button class="btn btn-primary" id="save-edit-btn" style="padding: 10px 20px; background: var(--accent); color: white;">Save Role</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+    <script src="user-management.js"></script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+/* Database Control specific */
+.db-health { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; }
+.db-health-dot { width: 8px; height: 8px; border-radius: 50%; }
+.db-health.healthy .db-health-dot { background: var(--success); }
+.db-health.healthy { color: var(--success); }
+.db-health.warning .db-health-dot { background: var(--warning); }
+.db-health.warning { color: var(--warning); }
+.db-table-name { font-family: 'Courier New', monospace; font-weight: 600; font-size: 14px; color: var(--text-primary); background: #f1f5f9; padding: 4px 10px; border-radius: var(--radius-sm); display: inline-block; }
