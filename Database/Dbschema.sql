@@ -1,5 +1,6 @@
 CREATE TABLE User (
   user_id INT NOT NULL,
+  user_role VARCHAR(100) NOT NULL,
   name VARCHAR(100) NOT NULL,
   email VARCHAR(150) NOT NULL,
   phone VARCHAR(15),
