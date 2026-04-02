@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <meta name="description" content="Browse Events â€“ Wevents.com EventHub" />
+    <title>Browse Events â€“ Wevents.com</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="globals.css" />
+    <link rel="stylesheet" href="style2.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+
+      <!-- â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â• -->
+      <header class="header" id="site-header">
+        <div class="header-inner">
+          <div class="brand">
+            <div class="brand-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="28" height="28" rx="8" fill="#3b52a5"/>
+                <rect x="6" y="8" width="16" height="14" rx="2.5" stroke="#f97316" stroke-width="1.6" fill="none"/>
+                <line x1="10" y1="6" x2="10" y2="10" stroke="#f97316" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="18" y1="6" x2="18" y2="10" stroke="#f97316" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="6" y1="13" x2="22" y2="13" stroke="#f97316" stroke-width="1.2"/>
+                <rect x="9" y="15.5" width="3" height="2.5" rx="0.5" fill="#f97316"/>
+              </svg>
+            </div>
+            <span class="brand-name">Wevents.com</span>
+          </div>
+          <nav class="header-nav" aria-label="Header navigation">
+            <a href="#" class="header-nav-item" id="nav-notifications" aria-label="Notifications">
+              <span class="header-nav-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+              </span>
+              <span class="header-nav-label">Notifications</span>
+              <span class="notif-badge" aria-label="2 notifications">2</span>
+            </a>
+            <button class="header-nav-item header-profile-btn" id="nav-profile" aria-label="Profile">
+              <span class="header-nav-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
+              <span class="header-nav-label">Profile</span>
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <div class="layout">
+
+        <!-- â•â•â•â•â•â•â•â•â•â•â• SIDEBAR â•â•â•â•â•â•â•â•â•â•â• -->
+        <aside class="sidebar" id="sidebar" aria-label="Sidebar navigation">
+          <nav class="sidebar-nav">
+            <a href="#" class="sidebar-link" id="sidebar-home">
+              <span class="sidebar-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </span>
+              <span class="sidebar-label">Home</span>
+            </a>
+            <a href="#" class="sidebar-link active" id="sidebar-browse" aria-current="page">
+              <span class="sidebar-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </span>
+              <span class="sidebar-label">Browse Events</span>
+            </a>
+            <a href="#" class="sidebar-link" id="sidebar-myevents">
+              <span class="sidebar-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
+              <span class="sidebar-label">My Events</span>
+            </a>
+          </nav>
+        </aside>
+
+        <!-- â•â•â•â•â•â•â•â•â•â•â• MAIN CONTENT â•â•â•â•â•â•â•â•â•â•â• -->
+        <main class="main-content" id="main-content">
+
+          <!-- â”€â”€ Page Header / Filters â”€â”€ -->
+          <div class="browse-header">
+            <h1 class="browse-title">Browse Events</h1>
+
+            <!-- Search + Filters row -->
+            <div class="filters-row">
+              <!-- Search -->
+              <div class="search-wrap">
+                <span class="search-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                </span>
+                <input
+                  class="search-input"
+                  id="search-events"
+                  type="text"
+                  placeholder="Search events..."
+                  aria-label="Search events"
+                />
+              </div>
+
+              <!-- Category dropdown -->
+              <div class="filter-select" id="filter-category" tabindex="0" role="combobox" aria-label="Filter by category" aria-expanded="false">
+                <span class="filter-label">All Categories</span>
+                <span class="filter-chevron" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- Location dropdown -->
+              <div class="filter-select" id="filter-location" tabindex="0" role="combobox" aria-label="Filter by location" aria-expanded="false">
+                <span class="filter-label">All Locations</span>
+                <span class="filter-chevron" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </span>
+              </div>
+
+              <!-- Dates dropdown -->
+              <div class="filter-select" id="filter-dates" tabindex="0" role="combobox" aria-label="Filter by date" aria-expanded="false">
+                <span class="filter-label">All Dates</span>
+                <span class="filter-chevron" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="6 9 12 15 18 9"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+
+            <!-- Results count -->
+            <p class="results-count" id="results-count" aria-live="polite">11 events found</p>
+          </div>
+
+          <!-- â”€â”€ Cards Grid â”€â”€ -->
+          <div class="browse-body">
+            <div class="cards-grid" role="list">
+
+              <!-- â”€â”€ Card 1: Digital Marketing â”€â”€ -->
+              <article class="event-card" role="listitem" id="card-digital" data-state="Maharashtra">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Marketing</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">Digital</h2>
+                  <p class="card-desc">Learn advanced digital marketing strategies from industry experts. Topics include SEO, social media marketing, content strategy, and analytics.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Fri, Mar 20, 2026 â€¢ 10:00 AM â€“ 4:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>Nehru Centre, Maharashtra</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>156 / 200 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-digital">Attend</button>
+                    <button class="btn-details" id="details-digital">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- â”€â”€ Card 2: AI & Machine â”€â”€ -->
+              <article class="event-card" role="listitem" id="card-ai" data-state="Telangana">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1677442135703-1787eea5ce01?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Technology</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">AI &amp; Machine</h2>
+                  <p class="card-desc">Hands-on workshop covering the fundamentals of AI and machine learning. Build your first ML model and explore real-world applications.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Wed, Mar 25, 2026 â€¢ 1:00 PM â€“ 5:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>IIT Hyderabad, Telangana</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>87 / 100 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-ai">Attend</button>
+                    <button class="btn-details" id="details-ai">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- â”€â”€ Card 3: Design Thinking â”€â”€ -->
+              <article class="event-card" role="listitem" id="card-design" data-state="Gujarat">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1531403009284-440f080d1e12?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Design</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">Design</h2>
+                  <p class="card-desc">Intensive 2-day bootcamp on design thinking methodologies. Learn to solve complex problems with user-centered design approaches.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Sun, Apr 5, 2026 â€¢ 9:00 AM â€“ 5:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>NID Ahmedabad, Gujarat</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>112 / 150 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-design">Attend</button>
+                    <button class="btn-details" id="details-design">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- â”€â”€ Card 4: Cybersecurity (spans 1 col, second row) â”€â”€ -->
+              <article class="event-card" role="listitem" id="card-cyber" data-state="Delhi">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Technology</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">Cybersecurity</h2>
+                  <p class="card-desc">Annual conference focusing on cybersecurity trends, threats, and solutions. Features keynotes from leading security experts.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Sun, Apr 12, 2026 â€¢ 8:30 AM â€“ 6:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>India Habitat Centre, Delhi</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>365 / 400 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-cyber">Attend</button>
+                    <button class="btn-details" id="details-cyber">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- ── Card 5: Cloud Computing ── -->
+              <article class="event-card" role="listitem" id="card-cloud" data-state="Karnataka">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Technology</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">Cloud Computing</h2>
+                  <p class="card-desc">Master AWS, Azure, and Google Cloud concepts in this intensive technical workshop designed for backend engineers.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Sat, May 02, 2026 • 9:00 AM – 3:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>Tech Park Hub, Karnataka</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>215 / 300 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-cloud">Attend</button>
+                    <button class="btn-details" id="details-cloud">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- ── Card 6: UI/UX Bootcamp ── -->
+              <article class="event-card" role="listitem" id="card-uiux" data-state="Tamil Nadu">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Design</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">UI/UX Bootcamp</h2>
+                  <p class="card-desc">Learn the fundamentals of visual storytelling, wireframing, and Figma prototyping in this beginner-friendly bootcamp.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Mon, May 11, 2026 • 10:00 AM – 2:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>Design Center, Tamil Nadu</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>42 / 50 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-uiux">Attend</button>
+                    <button class="btn-details" id="details-uiux">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- ── Card 7: Blockchain Expo ── -->
+              <article class="event-card" role="listitem" id="card-blockchain" data-state="Rajasthan">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1621416894569-0f39ed31d247?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Technology</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">Blockchain Expo</h2>
+                  <p class="card-desc">Future-proof your application architecture with decentralized tech. Features talks from leading Web3 innovators.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Fri, May 15, 2026 • 1:00 PM – 7:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>Crypto Conference Center, Rajasthan</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>859 / 1200 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-blockchain">Attend</button>
+                    <button class="btn-details" id="details-blockchain">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- ── Card 8: FinTech Innovators ── -->
+              <article class="event-card" role="listitem" id="card-fintech" data-state="West Bengal">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1518186285589-2f7649de83e0?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Business</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">FinTech Innovators</h2>
+                  <p class="card-desc">Networking event for founders and investors looking to disrupt the global financial sector using modern technologies.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Tue, Jun 02, 2026 • 5:00 PM – 9:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>Downtown Business Club, West Bengal</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>210 / 250 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-fintech">Attend</button>
+                    <button class="btn-details" id="details-fintech">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- ── Card 9: Web3 Developers Meetup ── -->
+              <article class="event-card" role="listitem" id="card-web3" data-state="Kerala">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Engineering</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">Web3 Meetup</h2>
+                  <p class="card-desc">A deep dive into smart contracts, dApps, and modern tokenomics. Bring your laptop for the interactive coding session.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Sun, Jun 14, 2026 • 2:00 PM – 6:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>Block Labs HQ, Kerala</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>85 / 100 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-web3">Attend</button>
+                    <button class="btn-details" id="details-web3">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- ── Card 10: Data Science Conference ── -->
+              <article class="event-card" role="listitem" id="card-datascience" data-state="Uttar Pradesh">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Data</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">Data Science Con</h2>
+                  <p class="card-desc">Big data analytics, predictive modeling, and data visualization. Gain actionable insights from industry data experts.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Thu, Jul 09, 2026 • 9:00 AM – 5:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>Grand Analytics Hall, Uttar Pradesh</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>425 / 500 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-datascience">Attend</button>
+                    <button class="btn-details" id="details-datascience">Details</button>
+                  </div>
+                </div>
+              </article>
+
+              <!-- ── Card 11: E-commerce Strategies ── -->
+              <article class="event-card" role="listitem" id="card-ecommerce" data-state="Maharashtra">
+                <div class="card-image" style="background-image: url('https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=600&q=80');" aria-hidden="true">
+                  <span class="card-badge badge-white">Marketing</span>
+                </div>
+                <div class="card-body">
+                  <h2 class="card-title">E-commerce Strategies</h2>
+                  <p class="card-desc">Scale your online store with proven conversion rate optimization techniques and retention marketing workflows.</p>
+                  <ul class="card-meta" aria-label="Event details">
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                      </span>
+                      <span>Wed, Aug 12, 2026 • 10:00 AM – 2:00 PM</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                      </span>
+                      <span>Retail Innovations Hub, Maharashtra</span>
+                    </li>
+                    <li class="meta-item">
+                      <span class="meta-icon" aria-hidden="true">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                      </span>
+                      <span>150 / 200 attendees</span>
+                    </li>
+                  </ul>
+                  <div class="card-actions">
+                    <button class="btn-attend" id="attend-ecommerce">Attend</button>
+                    <button class="btn-details" id="details-ecommerce">Details</button>
+                  </div>
+                </div>
+              </article>
+
+            </div><!-- /cards-grid -->
+          </div><!-- /browse-body -->
+
+        </main>
+      </div><!-- /layout -->
+    </div><!-- /page-shell -->
+    <script src="app.js" defer></script>
+  <script src="script2.js" defer></script>
+</body>
+</html>
+
+
+
+

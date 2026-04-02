@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RSVP for Event â€“ Wevents.com</title>
+    <meta name="description" content="RSVP registration form for the event." />
+    <link rel="stylesheet" href="globals.css" />
+    <link rel="stylesheet" href="style7.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+
+    <!-- Page backdrop -->
+    <div class="page-backdrop" aria-hidden="true"></div>
+
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• RSVP DIALOG â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <div class="dialog-wrapper">
+      <dialog class="dialog" id="rsvp-dialog" open aria-modal="true" aria-labelledby="dialog-heading">
+
+        <!-- Close button -->
+        <button class="dialog-close" id="btn-close-dialog" type="button" aria-label="Close dialog">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M1 1L13 13M13 1L1 13" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <!-- Dialog header -->
+        <header class="dialog-header">
+          <h1 class="dialog-title" id="dialog-heading">RSVP for Event</h1>
+        </header>
+
+        <!-- RSVP Form -->
+        <form class="rsvp-form" id="rsvp-form" novalidate>
+
+          <!-- Full Name -->
+          <div class="field-group" id="field-fullname">
+            <label class="field-label" for="input-fullname">Full Name <span class="required" aria-label="required">*</span></label>
+            <input
+              class="field-input"
+              type="text"
+              id="input-fullname"
+              name="fullname"
+              value=""
+              autocomplete="name"
+              required
+            />
+          </div>
+
+          <!-- Email Address -->
+          <div class="field-group" id="field-email">
+            <label class="field-label" for="input-email">Email Address <span class="required" aria-label="required">*</span></label>
+            <input
+              class="field-input"
+              type="email"
+              id="input-email"
+              name="email"
+              placeholder="rahul@example.com"
+              autocomplete="email"
+              required
+            />
+          </div>
+
+          <!-- Phone Number -->
+          <div class="field-group" id="field-phone">
+            <label class="field-label" for="input-phone">Phone Number <span class="required" aria-label="required">*</span></label>
+            <input
+              class="field-input"
+              type="tel"
+              id="input-phone"
+              name="phone"
+              value=""
+              autocomplete="tel"
+              required
+            />
+          </div>
+
+          <!-- Actions -->
+          <div class="form-actions">
+            <button class="btn-cancel" id="btn-cancel" type="button">Cancel</button>
+            <button class="btn-continue" id="btn-continue" type="submit">Continue</button>
+          </div>
+
+        </form>
+      </dialog>
+    </div><!-- /dialog-wrapper -->
+
+    <script src="app.js" defer></script>
+  <script src="script7.js" defer></script>
+</body>
+</html>
+
