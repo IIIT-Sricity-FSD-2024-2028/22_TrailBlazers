@@ -18,11 +18,11 @@ There is a need for a structured way to support event execution and post-event e
 ---
 
 ## Identified actors :
-Client / Organization : "The party that requests and funds an event; defines high-level objectives and reviews post-event outcomes."  
+Client : "The party that requests and funds an event; defines high-level objectives and reviews post-event outcomes."  
 Event Manager : "Responsible for planning, coordinating, and delivering the event end-to-end, and preparing post-event reports."  
 On - Site Event Co - Ordinator : "Handles on-ground execution, check-ins, crowd flow, and immediate operational issues during the event."  
 Attendee : "Participant of the event who registers, attends sessions, engages with content, and provides feedback."  
-Administrator : "Platform/system actor who manages requests, assignments, access control, and overall platform governance."
+Admin : "Platform/system actor who manages requests, assignments, access control, and overall platform governance."
 
 ---
 
@@ -30,7 +30,7 @@ Administrator : "Platform/system actor who manages requests, assignments, access
 
 # Actor-wise Features
  
-## Client / Organization
+## Client
 - Register on the platform
 - Request an event
 - Provide event requirements to the assigned event manager
@@ -39,7 +39,7 @@ Administrator : "Platform/system actor who manages requests, assignments, access
  
 ---
  
-## Admin (System Actor)
+## Admin
 - Review incoming event requests
 - Assign an event manager to a client’s event
 - Manage event ownership and access control
@@ -47,7 +47,7 @@ Administrator : "Platform/system actor who manages requests, assignments, access
 ---
  
 ## Event Manager
-- Structure attendee engagement strategies (polls, Q&A, networking)
+- Structure attendee engagement strategies (polls, Q&A)
 - Monitor live event execution
 - Track RSVP versus actual attendance
 - Analyze session-wise attendee engagement
@@ -61,12 +61,12 @@ Administrator : "Platform/system actor who manages requests, assignments, access
 ## Attendee
 - RSVP to an event
 - Check in at the event venue
-- Engage with like minded individuals
+- Participate in the Engagement Activities(polls, Q&A)
 - Provide feedback during or after the event
  
 ---
  
-## On-site Event Coordinator / Supervisor
+## On-site Event Coordinator
 - Verify attendee check-in
 - Manage entry, exit, and crowd flow
 - Coordinate session transitions
