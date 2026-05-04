@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings | Super User Dashboard | Wevents.com</title>
+    <meta name="description" content="Manage your account, platform preferences and system configuration">
+    <link rel="stylesheet" href="su-global.css">
+    <link rel="stylesheet" href="settings.css">
+</head>
+<body>
+
+    <!-- ── SIDEBAR ── -->
+    <aside class="su-sidebar" id="su-sidebar">
+        <div class="sidebar-brand">
+            <div class="sidebar-brand-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><rect x="8" y="14" width="3" height="3" fill="currentColor"/></svg>
+            </div>
+            <span class="sidebar-brand-text">Wevents.com</span>
+        </div>
+        <div class="sidebar-label"><span class="sidebar-label-dot"></span> SUPER USER</div>
+        <ul class="sidebar-nav">
+            <li><a class="sidebar-nav-item" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> Dashboard</a></li>
+            <li><a class="sidebar-nav-item" href="user-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> User Management</a></li>
+            <li><a class="sidebar-nav-item" href="event-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Event Management</a></li>
+            <li><a class="sidebar-nav-item" href="database-control.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> Database Control</a></li>
+            <li><a class="sidebar-nav-item" href="platform-analytics.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Platform Analytics</a></li>
+            <li><a class="sidebar-nav-item" href="system-health.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> System Health</a></li>
+            <li><a class="sidebar-nav-item" href="audit-logs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Audit Logs</a></li>
+            <li><a class="sidebar-nav-item active" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Settings</a></li>
+        </ul>
+    </aside>
+
+    <!-- ── HEADER ── -->
+    <header class="su-header" id="su-header">
+        <div class="header-left">
+            <div class="header-title-group">
+                <span class="header-title">Super User Control Panel</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="header-status"><span class="header-status-dot"></span> All systems operational</div>
+            <div class="header-notif" id="notif-bell">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                <span class="header-notif-badge">3</span>
+            </div>
+            <div class="header-user" id="header-user">
+                <div class="header-user-info">
+                    <span class="header-user-name">Amanda Phillips</span>
+                    <span class="header-user-role">Super Admin</span>
+                </div>
+                <div class="header-avatar">AP</div>
+                <span class="header-user-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span>
+                <div class="header-dropdown" id="header-dropdown">
+                    <div class="dd-header">My Account</div>
+                    <div class="dd-body">
+                        <div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Amanda Phillips</div>
+                        <div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 7 10-7"/></svg> amanda@wevents.com</div>
+                        <div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> Super Admin</div>
+                    </div>
+                    <button class="dd-logout" id="logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- ── MAIN CONTENT ── -->
+    <main class="su-main" id="su-main">
+        <div class="page-header">
+            <h1>Settings</h1>
+            <p>Manage your account, platform preferences and system configuration</p>
+        </div>
+
+        <div class="settings-layout">
+            <!-- Settings Sub-Navigation -->
+            <nav class="settings-nav" id="settings-nav">
+                <a class="settings-nav-item active" data-tab="profile" id="tab-profile">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                    Profile & Account
+                    <svg class="settings-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </a>
+                <a class="settings-nav-item" data-tab="security" id="tab-security">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+                    Security
+                    <svg class="settings-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </a>
+                <a class="settings-nav-item" data-tab="notifications" id="tab-notifications">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+                    Notifications
+                    <svg class="settings-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </a>
+                <a class="settings-nav-item" data-tab="platform" id="tab-platform">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+                    Platform Config
+                    <svg class="settings-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </a>
+                <a class="settings-nav-item" data-tab="email" id="tab-email">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 7 10-7"/></svg>
+                    Email Settings
+                    <svg class="settings-nav-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                </a>
+
+            </nav>
+
+            <!-- Settings Content Panels -->
+            <div class="settings-content">
+                <!-- Profile & Account -->
+                <div class="settings-panel active" id="panel-profile">
+                    <div class="settings-panel-header">
+                        <h2>Profile & Account</h2>
+                        <p>Update your personal information</p>
+                    </div>
+                    <div class="profile-card">
+                        <div class="profile-avatar-section">
+                            <div class="profile-avatar-large">AP</div>
+                            <div class="profile-meta">
+                                <div class="profile-meta-name">Amanda Phillips</div>
+                                <div class="profile-meta-role">Super Admin · Member since Jan 2026</div>
+                                <a href="#" class="profile-change-avatar" id="change-avatar-link">Change avatar</a>
+                            </div>
+                        </div>
+                    </div>
+                    <form id="profile-form" class="settings-form">
+                        <div class="form-grid cols-2">
+                            <div class="form-group">
+                                <label class="form-label" for="first-name">First Name</label>
+                                <input class="form-input" type="text" id="first-name" value="Amanda">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="last-name">Last Name</label>
+                                <input class="form-input" type="text" id="last-name" value="Phillips">
+                            </div>
+                        </div>
+                        <div class="form-grid cols-2">
+                            <div class="form-group">
+                                <label class="form-label" for="email">Email</label>
+                                <input class="form-input" type="email" id="email" value="amanda@wevents.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="phone">Phone</label>
+                                <input class="form-input" type="text" id="phone" value="+91 98765 43210">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="role">Role</label>
+                            <input class="form-input" type="text" id="role" value="Super Admin" disabled>
+                            <span class="form-hint">Role cannot be changed for Super Admin accounts.</span>
+                        </div>
+                        <div class="settings-form-actions">
+                            <button type="submit" class="btn btn-primary" id="save-profile-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                Save Changes
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Security -->
+                <div class="settings-panel" id="panel-security">
+                    <div class="settings-panel-header">
+                        <h2>Security</h2>
+                        <p>Manage your password and authentication settings</p>
+                    </div>
+                    <form id="security-form" class="settings-form">
+                        <div class="form-group">
+                            <label class="form-label" for="current-password">Current Password</label>
+                            <input class="form-input" type="password" id="current-password" placeholder="Enter current password">
+                        </div>
+                        <div class="form-grid cols-2">
+                            <div class="form-group">
+                                <label class="form-label" for="new-password">New Password</label>
+                                <input class="form-input" type="password" id="new-password" placeholder="Enter new password">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="confirm-password">Confirm New Password</label>
+                                <input class="form-input" type="password" id="confirm-password" placeholder="Confirm new password">
+                            </div>
+                        </div>
+                        <div class="form-hint">Password must be at least 8 characters with uppercase, number, and special character.</div>
+                        <div class="settings-divider"></div>
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">Two-Factor Authentication</div>
+                                <div class="settings-toggle-desc">Add an extra layer of security to your account</div>
+                            </div>
+                            <div class="toggle" id="toggle-2fa"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">Login Notifications</div>
+                                <div class="settings-toggle-desc">Get notified when someone logs into your account</div>
+                            </div>
+                            <div class="toggle active" id="toggle-login-notif"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-form-actions">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Notifications -->
+                <div class="settings-panel" id="panel-notifications">
+                    <div class="settings-panel-header">
+                        <h2>Notifications</h2>
+                        <p>Configure how you receive alerts and updates</p>
+                    </div>
+                    <div class="settings-form">
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">Email Notifications</div>
+                                <div class="settings-toggle-desc">Receive event updates via email</div>
+                            </div>
+                            <div class="toggle active" id="toggle-email-notif"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">Push Notifications</div>
+                                <div class="settings-toggle-desc">Get real-time browser notifications</div>
+                            </div>
+                            <div class="toggle active" id="toggle-push-notif"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">System Alerts</div>
+                                <div class="settings-toggle-desc">Alerts for system health and critical issues</div>
+                            </div>
+                            <div class="toggle active" id="toggle-system-alerts"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">New User Registration</div>
+                                <div class="settings-toggle-desc">Get notified when new users register</div>
+                            </div>
+                            <div class="toggle" id="toggle-new-user"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">Event Completion Reports</div>
+                                <div class="settings-toggle-desc">Automated reports after event completion</div>
+                            </div>
+                            <div class="toggle active" id="toggle-event-reports"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-form-actions">
+                            <button type="button" class="btn btn-primary" id="save-notif-btn">Save Changes</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Platform Config -->
+                <div class="settings-panel" id="panel-platform">
+                    <div class="settings-panel-header">
+                        <h2>Platform Config</h2>
+                        <p>Configure platform-wide settings and defaults</p>
+                    </div>
+                    <form id="platform-form" class="settings-form">
+                        <div class="form-grid cols-2">
+                            <div class="form-group">
+                                <label class="form-label" for="platform-name">Platform Name</label>
+                                <input class="form-input" type="text" id="platform-name" value="Wevents.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="platform-url">Platform URL</label>
+                                <input class="form-input" type="url" id="platform-url" value="https://wevents.com">
+                            </div>
+                        </div>
+                        <div class="form-grid cols-2">
+                            <div class="form-group">
+                                <label class="form-label" for="timezone">Default Timezone</label>
+                                <select class="form-select filter-select" id="timezone">
+                                    <option value="IST" selected>IST (UTC+5:30)</option>
+                                    <option value="UTC">UTC (UTC+0:00)</option>
+                                    <option value="EST">EST (UTC-5:00)</option>
+                                    <option value="PST">PST (UTC-8:00)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="language">Default Language</label>
+                                <select class="form-select filter-select" id="language">
+                                    <option value="en" selected>English</option>
+                                    <option value="hi">Hindi</option>
+                                    <option value="ta">Tamil</option>
+                                    <option value="te">Telugu</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="max-attendees">Max Attendees per Event</label>
+                            <input class="form-input" type="number" id="max-attendees" value="5000">
+                        </div>
+                        <div class="settings-divider"></div>
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">Maintenance Mode</div>
+                                <div class="settings-toggle-desc">Put the platform into maintenance mode</div>
+                            </div>
+                            <div class="toggle" id="toggle-maintenance"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">Allow Public Registration</div>
+                                <div class="settings-toggle-desc">Allow new users to self-register on the platform</div>
+                            </div>
+                            <div class="toggle active" id="toggle-registration"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-form-actions">
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Email Settings -->
+                <div class="settings-panel" id="panel-email">
+                    <div class="settings-panel-header">
+                        <h2>Email Settings</h2>
+                        <p>Configure outgoing email and SMTP settings</p>
+                    </div>
+                    <form id="email-form" class="settings-form">
+                        <div class="form-grid cols-2">
+                            <div class="form-group">
+                                <label class="form-label" for="smtp-host">SMTP Host</label>
+                                <input class="form-input" type="text" id="smtp-host" value="smtp.wevents.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="smtp-port">SMTP Port</label>
+                                <input class="form-input" type="number" id="smtp-port" value="587">
+                            </div>
+                        </div>
+                        <div class="form-grid cols-2">
+                            <div class="form-group">
+                                <label class="form-label" for="smtp-user">SMTP Username</label>
+                                <input class="form-input" type="text" id="smtp-user" value="noreply@wevents.com">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="smtp-pass">SMTP Password</label>
+                                <input class="form-input" type="password" id="smtp-pass" value="••••••••">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="sender-name">Sender Display Name</label>
+                            <input class="form-input" type="text" id="sender-name" value="Wevents Platform">
+                        </div>
+                        <div class="settings-divider"></div>
+                        <div class="settings-toggle-row">
+                            <div>
+                                <div class="settings-toggle-label">Use TLS/SSL</div>
+                                <div class="settings-toggle-desc">Enable secure connection for outgoing emails</div>
+                            </div>
+                            <div class="toggle active" id="toggle-tls"><div class="toggle-knob"></div></div>
+                        </div>
+                        <div class="settings-form-actions">
+                            <button type="button" class="btn btn-secondary" id="test-email-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 7 10-7"/></svg>
+                                Send Test Email
+                            </button>
+                            <button type="submit" class="btn btn-primary">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+
+
+            </div>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toast-container"></div>
+    <script src="settings.js"></script>
+    <script src="../profile-init.js"></script>
+</body>
+</html>

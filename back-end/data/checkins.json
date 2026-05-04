@@ -1,0 +1,57 @@
+[
+  {
+    "id": "ci1",
+    "eventId": "e1",
+    "attendeeId": "u8",
+    "attendeeEmail": "rahul.s@gmail.com",
+    "attendeeName": "Rahul Sharma",
+    "ticketCode": "TKT00001",
+    "status": "checked-in",
+    "checkInTime": "2026-04-15T03:30:00.000Z",
+    "createdAt": "2026-04-15T03:30:00.000Z"
+  },
+  {
+    "id": "ci2",
+    "eventId": "e1",
+    "attendeeId": "u9",
+    "attendeeEmail": "priya.p@gmail.com",
+    "attendeeName": "Priya Patel",
+    "ticketCode": "TKT00002",
+    "status": "checked-in",
+    "checkInTime": "2026-04-15T03:45:00.000Z",
+    "createdAt": "2026-04-15T03:45:00.000Z"
+  },
+  {
+    "id": "ci3",
+    "eventId": "e2",
+    "attendeeId": "u10",
+    "attendeeEmail": "meera.k@gmail.com",
+    "attendeeName": "Meera Krishnan",
+    "ticketCode": "TKT00003",
+    "status": "checked-in",
+    "checkInTime": "2026-05-03T03:30:00.000Z",
+    "createdAt": "2026-05-03T03:30:00.000Z"
+  },
+  {
+    "id": "ci4",
+    "eventId": "e4",
+    "attendeeId": "u11",
+    "attendeeEmail": "vikram.s@gmail.com",
+    "attendeeName": "Vikram Singh",
+    "ticketCode": "TKT00004",
+    "status": "checked-in",
+    "checkInTime": "2026-04-24T04:00:00.000Z",
+    "createdAt": "2026-04-24T04:00:00.000Z"
+  },
+  {
+    "id": "ci5",
+    "eventId": "e6",
+    "attendeeId": "u12",
+    "attendeeEmail": "sid.n@gmail.com",
+    "attendeeName": "Siddharth Nair",
+    "ticketCode": "TKT00005",
+    "status": "pending",
+    "checkInTime": null,
+    "createdAt": "2026-05-03T09:00:00.000Z"
+  }
+]

@@ -1,0 +1,42 @@
+[
+  {
+    "id": "fb1",
+    "eventId": "e1",
+    "attendeeId": "u8",
+    "attendeeEmail": "rahul.s@gmail.com",
+    "rating": 5,
+    "comment": "Excellent keynote on AI. The sessions were well-organised and speakers were top-notch.",
+    "date": "2026-04-15T10:00:00.000Z",
+    "createdAt": "2026-04-15T10:00:00.000Z"
+  },
+  {
+    "id": "fb2",
+    "eventId": "e1",
+    "attendeeId": "u9",
+    "attendeeEmail": "priya.p@gmail.com",
+    "rating": 4,
+    "comment": "Great event overall. Wish there was more time for Q&A in the panel session.",
+    "date": "2026-04-15T11:00:00.000Z",
+    "createdAt": "2026-04-15T11:00:00.000Z"
+  },
+  {
+    "id": "fb3",
+    "eventId": "e2",
+    "attendeeId": "u10",
+    "attendeeEmail": "meera.k@gmail.com",
+    "rating": 5,
+    "comment": "The pitch competition was thrilling. Loved networking with investors during lunch!",
+    "date": "2026-05-03T14:00:00.000Z",
+    "createdAt": "2026-05-03T14:00:00.000Z"
+  },
+  {
+    "id": "fb4",
+    "eventId": "e4",
+    "attendeeId": "u11",
+    "attendeeEmail": "vikram.s@gmail.com",
+    "rating": 3,
+    "comment": "Informative expo but venue was too crowded in the afternoon.",
+    "date": "2026-04-24T12:00:00.000Z",
+    "createdAt": "2026-04-24T12:00:00.000Z"
+  }
+]

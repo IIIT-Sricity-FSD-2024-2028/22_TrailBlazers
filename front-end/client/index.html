@@ -1,0 +1,149 @@
++<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wevents – Redirecting…</title>
+    <meta http-equiv="refresh" content="0; url=../landing-page/index.html">
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: #1E3A8A;
+            font-family: 'Inter', sans-serif;
+            color: white;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .spinner {
+            width: 40px; height: 40px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: #F97316;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        p { font-size: 15px; opacity: 0.8; margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="spinner"></div>
+    <p>Redirecting to Wevents…</p>
+    <script>
+        // Clear only the session user and redirect
+        localStorage.removeItem('wevents_user');
+        window.location.replace('../landing-page/index.html');
+    </script>
+    <script src="../profile-init.js"></script>
+</body>
+</html>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="components.css">
+    <style>
+        .signin-badge {
+            display: inline-block;
+            background: rgba(249, 115, 22, 0.1);
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+        .login-card {
+            animation: fadeInUp 0.4s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        #loggedOutMsg {
+            display: none;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 18px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body class="login-body">
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="logo" style="display:flex; align-items:center; gap:12px; margin-bottom:16px; justify-content:center;">
+                    <div class="logo-icon" style="width: 38px; height: 38px; background: #3B52D4; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(59, 82, 212, 0.2);">
+                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <rect x="4" y="5" width="16" height="15" rx="2" stroke="#F97316" stroke-width="2.5"/>
+                            <path d="M4 10H20" stroke="#F97316" stroke-width="2.5"/>
+                            <path d="M8 3V7" stroke="#F97316" stroke-width="2.5" stroke-linecap="round"/>
+                            <path d="M16 3V7" stroke="#F97316" stroke-width="2.5" stroke-linecap="round"/>
+                            <rect x="8" y="14" width="3" height="3" fill="#F97316"/>
+                        </svg>
+                    </div>
+                    <h2 style="margin:0; font-size: 24px; font-weight: 700; color: var(--text-main);">Wevents.com</h2>
+                </div>
+                <div class="signin-badge">🔐 Secure Sign In</div>
+                <h3 style="margin: 0 0 6px; font-size: 18px;">Welcome Back!</h3>
+                <p style="margin:0; color: var(--text-muted); font-size: 14px;">Select your role to access the dashboard</p>
+            </div>
+
+            <div id="loggedOutMsg">✅ You have been signed out successfully.</div>
+
+            <div style="margin-top: 24px;">
+                <div style="background: var(--sidebar-bg); border-radius: 12px; padding: 18px; display:flex; align-items:center; gap: 14px; margin-bottom: 24px; border: 1px solid var(--border-color);">
+                    <div style="width: 46px; height: 46px; background: linear-gradient(135deg, #3B52D4, #6366f1); border-radius: 50%; display:flex; align-items:center; justify-content:center; font-size: 18px; flex-shrink:0;">👤</div>
+                    <div>
+                        <div style="font-weight: 700; font-size: 15px; color: var(--text-main);">Rajesh Kumar</div>
+                        <div style="font-size: 12px; color: var(--text-muted);">rajesh@gmail.com</div>
+                        <div style="margin-top: 4px;">
+                            <span style="background: rgba(249,115,22,0.12); color: var(--primary); font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px;">Super User · Full Access</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="signInBtn" class="btn btn-primary btn-block" style="padding: 13px; font-size: 15px; font-weight: 600;">
+                    Sign In →
+                </button>
+            </div>
+            
+            <div class="login-footer" style="margin-top: 24px; text-align: center;">
+                <p style="color: var(--text-muted); font-size: 13px;">Wevents — Event Management Platform</p>
+                <p><small style="color: var(--text-muted);">Role-Based Access Simulation</small></p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="data.js"></script>
+    <script src="auth.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (Auth.isLoggedIn()) {
+                window.location.href = 'dashboard.html';
+                return;
+            }
+            // Show "signed out" message if redirected from logout
+            if (document.referrer && document.referrer.includes('dashboard.html')) {
+                document.getElementById('loggedOutMsg').style.display = 'block';
+            }
+            // Single Sign In as Rajesh Kumar (superuser)
+            document.getElementById('signInBtn').addEventListener('click', () => {
+                const user = DataStore.getUserById('u1'); // Rajesh Kumar
+                if (user) {
+                    localStorage.setItem('wevents_user', JSON.stringify(user));
+                    window.location.href = 'dashboard.html';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "pr2",
+    "pollId": "poll1",
+    "attendeeId": "u9",
+    "attendeeEmail": "priya.p@gmail.com",
+    "answer": "Cloud Computing",
+    "createdAt": "2026-04-15T05:05:00.000Z"
+  },
+  {
+    "id": "pr3",
+    "pollId": "poll1",
+    "attendeeId": "u10",
+    "attendeeEmail": "meera.k@gmail.com",
+    "answer": "Machine Learning",
+    "createdAt": "2026-04-15T05:10:00.000Z"
+  },
+  {
+    "id": "pr4",
+    "pollId": "poll2",
+    "attendeeId": "u8",
+    "attendeeEmail": "rahul.s@gmail.com",
+    "answer": "Very Likely",
+    "createdAt": "2026-04-15T06:00:00.000Z"
+  }
+]

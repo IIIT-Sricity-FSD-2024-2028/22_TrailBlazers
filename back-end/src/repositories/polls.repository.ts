@@ -1,0 +1,22 @@
+﻿import { Injectable } from '@nestjs/common';
+import { BaseRepository } from './base.repository';
+
+export interface PollOption { label:string; votes:number; voters:string[]; }
+export type PollStatus = 'open'|'closed';
+export interface Poll { id:string; eventId:string; question:string; options:PollOption[]; status:PollStatus; createdBy:string; createdAt:string; updatedAt:string; }
+
+const POLLS_SEED: Poll[] = [
+  {id:'poll1',eventId:'e1',question:'Which session did you enjoy most?',options:[{label:'Keynote: Future of AI',votes:54,voters:['ral.s@gmail.com','testnew2@gmail.com']},{label:'Panel: Sustainable Tech',votes:38,voters:[]},{label:'Lunch & Networking',votes:14,voters:[]}],status:'open',createdBy:'u4',createdAt:'2026-04-15T06:00:00.000Z',updatedAt:'2026-05-03T15:14:06.571Z'},
+  {id:'poll2',eventId:'e1',question:'How would you rate the venue and facilities?',options:[{label:'Excellent',votes:78,voters:[]},{label:'Good',votes:45,voters:[]},{label:'Average',votes:12,voters:[]},{label:'Poor',votes:3,voters:[]}],status:'closed',createdBy:'u4',createdAt:'2026-04-15T10:00:00.000Z',updatedAt:'2026-04-15T16:00:00.000Z'},
+  {id:'poll3',eventId:'e4',question:'Which topic would you like covered in the next sustainability event?',options:[{label:'Carbon Neutrality',votes:210,voters:[]},{label:'Renewable Energy',votes:185,voters:[]},{label:'Circular Economy',votes:97,voters:[]},{label:'Water Conservation',votes:63,voters:[]}],status:'open',createdBy:'u5',createdAt:'2026-04-24T04:00:00.000Z',updatedAt:'2026-04-24T04:00:00.000Z'},
+  {id:'poll4',eventId:'e2',question:'Would you attend the Digital Marketing Expo again next year?',options:[{label:'Definitely Yes',votes:102,voters:[]},{label:'Probably Yes',votes:38,voters:[]},{label:'Not Sure',votes:10,voters:[]},{label:'No',votes:4,voters:[]}],status:'closed',createdBy:'u4',createdAt:'2026-03-20T10:00:00.000Z',updatedAt:'2026-03-21T10:00:00.000Z'},
+];
+
+@Injectable()
+export class PollsRepository extends BaseRepository<Poll> {
+  constructor() { super('polls.json', POLLS_SEED); }
+  findByEventId(eventId: string): Poll[]     { return this.store.filter(p => p.eventId===eventId); }
+  findOpenByEventId(eventId: string): Poll[] { return this.store.filter(p => p.eventId===eventId && p.status==='open'); }
+  nextPollId(): string { return this.nextId('poll'); }
+}
+

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "qna3",
+    "eventId": "e1",
+    "question": "sad",
+    "askedBy": "sai@gmail.com",
+    "status": "answered",
+    "createdAt": "2026-05-04T16:51:56.920Z",
+    "updatedAt": "2026-05-04T17:16:26.642Z",
+    "answer": "zxs",
+    "answeredBy": "u17",
+    "answeredAt": "2026-05-04T17:16:26.642Z"
+  },
+  {
+    "id": "qna1",
+    "eventId": "e1",
+    "question": "Will recording be available after the event?",
+    "askedBy": "random_attendee@test.com",
+    "status": "answered",
+    "createdAt": "2026-05-04T16:25:20.104Z",
+    "updatedAt": "2026-05-04T16:25:20.115Z",
+    "answer": "Yes, recordings will be shared within 48 hours.",
+    "answeredBy": "u4",
+    "answeredAt": "2026-05-04T16:25:20.115Z"
+  }
+]

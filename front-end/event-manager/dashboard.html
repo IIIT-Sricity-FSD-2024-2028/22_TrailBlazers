@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wevents – Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    <div class="one-unit">
+      <div class="app">
+        <aside>
+          
+          <button class="back-btn" onclick="location.href = 'home.html'">
+            ← Back to Events
+          </button>
+          <ul class="menu">
+            <li class="active" data-page="dashboard">
+              <i class="fa-solid fa-table-columns"></i>Dashboard
+            </li>
+            <li data-page="event_agenda">
+              <i class="fa-solid fa-calendar"></i>Event Agenda
+            </li>
+            <li data-page="sessions">
+              <i class="fa-solid fa-desktop"></i>Sessions
+            </li>
+            <li data-page="attendance">
+              <i class="fa-solid fa-users"></i>Attendance
+            </li>
+            <li data-page="engagement">
+              <i class="fa-solid fa-chart-line"></i>Engagement
+            </li>
+            <li data-page="live">
+              <i class="fa-solid fa-comments"></i>Live Q&A
+            </li>
+            <li data-page="poll">
+              <i class="fa-solid fa-chart-bar"></i>Poll Activity
+            </li>
+            <li data-page="reports">
+              <i class="fa-solid fa-file-lines"></i>Reports
+            </li>
+            <li data-page="settings">
+              <i class="fa-solid fa-gear"></i>Settings
+            </li>
+          </ul>
+        </aside>
+
+        <div class="main">
+          <div class="navbar" style="position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #e2e8f0; border-radius: 0;">
+            <div style="display:flex; align-items:center; gap:10px; color:var(--primary); font-size: 18px; font-weight: 700; margin-left: 10px;">
+              <div style="width: 32px; height: 32px; background: var(--primary); color: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center;"><i class="fa-regular fa-calendar"></i></div> Wevents.com
+            </div>
+            <div></div>
+            <div class="nav-right">
+              <i class="fa-regular fa-bell" style="cursor: pointer"></i>
+              <div class="profile-wrapper">
+                <div class="profile" id="profileBtn">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                  <div class="ph">
+                    <div>
+                      <div style="font-weight: 600; font-size: 15px">
+                        Alex Thompson
+                      </div>
+                      <div style="font-size: 12px; opacity: 0.8">
+                        Lead Coordinator
+                      </div>
+                    </div>
+                    <div class="av">AT</div>
+                  </div>
+                  <div class="pb">
+                    <h4>My Account</h4>
+                    <div class="pi">
+                      <i class="fa-regular fa-user"></i>Alex Thompson
+                    </div>
+                    <div class="pi">
+                      <i class="fa-regular fa-envelope"></i>alex.t@gmail.com
+                    </div>
+                  </div>
+                  <div class="pf">
+                    <button class="logout-btn">
+                      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ev-header">
+            <div>
+              <h2>Tech Mumbai Innovation Summit 2026</h2>
+              <p>March 15–17, 2026 · Jio World Convention Centre, Mumbai</p>
+            </div>
+            <button class="live-pill">
+              <span class="dot"></span>Event Live
+            </button>
+          </div>
+
+          <div class="content">
+            <h2>Dashboard</h2>
+            <p class="subtext">Real-time overview of your event</p>
+
+            <div class="big-stats-grid">
+              <div class="big-stat-card">
+                <div>
+                  <p class="big-stat-title">Total RSVP Attendees</p>
+                  <h2 class="big-stat-value">850</h2>
+                </div>
+                <div class="big-stat-icon orange">
+                  <i class="fa-solid fa-users"></i>
+                </div>
+              </div>
+              <div class="big-stat-card">
+                <div>
+                  <p class="big-stat-title">Checked-In Attendees</p>
+                  <h2 class="big-stat-value">712</h2>
+                  <div class="progress-bar" style="margin-top: 8px">
+                    <div class="progress-fill" style="width: 83.8%"></div>
+                  </div>
+                  <p style="font-size: 12px; color: #64748b; margin-top: 4px">
+                    83.8% check-in rate
+                  </p>
+                </div>
+                <div class="big-stat-icon blue">
+                  <i class="fa-solid fa-user-check"></i>
+                </div>
+              </div>
+              <div class="big-stat-card">
+                <div>
+                  <p class="big-stat-title">Sessions Running</p>
+                  <h2 class="big-stat-value">3</h2>
+                </div>
+                <div class="big-stat-icon green">
+                  <i class="fa-solid fa-desktop"></i>
+                </div>
+              </div>
+              <div class="big-stat-card">
+                <div>
+                  <p class="big-stat-title">Upcoming Sessions</p>
+                  <h2 class="big-stat-value">5</h2>
+                </div>
+                <div class="big-stat-icon purple">
+                  <i class="fa-solid fa-clock"></i>
+                </div>
+              </div>
+              <div class="big-stat-card">
+                <div>
+                  <p class="big-stat-title">Total Questions Asked</p>
+                  <h2 class="big-stat-value">156</h2>
+                </div>
+                <div class="big-stat-icon orange">
+                  <i class="fa-solid fa-comment"></i>
+                </div>
+              </div>
+              <div class="big-stat-card">
+                <div>
+                  <p class="big-stat-title">Poll Participation</p>
+                  <h2 class="big-stat-value">72%</h2>
+                </div>
+                <div class="big-stat-icon blue">
+                  <i class="fa-solid fa-chart-bar"></i>
+                </div>
+              </div>
+            </div>
+
+            <div class="dashboard-grid">
+              <div class="dashboard-card">
+                <h3>Attendance Timeline</h3>
+                <!-- Fixed-height wrapper prevents chart from growing on scroll -->
+                <div class="chart-wrap">
+                  <canvas id="attendanceChart"></canvas>
+                </div>
+              </div>
+              <div class="dashboard-card">
+                <h3>Session Engagement Activity</h3>
+                <div class="chart-wrap">
+                  <canvas id="engagementChart"></canvas>
+                </div>
+              </div>
+            </div>
+
+            <div class="dashboard-card" style="margin-top: 16px">
+              <h3>Event Progress</h3>
+              <div class="progress-row">
+                <div class="progress-top">
+                  <span>Day 1 Sessions</span><span>8 of 12 completed</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 65%"></div>
+                </div>
+              </div>
+              <div class="progress-row">
+                <div class="progress-top">
+                  <span>Overall Event</span><span>Day 1 of 3</span>
+                </div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 33%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="toast"></div>
+      <script src="shared.js"></script>
+      <script src="dashboard.js"></script>
+    </div>
+      <script src="../profile-init.js"></script>
+</body>
+</html>

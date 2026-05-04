@@ -1,0 +1,45 @@
+﻿import { Injectable } from '@nestjs/common';
+import { BaseRepository } from './base.repository';
+
+export interface TimelineItem { time: string; title: string; speaker?: string; location?: string; duration?: string; type?: string; }
+export interface EventStats   { rsvps: number; checkins: number; engagement: number; rating: number; participationTrend: number[]; feedbackScore: number; }
+export interface Event {
+  id: string; title: string; status: 'pending'|'upcoming'|'live'|'completed'|'rejected';
+  date: string; location: string; capacity: number; domain?: string; description: string;
+  clientId?: string; clientEmail?: string; clientName?: string;
+  managerId?: string|null; managerName?: string|null;
+  attendees: number; sessions: number; speakers: number;
+  timeline: TimelineItem[]; stats?: EventStats; createdAt: string; updatedAt: string;
+  [key: string]: any;
+}
+
+const EVENTS_SEED: Event[] = [
+  { id:'e8', title:'Digital Marketing Expo', status:'rejected', date:'2026-05-05', location:'Taj Hotel, Mumbai', capacity:500, domain:'Client Hosted Events', description:'hgs', managerId:null, managerName:null, attendees:0, sessions:0, speakers:0, timeline:[], stats:{rsvps:0,checkins:0,engagement:0,rating:0,participationTrend:[],feedbackScore:0}, createdAt:'2026-05-03T13:44:13.951Z', updatedAt:'2026-05-03T14:02:44.761Z' },
+  { id:'e7', title:'Test Client Event', status:'pending', date:'2026-08-01', location:'Test Hall', capacity:100, domain:'Client Hosted Events', description:'Test desc', attendees:0, sessions:0, speakers:0, timeline:[], stats:{rsvps:0,checkins:0,engagement:0,rating:0,participationTrend:[],feedbackScore:0}, createdAt:'2026-05-03T13:42:21.526Z', updatedAt:'2026-05-03T13:42:21.526Z' },
+  { id:'e1', title:'Global Tech Summit 2026', status:'pending', date:'2026-06-15', location:'India Habitat Centre, New Delhi', capacity:500, domain:'Tech Conferences', clientId:'u2', clientEmail:'rajesh@gmail.com', clientName:'Rajesh Kumar', description:'Explore the future of technology with industry leaders. Covers AI, cloud computing, and more.', managerId:null, managerName:null, attendees:342, sessions:3, speakers:3, timeline:[{time:'09:00 AM',title:'Keynote: Future of AI',speaker:'Dr. Ananya Gupta',location:'Main Auditorium',duration:'1 hour',type:'keynote'},{time:'10:30 AM',title:'Panel: Sustainable Tech',speaker:'Industry Leaders',location:'Hall A',duration:'1 hour',type:'panel'},{time:'12:00 PM',title:'Lunch & Networking',speaker:'N/A',location:'Dining Hall',duration:'1 hour',type:'break'}], createdAt:'2026-01-10T08:00:00.000Z', updatedAt:'2026-05-03T13:48:37.721Z' },
+  { id:'e2', title:'Startup Founders Summit 2026', status:'live', date:'2026-05-03', location:'T-Hub, Hyderabad', capacity:600, description:'Premier summit for startup founders, investors, and ecosystem builders.', attendees:520, sessions:4, speakers:4, timeline:[{time:'09:00 AM',title:'Keynote: Building a Unicorn in 2026',speaker:'Kavya Iyer',location:'Main Stage',duration:'1 hour',type:'keynote'},{time:'10:30 AM',title:'Pitch Competition: Round 1',speaker:'Jury Panel',location:'Arena Hall',duration:'2 hours',type:'demo'},{time:'01:00 PM',title:'Investor Networking Lunch',speaker:'N/A',location:'Rooftop',duration:'1 hour',type:'break'},{time:'02:30 PM',title:'Talk: Fundraising in a Down Market',speaker:'Arjun Mehta',location:'Hall B',duration:'45 min',type:'talk'}], createdAt:'2026-02-01T08:00:00.000Z', updatedAt:'2026-05-03T19:58:52.183Z' },
+  { id:'e3', title:'Digital Health Innovation Summit', status:'upcoming', date:'2026-06-12', location:'HICC, Hyderabad', capacity:400, domain:'Healthcare & Life Sciences', clientId:'u3', clientEmail:'priya.s@gmail.com', clientName:'Priya Sharma', description:'Annual summit bringing together healthcare professionals and tech innovators.', managerId:'u6', managerName:'Arjun Mehta', attendees:0, sessions:3, speakers:3, timeline:[{time:'09:00 AM',title:'Keynote: Future of Digital Health',speaker:'Dr. Priya Nair',location:'Main Auditorium',duration:'1 hour',type:'keynote'},{time:'10:30 AM',title:'Panel: AI in Healthcare',speaker:'Dr. Ramesh Iyer',location:'Hall B',duration:'45 min',type:'panel'},{time:'11:30 AM',title:'Workshop: Health Data Analytics',speaker:'Sneha Kulkarni',location:'Lab 202',duration:'1 hour',type:'workshop'}], stats:{rsvps:0,checkins:0,engagement:0,rating:0,participationTrend:[0,0,0,0,0,0],feedbackScore:0}, createdAt:'2026-02-15T08:00:00.000Z', updatedAt:'2026-02-15T08:00:00.000Z' },
+  { id:'e4', title:'MedTech Innovation Expo 2026', status:'pending', date:'2026-07-20', location:'NIMHANS Convention Centre, Bangalore', capacity:300, domain:'Healthcare & Life Sciences', clientId:'u3', clientEmail:'priya.s@gmail.com', clientName:'Priya Sharma', description:'A focused expo for medical device manufacturers and healthcare innovators.', managerId:'u6', managerName:'Arjun Mehta', attendees:0, sessions:0, speakers:0, timeline:[], stats:{rsvps:0,checkins:0,engagement:0,rating:0,participationTrend:[0,0,0,0,0,0],feedbackScore:0}, createdAt:'2026-03-01T08:00:00.000Z', updatedAt:'2026-03-01T08:00:00.000Z' },
+  { id:'e5', title:'Fintech Innovators Conclave 2026', status:'upcoming', date:'2026-07-18', location:'Bombay Stock Exchange, Mumbai', capacity:350, domain:'Fintech & Banking', clientId:'u4', clientEmail:'arjun.b@gmail.com', clientName:'Arjun Bose', description:'A premier gathering of fintech leaders, investors, and regulators.', managerId:'u5', managerName:'Kavya Iyer', attendees:0, sessions:3, speakers:3, timeline:[{time:'09:30 AM',title:'Keynote: Future of Digital Payments',speaker:'Rohit Verma',location:'Main Hall',duration:'1 hour',type:'keynote'},{time:'11:00 AM',title:'Panel: UPI 3.0 and Global Expansion',speaker:'Nisha Kapoor',location:'Hall A',duration:'45 min',type:'panel'},{time:'12:00 PM',title:'Lunch & Networking',speaker:'N/A',location:'Terrace',duration:'1 hour',type:'break'}], stats:{rsvps:0,checkins:0,engagement:0,rating:0,participationTrend:[0,0,0,0,0,0],feedbackScore:0}, createdAt:'2026-03-10T08:00:00.000Z', updatedAt:'2026-03-10T08:00:00.000Z' },
+  { id:'e6', title:'Blockchain & Web3 Summit India', status:'live', date:'2026-05-03', location:'NSCI Dome, Mumbai', capacity:800, domain:'Fintech & Banking', clientId:'u4', clientEmail:'arjun.b@gmail.com', clientName:'Arjun Bose', description:"India's top Web3 conference uniting blockchain developers and DeFi founders.", managerId:'u5', managerName:'Kavya Iyer', attendees:650, sessions:5, speakers:5, timeline:[{time:'10:00 AM',title:'Opening: State of Web3 in India',speaker:'Kavya Iyer',location:'Dome Stage',duration:'45 min',type:'keynote'},{time:'11:00 AM',title:'Panel: DeFi vs CeFi',speaker:'Expert Panel',location:'Main Hall',duration:'1 hour',type:'panel'},{time:'12:30 PM',title:'Workshop: Smart Contracts 101',speaker:'Rahul Dev',location:'Lab A',duration:'1 hour',type:'workshop'},{time:'02:00 PM',title:'Demo: NFT Marketplace',speaker:'Sneha Web3',location:'Demo Zone',duration:'30 min',type:'demo'},{time:'03:00 PM',title:'Investor Roundtable',speaker:'VC Panel',location:'VIP Lounge',duration:'1 hour',type:'panel'}], stats:{rsvps:700,checkins:650,engagement:93,rating:4.6,participationTrend:[15,38,65,82,92,98],feedbackScore:88}, createdAt:'2026-03-20T08:00:00.000Z', updatedAt:'2026-05-03T08:00:00.000Z' },
+];
+
+@Injectable()
+export class EventsRepository extends BaseRepository<Event> {
+  constructor() { super('events.json', EVENTS_SEED); }
+
+  findFiltered(status?: string, managerId?: string, clientId?: string): Event[] {
+    return this.store.filter(e => {
+      if (status    && e.status    !== status)    return false;
+      if (managerId && e.managerId !== managerId) return false;
+      if (clientId  && e.clientId  !== clientId)  return false;
+      return true;
+    });
+  }
+  nextEventId(): string { return this.nextId('e'); }
+  incrementAttendees(eventId: string): void {
+    const ev = this.store.find(e => e.id === eventId);
+    if (ev) { ev.attendees = (ev.attendees ?? 0) + 1; ev.updatedAt = new Date().toISOString(); }
+  }
+}
+

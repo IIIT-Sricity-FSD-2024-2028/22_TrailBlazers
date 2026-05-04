@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta charset="utf-8" />
+    <meta name="description" content="My Events â€“ Wevents.com EventHub" />
+    <title>My Events â€“ Wevents.com</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="globals.css" />
+    <link rel="stylesheet" href="style3.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+
+      <!-- â•â•â•â•â•â•â•â•â•â•â• HEADER â•â•â•â•â•â•â•â•â•â•â• -->
+      <header class="header" id="site-header">
+        <div class="header-inner">
+          <div class="brand">
+            <div class="brand-icon" aria-hidden="true">
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect width="28" height="28" rx="8" fill="#3b52a5"/>
+                <rect x="6" y="8" width="16" height="14" rx="2.5" stroke="#f97316" stroke-width="1.6" fill="none"/>
+                <line x1="10" y1="6" x2="10" y2="10" stroke="#f97316" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="18" y1="6" x2="18" y2="10" stroke="#f97316" stroke-width="1.6" stroke-linecap="round"/>
+                <line x1="6" y1="13" x2="22" y2="13" stroke="#f97316" stroke-width="1.2"/>
+                <rect x="9" y="15.5" width="3" height="2.5" rx="0.5" fill="#f97316"/>
+              </svg>
+            </div>
+            <span class="brand-name">Wevents.com</span>
+          </div>
+          <nav class="header-nav" aria-label="Header navigation">
+            <a href="#" class="header-nav-item" id="nav-notifications" aria-label="Notifications">
+              <span class="header-nav-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                </svg>
+              </span>
+              <span class="header-nav-label">Notifications</span>
+              <span class="notif-badge" aria-label="2 notifications">2</span>
+            </a>
+            <button class="header-nav-item header-profile-btn" id="nav-profile" aria-label="Profile">
+              <span class="header-nav-icon" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                  <circle cx="12" cy="7" r="4"/>
+                </svg>
+              </span>
+              <span class="header-nav-label">Profile</span>
+            </button>
+          </nav>
+        </div>
+      </header>
+
+      <div class="layout">
+
+        <!-- â•â•â•â•â•â•â•â•â•â•â• SIDEBAR â•â•â•â•â•â•â•â•â•â•â• -->
+        <aside class="sidebar" id="sidebar" aria-label="Sidebar navigation">
+          <nav class="sidebar-nav">
+            <a href="#" class="sidebar-link" id="sidebar-home">
+              <span class="sidebar-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                  <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+              </span>
+              <span class="sidebar-label">Home</span>
+            </a>
+            <a href="#" class="sidebar-link" id="sidebar-browse">
+              <span class="sidebar-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="11" cy="11" r="8"/>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+              </span>
+              <span class="sidebar-label">Browse Events</span>
+            </a>
+            <a href="#" class="sidebar-link active" id="sidebar-myevents" aria-current="page">
+              <span class="sidebar-icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                  <line x1="16" y1="2" x2="16" y2="6"/>
+                  <line x1="8" y1="2" x2="8" y2="6"/>
+                  <line x1="3" y1="10" x2="21" y2="10"/>
+                </svg>
+              </span>
+              <span class="sidebar-label">My Events</span>
+            </a>
+          </nav>
+        </aside>
+
+        <!-- â•â•â•â•â•â•â•â•â•â•â• MAIN CONTENT â•â•â•â•â•â•â•â•â•â•â• -->
+        <main class="main-content" id="main-content">
+
+          <!-- â”€â”€ Page Header â”€â”€ -->
+          <div class="page-header">
+            <h1 class="page-title">My Events</h1>
+            <p class="page-subtitle">View your RSVP'd events and past attendance</p>
+          </div>
+
+          <!-- â”€â”€ Tab Bar + Cards â”€â”€ -->
+          <div class="tabs-section">
+
+            <!-- Tab switcher -->
+            <div class="tabs-list" role="tablist" aria-label="Event filter tabs">
+              <button
+                class="tab-trigger tab-active"
+                id="tab-upcoming"
+                role="tab"
+                aria-selected="true"
+                aria-controls="panel-upcoming"
+              >
+                Upcoming (2)
+              </button>
+              <button
+                class="tab-trigger"
+                id="tab-past"
+                role="tab"
+                aria-selected="false"
+                aria-controls="panel-past"
+              >
+                Past (2)
+              </button>
+            </div>
+
+            <!-- Tab panel - Upcoming -->
+            <div
+              class="tab-panel"
+              id="panel-upcoming"
+              role="tabpanel"
+              aria-labelledby="tab-upcoming"
+            >
+              <!-- Upcoming RSVP events loaded dynamically from backend by api-loader.js -->
+              <div class="cards-grid" role="list" id="upcoming-cards"></div>
+            </div><!-- /tab-panel upcoming -->
+
+             <!-- Tab panel - Past / Completed -->
+             <div class="tab-panel" id="panel-past" role="tabpanel" aria-labelledby="tab-past" style="display:none;">
+               <!-- Past events loaded dynamically from backend by api-loader.js -->
+               <div class="cards-grid" role="list" id="completed-cards"></div>
+             </div><!-- /tab-panel past -->
+
+           </div><!-- /tabs-section -->
+
+         </main>
+       </div><!-- /layout -->
+     </div><!-- /page-shell -->
+     <script src="api-loader.js" defer></script>
+     <script src="app.js" defer></script>
+     <script src="script3.js" defer></script>
+   </body>
+</html>

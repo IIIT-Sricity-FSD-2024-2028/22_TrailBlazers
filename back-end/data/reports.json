@@ -1,0 +1,42 @@
+[
+  {
+    "id": "rp1",
+    "eventId": "e1",
+    "attendanceCount": 342,
+    "pollParticipation": 120,
+    "feedbackScore": 4.5,
+    "checkInRate": 85,
+    "generatedAt": "2026-04-15T14:00:00.000Z",
+    "createdAt": "2026-04-15T14:00:00.000Z"
+  },
+  {
+    "id": "rp2",
+    "eventId": "e2",
+    "attendanceCount": 520,
+    "pollParticipation": 310,
+    "feedbackScore": 4.8,
+    "checkInRate": 92,
+    "generatedAt": "2026-05-03T18:00:00.000Z",
+    "createdAt": "2026-05-03T18:00:00.000Z"
+  },
+  {
+    "id": "rp3",
+    "eventId": "e4",
+    "attendanceCount": 0,
+    "pollParticipation": 0,
+    "feedbackScore": 3.2,
+    "checkInRate": 0,
+    "generatedAt": "2026-04-24T17:00:00.000Z",
+    "createdAt": "2026-04-24T17:00:00.000Z"
+  },
+  {
+    "id": "rp4",
+    "eventId": "e6",
+    "attendanceCount": 650,
+    "pollParticipation": 480,
+    "feedbackScore": 4.6,
+    "checkInRate": 93,
+    "generatedAt": "2026-05-03T20:00:00.000Z",
+    "createdAt": "2026-05-03T20:00:00.000Z"
+  }
+]

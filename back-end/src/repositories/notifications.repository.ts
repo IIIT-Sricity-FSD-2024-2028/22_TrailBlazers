@@ -1,0 +1,28 @@
+﻿import { Injectable } from '@nestjs/common';
+import { BaseRepository } from './base.repository';
+
+export interface Notification { id:string; [key:string]:any; createdAt:string; }
+
+const NOTIFICATIONS_SEED: Notification[] = [
+  {id:'n1',title:'Scanner Offline',              desc:'QR scanner at Gate 2 is offline â€” attendees queuing up',                     priority:'high',    reporter:'Alex Thompson',eventId:'e1',isRead:false,status:'open',    time:'09:15 AM',createdAt:'2026-04-15T03:45:00.000Z'},
+  {id:'n2',title:'Overcrowding Alert',           desc:'Main hall is at 95% capacity â€” consider opening overflow room',              priority:'critical',reporter:'Sujith R',     eventId:'e4',isRead:false,status:'open',    time:'10:30 AM',createdAt:'2026-04-24T05:00:00.000Z'},
+  {id:'n3',title:'Speaker Delay',                desc:'Keynote speaker is 15 mins delayed â€” request filler activity',              priority:'medium',  reporter:'Coordinator',  eventId:'e1',isRead:true, status:'open',    time:'11:00 AM',createdAt:'2026-04-15T05:30:00.000Z'},
+  {id:'n4',title:'Audio System Issue',           desc:'Microphone feedback in Hall B during workshop session',                     priority:'medium',  reporter:'Neha Verma',   eventId:'e5',isRead:false,status:'open',    time:'02:10 PM',createdAt:'2026-06-12T08:40:00.000Z'},
+  {id:'n5',title:'Catering Shortage',            desc:'Vegetarian meals ran out â€” additional order placed',                        priority:'low',     reporter:'Rohit Das',    eventId:'e2',isRead:true, status:'resolved', time:'01:05 PM',createdAt:'2026-03-20T07:35:00.000Z'},
+  {id:'n6',title:'New Event Request Submitted',  desc:'Client Priya Sharma submitted a request for Tech Innovation Summit 2026',  priority:'low',     reporter:'System',                    isRead:false,status:'open',    time:'08:00 AM',createdAt:'2026-04-10T02:30:00.000Z'},
+];
+
+@Injectable()
+export class NotificationsRepository extends BaseRepository<Notification> {
+  constructor() { super('notifications.json', NOTIFICATIONS_SEED); }
+  findByUserId(userId: string): Notification[]   { return this.store.filter(n => n.userId===userId); }
+  findByEventId(eventId: string): Notification[] { return this.store.filter(n => n.eventId===eventId); }
+  markRead(id: string): Notification|null {
+    const n = this.store.find(n => n.id===id);
+    if (!n) return null;
+    n.read = true; n.isRead = true; n.updatedAt = new Date().toISOString();
+    return n;
+  }
+  nextNotificationId(): string { return this.nextId('n'); }
+}
+

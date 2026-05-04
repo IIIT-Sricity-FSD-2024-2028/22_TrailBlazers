@@ -1,0 +1,311 @@
+/* ═══════════════════════════════════════════════════════════
+   Event Ticket Dialog  – style9.css
+   Figma: "Your Event Ticket" confirmation with QR, contact info,
+          Download Ticket & Close buttons
+   Pure Vanilla CSS – globals.css provides reset & font-smoothing
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Custom Properties ── */
+:root {
+  --blue:        #2563eb;
+  --green-bg:    #dcfce7;
+  --green-txt:   #16a34a;
+  --slate-900:   #0f172a;
+  --slate-600:   #717182;
+  --white:       #ffffff;
+  --warm-bg:     #f4ede2;
+  --card-border: rgba(0,0,0,0.10);
+  --radius-sm:   8px;
+  --radius-md:   10px;
+  --font:        'Inter', system-ui, -apple-system, sans-serif;
+  --mono:        'Source Code Pro', 'Consolas', monospace;
+  --transition:  150ms ease;
+}
+
+/* ── Base ── */
+*, *::before, *::after { box-sizing: border-box; }
+body {
+  font-family: var(--font);
+  font-size: 14px;
+  color: var(--slate-900);
+  background: rgba(15, 23, 42, 0.35);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+
+/* ════════════════════════════
+   DIALOG WRAPPER
+   ════════════════════════════ */
+.dialog-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  width: 100%;
+}
+
+/* ════════════════════════════
+   DIALOG CARD
+   ════════════════════════════ */
+.dialog {
+  position: relative;
+  width: 100%;
+  max-width: 448px;
+  background: var(--warm-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin: 0;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+/* ── Close button ── */
+.dialog-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0.60;
+  transition: opacity var(--transition), background var(--transition);
+}
+.dialog-close:hover {
+  opacity: 1;
+  background: rgba(0,0,0,0.06);
+}
+.dialog-close:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ── Dialog header ── */
+.dialog-header { margin-bottom: 20px; padding-right: 32px; }
+.dialog-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--slate-900);
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+
+/* ════════════════════════════
+   DIALOG BODY
+   ════════════════════════════ */
+.dialog-body {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 20px;
+}
+
+/* ── Success state ── */
+.success-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.success-icon-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--green-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-bottom: 2px;
+}
+.success-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--slate-900);
+  text-align: center;
+  line-height: 1.45;
+}
+.success-sub {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--slate-600);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ════════════════════════════
+   TICKET CARD  (white box)
+   ════════════════════════════ */
+.ticket-card {
+  background: var(--white);
+  border: 2px solid var(--card-border);
+  border-radius: var(--radius-md);
+  padding: 24px 24px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* QR code */
+.qr-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.qr-img {
+  width: 192px;
+  height: 192px;
+  display: block;
+  border-radius: 4px;
+}
+
+/* Ticket ID block */
+.ticket-id-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  width: 100%;
+}
+.ticket-id-label {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--slate-600);
+  text-align: center;
+  line-height: 1.4;
+}
+.ticket-id-value {
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--slate-900);
+  text-align: center;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+}
+
+/* ════════════════════════════
+   CONTACT STRIP  (warm bg)
+   ════════════════════════════ */
+.contact-strip {
+  background: var(--warm-bg);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1px solid rgba(0,0,0,0.06);
+}
+.contact-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.contact-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--slate-600);
+}
+.contact-key {
+  font-weight: 400;
+  color: var(--slate-600);
+  white-space: nowrap;
+}
+.contact-val {
+  font-weight: 500;
+  color: var(--slate-900);
+  word-break: break-all;
+}
+
+/* ════════════════════════════
+   ACTION BUTTONS
+   ════════════════════════════ */
+.ticket-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Download Ticket */
+.btn-download {
+  width: 100%;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--blue);
+  color: var(--white);
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition), box-shadow var(--transition), opacity var(--transition);
+}
+.btn-download:hover {
+  background: #1d4ed8;
+  box-shadow: 0 2px 10px rgba(37,99,235,0.35);
+}
+.btn-download:active { opacity: 0.88; }
+.btn-download:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* Close */
+.btn-close-action {
+  width: 100%;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  background: var(--warm-bg);
+  color: var(--slate-900);
+  font-size: 14px;
+  font-weight: 500;
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+.btn-close-action:hover {
+  background: #ece4d5;
+  border-color: rgba(0,0,0,0.16);
+}
+.btn-close-action:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ── Confirmation footnote ── */
+.confirm-note {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--slate-600);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ════════════════════════════
+   RESPONSIVE
+   ════════════════════════════ */
+@media (max-width: 480px) {
+  .dialog { padding: 20px 16px; }
+  .dialog-title { font-size: 16px; }
+  .qr-img { width: 160px; height: 160px; }
+}

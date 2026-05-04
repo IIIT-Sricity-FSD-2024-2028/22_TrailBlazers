@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Database Control | Super User Dashboard | Wevents.com</title>
+    <meta name="description" content="View and manage database tables and records">
+    <link rel="stylesheet" href="su-global.css">
+    <link rel="stylesheet" href="database-control.css">
+</head>
+<body>
+    <aside class="su-sidebar"><div class="sidebar-brand"><div class="sidebar-brand-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><rect x="8" y="14" width="3" height="3" fill="currentColor"/></svg>
+            </div><span class="sidebar-brand-text">Wevents.com</span></div><div class="sidebar-label"><span class="sidebar-label-dot"></span> SUPER USER</div><ul class="sidebar-nav"><li><a class="sidebar-nav-item" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> Dashboard</a></li><li><a class="sidebar-nav-item" href="user-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> User Management</a></li><li><a class="sidebar-nav-item" href="event-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Event Management</a></li><li><a class="sidebar-nav-item active" href="database-control.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> Database Control</a></li><li><a class="sidebar-nav-item" href="platform-analytics.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Platform Analytics</a></li><li><a class="sidebar-nav-item" href="system-health.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> System Health</a></li><li><a class="sidebar-nav-item" href="audit-logs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Audit Logs</a></li><li><a class="sidebar-nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Settings</a></li></ul></aside>
+
+    <header class="su-header"><div class="header-left"><div class="header-title-group"><span class="header-title">Super User Control Panel</span></div></div><div class="header-right"><div class="header-status"><span class="header-status-dot"></span> All systems operational</div><div class="header-notif" id="notif-bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="header-notif-badge">3</span></div><div class="header-user" id="header-user"><div class="header-user-info"><span class="header-user-name">Amanda Phillips</span><span class="header-user-role">Super Admin</span></div><div class="header-avatar">AP</div><span class="header-user-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span><div class="header-dropdown" id="header-dropdown"><div class="dd-header">My Account</div><div class="dd-body"><div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Amanda Phillips</div><div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 7 10-7"/></svg> amanda@wevents.com</div></div><button class="dd-logout" id="logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</button></div></div></div></header>
+
+    <main class="su-main">
+        <div class="page-header">
+            <div class="page-header-row">
+                <div><h1>Database Control</h1><p>View and manage database tables and records</p></div>
+                <div style="display:flex;gap:10px;">
+                    <button class="btn btn-secondary" id="export-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Export</button>
+                    <button class="btn btn-primary" id="refresh-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg> Refresh</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stats-grid cols-3">
+            <div class="stat-card"><div class="stat-card-top"><span class="stat-card-label">Total Tables</span><div class="stat-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg></div></div><div class="stat-card-value" id="stat-total-tables">0</div><div class="stat-card-sub">Database tables</div></div>
+            <div class="stat-card"><div class="stat-card-top"><span class="stat-card-label">Total Records</span><div class="stat-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div></div><div class="stat-card-value" id="stat-total-records">0</div><div class="stat-card-sub">Across all tables</div></div>
+            <div class="stat-card"><div class="stat-card-top"><span class="stat-card-label">Database Size</span><div class="stat-card-icon purple"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg></div></div><div class="stat-card-value" id="stat-total-size">0 KB</div><div class="stat-card-sub">Total storage used</div></div>
+        </div>
+
+        <div class="section-card">
+            <div class="section-card-header">
+                <div><div class="section-card-title">Table Management</div><div class="section-card-subtitle">View and manage individual database tables</div></div>
+            </div>
+            <table class="data-table">
+                <thead><tr><th>Table Name</th><th>Health</th><th>Records</th><th>Size</th><th>Last Updated</th><th>Actions</th></tr></thead>
+                <tbody id="db-tbody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal-card" style="width:420px;">
+            <button class="modal-close">✕</button>
+            <div class="modal-title" style="color:var(--danger)">⚠️ Confirm Deletion</div>
+            <div class="modal-subtitle">This action is destructive and cannot be undone. Type the table name to confirm.</div>
+            <div class="form-group" style="margin-top:12px;">
+                <label class="form-label">Type "<span id="delete-table-name" style="font-weight:700;color:var(--danger)"></span>" to confirm</label>
+                <input class="form-input" id="delete-confirm-input" placeholder="Enter table name...">
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="document.getElementById('delete-modal').classList.remove('active')">Cancel</button>
+                <button class="btn btn-danger" id="confirm-delete-btn" disabled>Delete Table</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Records Modal -->
+    <div class="modal-overlay" id="records-modal">
+        <div class="modal-card" style="width: 1000px; max-width: 95vw; padding: 0;">
+            <!-- Custom Modal Header -->
+            <div style="padding: 24px 32px; border-bottom: 1px solid var(--border-light); display: flex; align-items: flex-start; justify-content: space-between;">
+                <!-- Left Details -->
+                <div style="display: flex; gap: 16px;">
+                    <div style="width: 48px; height: 48px; border-radius: var(--radius-lg); background: #eff6ff; color: var(--info); display: flex; align-items: center; justify-content: center;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 24px; height: 24px;"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+                    </div>
+                    <div>
+                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+                            <h2 style="font-size: 20px; font-weight: 700; color: var(--text-primary); margin: 0;" id="records-table-name">users</h2>
+                            <span class="badge badge-active" style="font-size: 11px; padding: 2px 8px;">Healthy</span>
+                        </div>
+                        <div style="font-size: 13px; color: var(--text-muted);">Last updated: Mar 30, 2026 – 11:42 AM</div>
+                    </div>
+                </div>
+
+                <!-- Right Stats & Actions -->
+                <div style="display: flex; align-items: center; gap: 32px;">
+                    <div style="display: flex; gap: 24px; text-align: center;">
+                        <div>
+                            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">12,847</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Records</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">48.3 MB</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Size</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 16px; font-weight: 700; color: var(--text-primary);">6</div>
+                            <div style="font-size: 12px; color: var(--text-muted);">Columns</div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 12px; color: var(--text-secondary);">
+                        <button id="close-records-btn" style="background: none; border: none; cursor: pointer; color: inherit;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Area -->
+            <div style="padding: 24px 32px;">
+                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
+                    <span style="font-size: 13px; font-weight: 600; color: var(--text-secondary);">Columns:</span>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;" id="records-columns-badges">
+                        <!-- Dynamically populated by JS -->
+                    </div>
+                </div>
+
+                <div style="border: 1px solid var(--border-light); border-radius: var(--radius-lg); overflow: hidden; overflow-x: auto;">
+                    <table class="data-table" style="margin: 0; font-family: monospace; font-size: 13px;">
+                        <thead id="records-thead" style="background: #f8fafc;">
+                            <!-- Dynamically populated by JS -->
+                        </thead>
+                        <tbody id="records-tbody">
+                            <!-- Populated JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Custom Modal Footer -->
+            <div style="padding: 16px 32px; border-top: 1px solid var(--border-light); display: flex; align-items: center; justify-content: space-between; background: #fafafa; border-bottom-left-radius: var(--radius-xl); border-bottom-right-radius: var(--radius-xl);">
+                <span id="records-count-label" style="font-size: 13px; color: var(--text-muted);">Showing records</span>
+                <button class="btn btn-primary" id="modal-add-record-btn" style="background: #ea580c; border: none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Record</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container" id="toast-container"></div>
+    <script src="database-control.js"></script>
+    <script src="../profile-init.js"></script>
+</body>
+</html>

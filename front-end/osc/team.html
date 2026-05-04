@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Coordination - Wevents</title>
+    <link rel="stylesheet" href="global.css">
+    <link rel="stylesheet" href="team.css">
+</head>
+<body>
+    <header class="header">
+        <div class="logo-container">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="4" width="18" height="17" rx="2.5" stroke="#f97316" stroke-width="2"/>
+              <path d="M3 9.5h18" stroke="#f97316" stroke-width="2"/>
+              <path d="M8 2.5v3M16 2.5v3" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
+              <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#f97316"/>
+            </svg>
+            <span class="logo-text">Wevents.com</span>
+        </div>
+        <div class="event-info">
+            <h1>On-site Coordinator Dashboard</h1>
+            <p>Tech Innovation Summit 2026</p>
+        </div>
+        <div class="header-right">
+            <!-- Settings Icon -->
+            <button class="settings-button" id="settings-btn" aria-label="Settings" onclick="document.getElementById('global-settings-modal').classList.add('active')">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
+            <!-- Notifications Bell -->
+            <button class="notification-button" id="notif-btn" aria-label="Notifications">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </button>
+            <div class="coordinator-label">
+                <small>Lead Coordinator</small>
+                <span>Alex Thompson</span>
+            </div>
+            <button class="avatar-button">AT</button>
+        </div>
+    </header>
+
+    <div class="status-bar">
+        <div class="badge-live"><span class="dot"></span> Event Live</div>
+        <div class="status-item">&#128336; <span id="event-start-time">Started at 9:00 AM</span></div>
+        <div class="status-item">Venue: Grand Ballroom, Hall A</div>
+        <div class="status-item" style="margin-left: auto;">
+            <button class="event-details-dropdown-btn" id="event-details-btn">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+                Event Details
+            </button>
+            <div class="event-details-dropdown" id="event-details-dropdown" style="right: 0; left: auto;">
+                <div class="edd-header">
+                    <strong>Tech Innovation Summit 2026</strong>
+                    <p>Event ID: EVN-2026-042</p>
+                </div>
+                <div class="edd-section">
+                    <div class="edd-label">EVENT MANAGER</div>
+                    <div class="edd-manager">
+                        <div class="edd-manager-avatar">PS</div>
+                        <div>
+                            <strong>Priya Sharma</strong>
+                            <p>priya.s@wevents.com</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="edd-section">
+                    <div class="edd-label">AGENDA / SCHEDULE</div>
+                    <ul class="agenda-list" style="list-style: none; padding: 0;">
+                        <li style="display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; align-items: center;">
+                            <span style="font-size: 11px; font-weight: 700; color: #94a3b8; width: 60px;">09:00 AM</span>
+                            <span style="font-size: 13px; color: #334155;">Keynote: Future of AI</span>
+                        </li>
+                        <li style="display: flex; gap: 12px; padding: 8px 0; border-bottom: 1px solid #f1f5f9; align-items: center; background: #f0f7ff; margin: 0 -12px; padding: 8px 12px;">
+                            <span style="font-size: 11px; font-weight: 700; color: #2563eb; width: 60px;">10:30 AM</span>
+                            <span style="font-size: 13px; color: #1e3a8a; font-weight: 600;">Panel: Sustainable Tech</span>
+                            <span style="background: #2563eb; color: white; font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-left: auto;">LIVE</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="edd-footer" style="padding-top: 12px;">
+                    <button style="width: 100%; padding: 10px; background: #1e3a8a; color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">View Full Program</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <main class="main-content">
+        <div class="stats-grid">
+            <div class="card-stat">
+                <div class="card-stat-top"><h3>Total Check-ins</h3><span class="stat-icon">&#128101;</span></div>
+                <span class="value">248</span>
+                <small>Updated 2 min ago</small>
+            </div>
+            <div class="card-stat">
+                <div class="card-stat-top"><h3>Approved</h3><span class="stat-icon">&#10004;</span></div>
+                <span class="value">242</span>
+                <small>97.6% approval rate</small>
+            </div>
+            <div class="card-stat">
+                <div class="card-stat-top"><h3>Rejected</h3><span class="stat-icon">&#10006;</span></div>
+                <span class="value">6</span>
+                <small>2.4% rejection rate</small>
+            </div>
+            <div class="card-stat">
+                <div class="card-stat-top"><h3>Pending</h3><span class="stat-icon">&#9201;</span></div>
+                <span class="value">12</span>
+                <small>Awaiting verification</small>
+            </div>
+        </div>
+
+        <div class="dashboard-split">
+            <div class="team-section">
+                <div class="tabs-nav">
+                    <a href="scanner.html" class="tab">&#8635; QR Scanner</a>
+                    <a href="report.html" class="tab">&#9888; Report Issue</a>
+                    <a href="team.html" class="tab active">&#128101; Team</a>
+                </div>
+
+                <div class="team-card">
+                    <div class="team-card-header">
+                        <div class="team-header-left">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="18" cy="7" r="3"/><path d="M21 20c0-2.8-2.2-5-5-5"/></svg>
+                            Coordination Team
+                        </div>
+                        <span class="team-status-count" id="active-count-badge">4/6 Active</span>
+                    </div>
+
+                    <!-- Team Summary Stats -->
+                    <div class="team-summary-row">
+                        <div class="team-summary-stat">
+                            <span class="ts-value" id="total-checkins">877</span>
+                            <span class="ts-label">Total Team Check-ins</span>
+                        </div>
+                        <div class="team-summary-divider"></div>
+                        <div class="team-summary-stat">
+                            <span class="ts-value" id="member-count">6</span>
+                            <span class="ts-label">Team Members</span>
+                        </div>
+                    </div>
+
+                    <div class="team-card-body" id="team-member-list">
+                        <!-- Member: Alex Thompson -->
+                        <div class="member-row" data-member="Alex Thompson" data-role="Lead Coordinator"
+                             data-location="Grand Ballroom, Hall A" data-checkins="248"
+                             data-status="active" data-email="alex.t@wevents.com" data-phone="+91 98765 43210">
+                            <div class="member-avatar" style="background:#1e3a8a;">AT</div>
+                            <div class="member-details">
+                                <div class="member-name">
+                                    Alex Thompson
+                                    <span class="status-tag active">&#10004; Active</span>
+                                </div>
+                                <p class="member-sub">
+                                    <span class="member-role">Lead Coordinator</span>
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                    Grand Ballroom, Hall A
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                    248 check-ins today
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Member: Tharun -->
+                        <div class="member-row" data-member="Tharun" data-role="Coordinator"
+                             data-location="Main Entrance" data-checkins="186"
+                             data-status="active" data-email="tharun@wevents.com" data-phone="+91 98765 11223">
+                            <div class="member-avatar" style="background:#2563eb;">TH</div>
+                            <div class="member-details">
+                                <div class="member-name">
+                                    Tharun
+                                    <span class="status-tag active">&#10004; Active</span>
+                                </div>
+                                <p class="member-sub">
+                                    <span class="member-role">Coordinator</span>
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                    Main Entrance
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                    186 check-ins today
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Member: Varshith -->
+                        <div class="member-row" data-member="Varshith" data-role="Coordinator"
+                             data-location="Hall B Entrance" data-checkins="142"
+                             data-status="active" data-email="varshith@wevents.com" data-phone="+91 87654 32109">
+                            <div class="member-avatar" style="background:#1d4ed8;">VA</div>
+                            <div class="member-details">
+                                <div class="member-name">
+                                    Varshith
+                                    <span class="status-tag active">&#10004; Active</span>
+                                </div>
+                                <p class="member-sub">
+                                    <span class="member-role">Coordinator</span>
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                    Hall B Entrance
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                    142 check-ins today
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Member: Tejdeep (On Break) -->
+                        <div class="member-row" data-member="Tejdeep" data-role="Coordinator"
+                             data-location="Rest Area" data-checkins="102"
+                             data-status="break" data-email="tejdeep@wevents.com" data-phone="+91 99887 76654">
+                            <div class="member-avatar" style="background:#94a3b8;">TE</div>
+                            <div class="member-details">
+                                <div class="member-name">
+                                    Tejdeep
+                                    <span class="status-tag break">&#9201; On Break</span>
+                                </div>
+                                <p class="member-sub">
+                                    <span class="member-role">Coordinator</span>
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                    Rest Area
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                    102 check-ins today
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Member: Preethi (Offline) -->
+                        <div class="member-row" data-member="Preethi" data-role="Coordinator"
+                             data-location="VIP Lounge" data-checkins="89"
+                             data-status="offline" data-email="preethi@wevents.com" data-phone="+91 91234 56789">
+                            <div class="member-avatar" style="background:#cbd5e1; color:#64748b;">PR</div>
+                            <div class="member-details">
+                                <div class="member-name">
+                                    Preethi
+                                    <span class="status-tag offline">&#9679; Offline</span>
+                                </div>
+                                <p class="member-sub">
+                                    <span class="member-role">Coordinator</span>
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                    VIP Lounge
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                    89 check-ins today
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Member: Nithin (Offline) -->
+                        <div class="member-row" data-member="Nithin" data-role="Junior Coordinator"
+                             data-location="Exhibition Hall" data-checkins="110"
+                             data-status="offline" data-email="nithin@wevents.com" data-phone="+91 98001 23456">
+                            <div class="member-avatar" style="background:#cbd5e1; color:#64748b;">NI</div>
+                            <div class="member-details">
+                                <div class="member-name">
+                                    Nithin
+                                    <span class="status-tag offline">&#9679; Offline</span>
+                                </div>
+                                <p class="member-sub">
+                                    <span class="member-role">Junior Coordinator</span>
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                                    Exhibition Hall
+                                    <span class="dot-sep">&#8226;</span>
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                                    110 check-ins today
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <aside class="activity-sidebar">
+                <div class="activity-header">
+                    <span>Recent Activity</span>
+                    <select class="activity-filter" id="activity-filter" aria-label="Filter activity">
+                        <option value="all">All</option>
+                        <option value="approved">Approved</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="pending">Pending</option>
+                    </select>
+                </div>
+                <div class="activity-list" id="activity-list">
+                    <div class="activity-item" data-status="approved">
+                        <div><strong>Siddu</strong><br><small>TKT00248</small></div>
+                        <div class="status-col"><span class="badge approved">&#10004; Approved</span><br><small>2 min ago</small></div>
+                    </div>
+                    <div class="activity-item" data-status="approved">
+                        <div><strong>Sujith</strong><br><small>TKT00247</small></div>
+                        <div class="status-col"><span class="badge approved">&#10004; Approved</span><br><small>5 min ago</small></div>
+                    </div>
+                    <div class="activity-item" data-status="rejected">
+                        <div><strong>Vipul</strong><br><small>TKT00246</small></div>
+                        <div class="status-col"><span class="badge rejected">&#10006; Rejected</span><br><small>8 min ago</small></div>
+                    </div>
+                    <div class="activity-item" data-status="pending">
+                        <div><strong>Rahul</strong><br><small>TKT00245</small></div>
+                        <div class="status-col"><span class="badge pending">&#8987; Pending</span><br><small>10 min ago</small></div>
+                    </div>
+                    <div class="activity-item" data-status="approved">
+                        <div><strong>Vikas</strong><br><small>TKT00243</small></div>
+                        <div class="status-col"><span class="badge approved">&#10004; Approved</span><br><small>12 min ago</small></div>
+                    </div>
+                    <div class="activity-item" data-status="approved">
+                        <div><strong>Sai Nandhan</strong><br><small>TKT00244</small></div>
+                        <div class="status-col"><span class="badge approved">&#10004; Approved</span><br><small>15 min ago</small></div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </main>
+
+    <!-- ===== Member Detail Modal ===== -->
+    <div class="modal-overlay" id="member-modal" role="dialog" aria-modal="true" aria-labelledby="member-modal-title">
+        <div class="modal-card member-modal-card" id="member-modal-card">
+            <button class="modal-close" id="member-modal-close" aria-label="Close">&#10005;</button>
+
+            <div class="member-modal-top">
+                <div class="member-modal-avatar" id="modal-avatar">AT</div>
+                <div>
+                    <h2 class="member-modal-name" id="modal-name">Alex Thompson</h2>
+                    <p class="member-modal-role" id="modal-role">Lead Coordinator</p>
+                    <span class="status-tag active" id="modal-status-tag">&#10004; Active</span>
+                </div>
+            </div>
+
+            <div class="member-modal-details">
+                <div class="member-detail-row">
+                    <span class="mdr-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M12 2C8.1 2 5 5.1 5 9c0 5.2 7 13 7 13s7-7.8 7-13c0-3.9-3.1-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+                    </span>
+                    <div><small>Station</small><strong id="modal-location">Grand Ballroom, Hall A</strong></div>
+                </div>
+                <div class="member-detail-row">
+                    <span class="mdr-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+                    </span>
+                    <div><small>Check-ins Today</small><strong id="modal-checkins">248</strong></div>
+                </div>
+                <div class="member-detail-row">
+                    <span class="mdr-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 7 10-7"/></svg>
+                    </span>
+                    <div><small>Email</small><strong id="modal-email">alex.t@wevents.com</strong></div>
+                </div>
+                <div class="member-detail-row">
+                    <span class="mdr-icon">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1A19.5 19.5 0 013.1 10.7 19.8 19.8 0 01.1 2.2 2 2 0 012.1 0h3a2 2 0 012 1.7c.1 1 .4 2 .7 2.9a2 2 0 01-.4 2.1L6.1 8a16 16 0 006 6l1.3-1.3a2 2 0 012.1-.5c.9.3 1.9.6 2.9.7A2 2 0 0122 16.9z"/></svg>
+                    </span>
+                    <div><small>Phone</small><strong id="modal-phone">+91 98765 43210</strong></div>
+                </div>
+            </div>
+
+            <div class="member-modal-progress">
+                <div class="progress-label">
+                    <span>Today's Check-in Progress</span>
+                    <span id="modal-progress-pct">—</span>
+                </div>
+                <div class="progress-bar-bg">
+                    <div class="progress-bar-fill" id="modal-progress-bar"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== Notification Dropdown ===== -->
+    <div class="notification-dropdown" id="notif-dropdown" role="dialog" aria-label="Notifications menu">
+        <div class="notif-header-info">
+            <h3>Team Notifications</h3>
+            <button class="notif-clear-btn" id="notif-clear-all">Clear All</button>
+        </div>
+        <div class="notif-body-list" id="notif-list">
+            <!-- Notifications will be injected here via JS -->
+            <div class="notif-empty">No new notifications</div>
+        </div>
+    </div>
+
+    <!-- ===== Account Popup ===== -->
+    <div class="account-popup" id="account-popup" role="dialog" aria-label="Account menu">
+        <div class="acct-header">
+            <div class="acct-header-info">
+                <strong>Alex Thompson</strong>
+                <span>Lead Coordinator</span>
+            </div>
+            <div class="acct-header-avatar">AT</div>
+        </div>
+        <div class="acct-body">
+            <p class="acct-section-title">My Account</p>
+            <div class="acct-divider"></div>
+            <div class="acct-detail-row">
+                <span class="acct-detail-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+                </span>
+                Alex Thompson
+            </div>
+            <div class="acct-detail-row">
+                <span class="acct-detail-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 7 10-7"/></svg>
+                </span>
+                alex.t@evnt.com
+            </div>
+            <div class="acct-detail-row">
+                <span class="acct-detail-icon">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </span>
+                Lead Coordinator
+            </div>
+            <div class="acct-divider"></div>
+            <button class="acct-logout-btn" id="acct-logout-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+                Signout
+            </button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="global-settings-modal">
+        <div class="modal-card" style="width: 420px; padding: 28px;">
+            <button class="modal-close" onclick="document.getElementById('global-settings-modal').classList.remove('active')">&#10005;</button>
+            <div style="text-align: center; margin-bottom: 24px;">
+                <div style="width: 70px; height: 70px; background: #f97316; border-radius: 50%; color: white; display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700; margin: 0 auto 12px; box-shadow: 0 4px 12px rgba(249,115,22,0.3);">AT</div>
+                <h2 style="font-size: 20px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">Alex Thompson</h2>
+                <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">Lead Coordinator</p>
+                <div style="display: inline-flex; background: #e0f2fe; color: #0369a1; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700;">ON DUTY - SECTION A</div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 20px;">
+                <div class="form-group">
+                    <label style="font-size: 12px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 8px; display: block;">Contact Info</label>
+                    <input type="text" value="+91 98765 43210" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 10px; font-size: 14px;">
+                </div>
+                <div class="form-group">
+                    <label style="font-size: 12px; font-weight: 700; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 10px; display: block;">Working Status</label>
+                    <div style="display: flex; gap: 12px;">
+                        <button class="status-toggle-btn active" id="global-status-active-btn" onclick="window.setGlobalStatus('active')">
+                            <span class="dot" style="background:#22c55e;"></span> Active
+                        </button>
+                        <button class="status-toggle-btn" id="global-status-break-btn" onclick="window.setGlobalStatus('break')">
+                            <span class="dot" style="background:#f59e0b;"></span> On Break
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="padding-top: 28px; display: flex; gap: 12px; justify-content: stretch;">
+                <button class="btn-secondary" style="flex: 1; padding: 12px;" onclick="document.getElementById('global-settings-modal').classList.remove('active')">Cancel</button>
+                <button class="btn-primary" style="flex: 2; padding: 12px; background: #1e3a8a;" onclick="window.saveGlobalSettings()">Save Profile</button>
+            </div>
+        </div>
+    </div>
+    <script src="common.js"></script>
+    <script src="team.js"></script>
+    <script src="../profile-init.js"></script>
+</body>
+</html>
