@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Your Event Ticket â€“ Wevents.com</title>
+    <meta name="description" content="Your RSVP is confirmed. Download your event ticket." />
+    <link rel="stylesheet" href="globals.css" />
+    <link rel="stylesheet" href="style9.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Code+Pro:wght@500&display=swap" rel="stylesheet" />
+  </head>
+  <body>
+
+    <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• EVENT TICKET DIALOG â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
+    <div class="dialog-wrapper">
+      <dialog class="dialog" id="ticket-dialog" open aria-modal="true" aria-labelledby="dialog-heading">
+
+        <!-- Close button -->
+        <button class="dialog-close" id="btn-close-dialog" type="button" aria-label="Close dialog" onclick="location.href='index3.html'">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M1 1L13 13M13 1L1 13" stroke="#0f172a" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+
+        <!-- Dialog header -->
+        <header class="dialog-header">
+          <h1 class="dialog-title" id="dialog-heading">Your Event Ticket</h1>
+        </header>
+
+        <!-- Body -->
+        <div class="dialog-body">
+
+          <!-- Success state -->
+          <div class="success-state">
+            <div class="success-icon-wrap" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"/>
+              </svg>
+            </div>
+            <h2 class="success-title">RSVP Confirmed!</h2>
+            <p class="success-sub">Your ticket has been generated</p>
+          </div>
+
+          <!-- Ticket card -->
+          <div class="ticket-card" id="ticket-card">
+
+            <!-- QR Code -->
+            <div class="qr-wrapper" aria-label="QR code for ticket EVT-2-HD61JEASH">
+              <img
+                class="qr-img"
+                src="https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=EVT-2-HD61JEASH&margin=4&format=svg&color=0f172a"
+                alt="QR Code for ticket EVT-2-HD61JEASH"
+                width="192"
+                height="192"
+              />
+            </div>
+
+            <!-- Ticket ID -->
+            <div class="ticket-id-block">
+              <span class="ticket-id-label">Ticket ID</span>
+              <span class="ticket-id-value">EVT-2-HD61JEASH</span>
+            </div>
+
+          </div><!-- /ticket-card -->
+
+          <!-- Contact info strip -->
+          <div class="contact-strip" aria-label="Attendee contact information">
+
+            <div class="contact-row" id="contact-email">
+              <span class="contact-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
+                </svg>
+              </span>
+              <span class="contact-key">Email:</span>
+              <span class="contact-val">qwf@f.vc</span>
+            </div>
+
+            <div class="contact-row" id="contact-phone">
+              <span class="contact-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.72 12 19.79 19.79 0 0 1 1.64 3.42 2 2 0 0 1 3.62 1.24h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.83a16 16 0 0 0 6.29 6.29l.97-.97a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7a2 2 0 0 1 1.72 1.97z"/>
+                </svg>
+              </span>
+              <span class="contact-key">Phone:</span>
+              <span class="contact-val">3214432354</span>
+            </div>
+
+          </div><!-- /contact-strip -->
+
+          <!-- Action buttons -->
+          <div class="ticket-actions">
+            <button class="btn-download" id="btn-download" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+              Download Ticket
+            </button>
+
+            <button class="btn-close-action" id="btn-close-action" type="button">Close</button>
+          </div>
+
+          <!-- Confirmation footnote -->
+          <p class="confirm-note">A confirmation email has been sent to qwf@f.vc</p>
+
+        </div><!-- /dialog-body -->
+
+      </dialog>
+    </div><!-- /dialog-wrapper -->
+
+    <script src="app.js" defer></script>
+  <script src="script9.js" defer></script>
+</body>
+</html>
+

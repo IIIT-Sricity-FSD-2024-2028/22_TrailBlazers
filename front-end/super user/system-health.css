@@ -1,0 +1,11 @@
+/* System Health specific */
+.maintenance-toggle-wrap { display: flex; align-items: center; gap: 10px; background: var(--card); padding: 8px 14px; border-radius: var(--radius); border: 1px solid var(--border); }
+.maintenance-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
+
+.uptime-bar { width: 100px; height: 6px; background: #f1f5f9; border-radius: 99px; overflow: hidden; display: inline-block; vertical-align: middle; margin-right: 6px; }
+.uptime-bar-fill { height: 100%; border-radius: 99px; transition: width .5s ease; }
+.uptime-text { font-size: 13px; font-weight: 600; }
+
+.service-name { display: flex; align-items: center; gap: 8px; }
+.service-icon { width: 32px; height: 32px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; }
+.service-icon svg { width: 16px; height: 16px; }

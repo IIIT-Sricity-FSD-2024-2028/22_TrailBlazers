@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wevents - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="components.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .sidebar { transition: 0.3s; }
+        .mobile-toggle { display: none; background: transparent; border: none; color: white; font-size: 24px; cursor: pointer; }
+        @media (max-width: 768px) {
+            .mobile-toggle { display: block; }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header" style="padding: 25px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+                <div class="logo-icon" style="min-width: 38px; width: 38px; height: 38px; background: #3B52D4; border-radius: 10px; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.2);">
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="5" width="16" height="15" rx="2" stroke="#F97316" stroke-width="2.5"/>
+                        <path d="M4 10H20" stroke="#F97316" stroke-width="2.5"/>
+                        <path d="M8 3V7" stroke="#F97316" stroke-width="2.5" stroke-linecap="round"/>
+                        <path d="M16 3V7" stroke="#F97316" stroke-width="2.5" stroke-linecap="round"/>
+                        <rect x="8" y="14" width="3" height="3" fill="#F97316"/>
+                    </svg>
+                </div>
+                <h2 style="color:#FFFFFF; font-size: 20px; font-weight: 700; margin: 0; letter-spacing: -0.5px;">Wevents.com</h2>
+            </div>
+            <nav class="sidebar-nav" id="sidebarNav">
+                <!-- Navigation links will be injected based on role -->
+            </nav>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <main class="main-content">
+            <!-- Topbar -->
+            <header class="topbar">
+                <button class="mobile-toggle" id="mobileToggle">☰</button>
+                <h1 id="topbarTitle">Event Management Dashboard</h1>
+                
+                <div class="topbar-right">
+                    <a href="#/notifications" class="notifications" style="display:flex; align-items:center; text-decoration:none; position:relative; cursor:pointer;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+                        <span class="badge" style="position:absolute; top:-5px; right:-5px; background:#F97316; height:18px; width:18px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:10px; border:2px solid #1646D0; color:white; font-weight:bold;">2</span>
+                    </a>
+                    
+                    <div class="user-profile dropdown-container" style="position:relative; display:flex; align-items:center; gap: 12px; cursor:pointer;" id="userProfileBtn">
+                        <div class="avatar" id="userInitial">U</div>
+                        <div class="user-info" id="userInfoClick" style="display:flex; align-items:center; gap: 10px;">
+                            <div style="display:flex; flex-direction:column;">
+                                <span class="user-name" id="userName">User Name</span>
+                                <span class="user-email" id="userEmail">user@email.com</span>
+                            </div>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                        </div>
+                        
+                        <div class="dropdown-menu" id="profileDropdown" style="display:none; position:absolute; top:120%; right:0; background:white; color:var(--text-main); border-radius:8px; box-shadow:0 10px 25px rgba(0,0,0,0.15); width:240px; border:1px solid var(--border-color); z-index:100; overflow:hidden;">
+                            <div style="padding:15px; border-bottom:1px solid var(--border-color);">
+                                <div style="font-weight:600; margin-bottom:15px; font-size:14px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted);">My Account</div>
+                                <div style="display:flex; flex-direction:column; gap:12px; color:var(--text-main); font-size:14px;">
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                                        <span id="ddUserName">User</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                                        <span id="ddUserEmail" style="word-break: break-all;">email</span>
+                                    </div>
+                                    <div style="display:flex; align-items:center; gap:10px;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                                        <span id="ddUserRole">Role</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="padding:10px;">
+                                <button onclick="Auth.logout()" style="width:100%; display:flex; align-items:center; justify-content:center; gap:8px; padding:10px; border-radius:6px; cursor:pointer; font-weight:500; font-size:14px; color:var(--danger); border:1px solid var(--danger); background:transparent; transition:0.2s;" onmouseover="this.style.background='var(--danger)'; this.style.color='white';" onmouseout="this.style.background='transparent'; this.style.color='var(--danger)';">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                                    Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dynamic Content Area -->
+            <section class="content-area" id="mainContent">
+                <!-- Content will be injected here via JS Router -->
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals Container -->
+    <div id="modal-container"></div>
+
+    <!-- Scripts -->
+    <script src="data.js"></script>
+    <script src="auth.js"></script>
+    <!-- View Components -->
+    <script src="homeView.js"></script>
+    <script src="eventsView.js"></script>
+    <script src="createEventView.js"></script>
+    <script src="eventDetailsView.js"></script>
+    <script src="extraViews.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

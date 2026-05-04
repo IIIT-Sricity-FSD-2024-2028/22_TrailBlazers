@@ -1,0 +1,8 @@
+/* Audit Logs specific */
+.action-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: var(--radius-sm);
+    font-size: 12px; font-weight: 700; font-family: 'Courier New', monospace;
+    background: #f1f5f9; color: var(--text-primary);
+}
+.action-icon { width: 16px; height: 16px; }

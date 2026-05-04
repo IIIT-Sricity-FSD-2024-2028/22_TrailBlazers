@@ -1,0 +1,403 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wevents – Live Q&A</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      .qa-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+      .qa-stat {
+        background: white;
+        border-radius: 16px;
+        padding: 18px 20px;
+        border: 1px solid #e5e7eb;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      }
+      .qa-stat p {
+        font-size: 13px;
+        color: #64748b;
+        margin-bottom: 4px;
+      }
+      .qa-stat h2 {
+        font-size: 26px;
+        font-weight: 700;
+      }
+      .qa-controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+      }
+      .qa-controls span {
+        font-weight: 600;
+        font-size: 15px;
+        flex: 1;
+      }
+      .qa-controls select,
+      .qa-controls input {
+        padding: 8px 12px;
+        border-radius: 9px;
+        border: 1.5px solid #e5e7eb;
+        font-size: 13px;
+        outline: none;
+      }
+      .qa-controls select:focus,
+      .qa-controls input:focus {
+        border-color: #2563eb;
+      }
+      .qa-card {
+        background: #f8f9fb;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.07);
+      }
+      .qa-item {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 12px;
+        border-left: 3px solid #e5e7eb;
+      }
+      .qa-item.highlighted {
+        border-left-color: #f97316;
+      }
+      .qa-item.answered {
+        border-left-color: #10b981;
+      }
+      .qa-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 8px;
+      }
+      .qa-meta {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        color: #94a3b8;
+        flex-wrap: wrap;
+      }
+      .qa-question {
+        font-size: 15px;
+        color: #1e293b;
+        margin-bottom: 8px;
+        line-height: 1.5;
+      }
+      .qa-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .qa-user {
+        font-size: 13px;
+        color: #64748b;
+      }
+      .qa-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .qbtn {
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+      }
+      .qbtn.highlight {
+        background: #f97316;
+        color: white;
+      }
+      .qbtn.answered {
+        background: #10b981;
+        color: white;
+      }
+      .qbtn.hide {
+        background: transparent;
+        border: 1px solid #ef4444;
+        color: #ef4444;
+      }
+      .qbtn.edit {
+        background: #f1f5f9;
+        color: #374151;
+        border: 1px solid #e2e8f0;
+      }
+      .new-question-box {
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        margin-bottom: 16px;
+        border: 1px solid #e2e8f0;
+      }
+      .new-question-box textarea {
+        width: 100%;
+        border: 1.5px solid #e5e7eb;
+        border-radius: 9px;
+        padding: 10px 12px;
+        font-size: 14px;
+        outline: none;
+        resize: vertical;
+        min-height: 80px;
+        font-family: inherit;
+      }
+      .new-question-box textarea:focus {
+        border-color: #2563eb;
+      }
+      .nq-row {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .nq-row input,
+      .nq-row select {
+        padding: 8px 12px;
+        border-radius: 9px;
+        border: 1.5px solid #e5e7eb;
+        font-size: 13px;
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="one-unit">
+      <div class="app">
+        <aside>
+          
+          <button class="back-btn" onclick="location.href = 'home.html'">
+            ← Back to Events
+          </button>
+          <ul class="menu">
+            <li data-page="dashboard">
+              <i class="fa-solid fa-table-columns"></i>Dashboard
+            </li>
+            <li data-page="event_agenda">
+              <i class="fa-solid fa-calendar"></i>Event Agenda
+            </li>
+            <li data-page="sessions">
+              <i class="fa-solid fa-desktop"></i>Sessions
+            </li>
+            <li data-page="attendance">
+              <i class="fa-solid fa-users"></i>Attendance
+            </li>
+            <li data-page="engagement">
+              <i class="fa-solid fa-chart-line"></i>Engagement
+            </li>
+            <li data-page="live" class="active">
+              <i class="fa-solid fa-comments"></i>Live Q&A
+            </li>
+            <li data-page="poll">
+              <i class="fa-solid fa-chart-bar"></i>Poll Activity
+            </li>
+            <li data-page="reports">
+              <i class="fa-solid fa-file-lines"></i>Reports
+            </li>
+            <li data-page="settings">
+              <i class="fa-solid fa-gear"></i>Settings
+            </li>
+          </ul>
+        </aside>
+
+        <div class="main">
+          <div class="navbar" style="position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #e2e8f0; border-radius: 0;">
+            <div style="display:flex; align-items:center; gap:10px; color:var(--primary); font-size: 18px; font-weight: 700; margin-left: 10px;">
+              <div style="width: 32px; height: 32px; background: var(--primary); color: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center;"><i class="fa-regular fa-calendar"></i></div> Wevents.com
+            </div>
+            <div></div>
+            <div class="nav-right">
+              <i class="fa-regular fa-bell" style="cursor: pointer"></i>
+              <div class="profile-wrapper">
+                <div class="profile" id="profileBtn">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                  <div class="ph">
+                    <div>
+                      <div style="font-weight: 600; font-size: 15px">
+                        Alex Thompson
+                      </div>
+                      <div style="font-size: 12px; opacity: 0.8">
+                        Lead Coordinator
+                      </div>
+                    </div>
+                    <div class="av">AT</div>
+                  </div>
+                  <div class="pb">
+                    <h4>My Account</h4>
+                    <div class="pi">
+                      <i class="fa-regular fa-user"></i>Alex Thompson
+                    </div>
+                    <div class="pi">
+                      <i class="fa-regular fa-envelope"></i>alex.t@evnt.com
+                    </div>
+                  </div>
+                  <div class="pf">
+                    <button class="logout-btn">
+                      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ev-header">
+            <div>
+              <h2>Tech Mumbai Innovation Summit 2026</h2>
+              <p>March 15–17, 2026 · Jio World Convention Centre, Mumbai</p>
+            </div>
+            <div class="live-pill"><span class="dot"></span>Event Live</div>
+          </div>
+
+          <div class="content">
+            <h2>Live Q&A</h2>
+            <p class="subtext">
+              Moderate and manage audience questions in real-time
+            </p>
+
+            <div class="qa-stats" id="qa-stats"></div>
+
+            <div class="new-question-box">
+              <div
+                style="font-weight: 600; font-size: 15px; margin-bottom: 10px"
+              >
+                <i class="fa-solid fa-plus" style="color: #2563eb"></i> Add New
+                Question
+              </div>
+              <textarea
+                id="new-q-text"
+                placeholder="Type the question here..."
+              ></textarea>
+              <div class="nq-row">
+                <input
+                  id="new-q-user"
+                  placeholder="Asked by (name)"
+                  style="width: 180px"
+                />
+                <select id="new-q-topic">
+                  <option>AI & Machine Learning</option>
+                  <option>Cloud Solutions</option>
+                  <option>Cybersecurity</option>
+                  <option>Web Development</option>
+                  <option>Data Science</option>
+                  <option>General</option>
+                </select>
+                <button class="btn btn-primary" onclick="addQuestion()">
+                  <i class="fa-solid fa-paper-plane"></i>Submit
+                </button>
+              </div>
+            </div>
+
+            <div class="qa-controls">
+              <span>Questions</span>
+              <select id="q-filter" onchange="renderQuestions()">
+                <option value="">All Status</option>
+                <option value="pending">Pending</option>
+                <option value="highlighted">Highlighted</option>
+                <option value="answered">Answered</option>
+              </select>
+              <input
+                id="q-search"
+                placeholder="Search questions..."
+                oninput="renderQuestions()"
+              />
+            </div>
+
+            <div class="qa-card" id="qa-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDIT MODAL -->
+      <div class="modal-overlay" id="q-modal">
+        <div class="modal">
+          <h3>Edit Question</h3>
+          <div class="fg">
+            <label>Question Text</label>
+            <textarea
+              id="eq-text"
+              style="
+                width: 100%;
+                border: 1.5px solid #e5e7eb;
+                border-radius: 9px;
+                padding: 10px;
+                font-size: 14px;
+                min-height: 80px;
+                outline: none;
+                font-family: inherit;
+              "
+            ></textarea>
+          </div>
+          <div class="fg">
+            <label>Host/Manager Answer</label>
+            <textarea
+              id="eq-answer"
+              placeholder="Type the answer here..."
+              style="
+                width: 100%;
+                border: 1.5px solid #e5e7eb;
+                border-radius: 9px;
+                padding: 10px;
+                font-size: 14px;
+                min-height: 80px;
+                outline: none;
+                font-family: inherit;
+                background: #f0fdf4;
+              "
+            ></textarea>
+          </div>
+          <div class="frow">
+            <div class="fg">
+              <label>Asked By</label><input id="eq-user" placeholder="Name" />
+            </div>
+            <div class="fg">
+              <label>Topic</label>
+              <select id="eq-topic">
+                <option>AI & Machine Learning</option>
+                <option>Cloud Solutions</option>
+                <option>Cybersecurity</option>
+                <option>Web Development</option>
+                <option>Data Science</option>
+                <option>General</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Status</label>
+            <select id="eq-status">
+              <option value="pending">Pending</option>
+              <option value="highlighted">Highlighted</option>
+              <option value="answered">Answered</option>
+            </select>
+          </div>
+          <div class="ma">
+            <button class="bc" onclick="closeModal('q-modal')">Cancel</button>
+            <button class="bs" onclick="saveQuestion()">Save</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="toast"></div>
+      <script src="shared.js"></script>
+      <script src="liveQA.js"></script>
+    </div>
+  </body>
+</html>

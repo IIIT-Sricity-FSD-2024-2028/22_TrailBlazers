@@ -1,0 +1,251 @@
+[
+  {
+    "id": "e5",
+    "title": "Digital Health Innovation Summit",
+    "status": "upcoming",
+    "date": "2026-06-12",
+    "location": "HICC, Hyderabad",
+    "capacity": 400,
+    "domain": "Client Hosted Events",
+    "description": "Annual summit bringing together healthcare professionals and tech innovators to explore digital health solutions.",
+    "managerId": "u2",
+    "managerName": "Arjun Mehta",
+    "attendees": 0,
+    "sessions": 3,
+    "speakers": 3,
+    "timeline": [
+      {
+        "time": "09:00 AM",
+        "title": "Keynote: Future of Digital Health",
+        "speaker": "Dr. Priya Nair",
+        "location": "Main Auditorium",
+        "duration": "1 hour",
+        "type": "keynote"
+      },
+      {
+        "time": "10:30 AM",
+        "title": "Panel: AI in Healthcare",
+        "speaker": "Dr. Ramesh Iyer",
+        "location": "Hall B",
+        "duration": "45 min",
+        "type": "panel"
+      },
+      {
+        "time": "11:30 AM",
+        "title": "Workshop: Health Data Analytics",
+        "speaker": "Sneha Kulkarni",
+        "location": "Lab 202",
+        "duration": "1 hour",
+        "type": "workshop"
+      }
+    ],
+    "stats": {
+      "rsvps": 0,
+      "checkins": 0,
+      "engagement": 0,
+      "rating": 0,
+      "participationTrend": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feedbackScore": 0
+    },
+    "createdAt": "2026-04-24T13:41:41.779Z",
+    "updatedAt": "2026-04-24T13:41:41.779Z"
+  },
+  {
+    "id": "e1",
+    "title": "Global Tech Summit 2026",
+    "status": "upcoming",
+    "date": "2026-04-15",
+    "location": "India Habitat Centre, New Delhi",
+    "attendees": 342,
+    "capacity": 500,
+    "sessions": 3,
+    "speakers": 3,
+    "managerId": "u1",
+    "managerName": "Rajesh Kumar",
+    "domain": "Client Hosted Events",
+    "description": "Explore the future of technology with industry leaders at our annual Tech Conference. Covers AI, cloud computing, and more.",
+    "timeline": [
+      {
+        "time": "09:00 AM",
+        "title": "Keynote: Future of AI",
+        "speaker": "Dr. Ananya Gupta",
+        "location": "Main Auditorium",
+        "duration": "1 hour",
+        "type": "keynote"
+      },
+      {
+        "time": "10:30 AM",
+        "title": "Panel: Sustainable Tech",
+        "speaker": "Industry Leaders",
+        "location": "Hall A",
+        "duration": "1 hour",
+        "type": "panel"
+      },
+      {
+        "time": "12:00 PM",
+        "title": "Lunch & Networking",
+        "speaker": "N/A",
+        "location": "Dining Hall",
+        "duration": "1 hour",
+        "type": "break"
+      }
+    ],
+    "stats": {
+      "rsvps": 342,
+      "checkins": 298,
+      "engagement": 87.5,
+      "rating": 4.8,
+      "participationTrend": [
+        10,
+        25,
+        45,
+        30,
+        55,
+        78
+      ],
+      "feedbackScore": 92
+    },
+    "createdAt": "2026-01-10T08:00:00.000Z",
+    "updatedAt": "2026-04-10T08:00:00.000Z"
+  },
+  {
+    "id": "e2",
+    "title": "Digital Marketing Expo",
+    "status": "completed",
+    "date": "2026-03-20",
+    "location": "Taj Hotel, Mumbai",
+    "attendees": 156,
+    "capacity": 200,
+    "sessions": 2,
+    "speakers": 2,
+    "managerId": "u1",
+    "managerName": "Rajesh Kumar",
+    "domain": "Client Hosted Events",
+    "description": "Exclusive reveal of our new product ecosystem designed for modern enterprises.",
+    "timeline": [
+      {
+        "time": "10:00 AM",
+        "title": "Opening Address",
+        "speaker": "Rajesh Kumar",
+        "location": "Ballroom",
+        "duration": "30 min",
+        "type": "keynote"
+      },
+      {
+        "time": "11:00 AM",
+        "title": "SEO Masterclass",
+        "speaker": "Priya Patel",
+        "location": "Hall B",
+        "duration": "1 hour",
+        "type": "workshop"
+      }
+    ],
+    "stats": {
+      "rsvps": 182,
+      "checkins": 156,
+      "engagement": 82,
+      "rating": 4.4,
+      "participationTrend": [
+        70,
+        65,
+        40,
+        25,
+        10,
+        5
+      ],
+      "feedbackScore": 85
+    },
+    "createdAt": "2026-01-15T08:00:00.000Z",
+    "updatedAt": "2026-03-21T08:00:00.000Z"
+  },
+  {
+    "id": "e3",
+    "title": "AI Innovation Workshop",
+    "status": "pending",
+    "date": "2026-05-10",
+    "location": "IISc Auditorium, Bangalore",
+    "attendees": 0,
+    "capacity": 300,
+    "sessions": 0,
+    "speakers": 0,
+    "managerId": "u1",
+    "managerName": "Rajesh Kumar",
+    "domain": "Client Hosted Events",
+    "description": "A hands-on workshop focused on creative problem-solving and rapid prototyping methodologies.",
+    "timeline": [],
+    "stats": {
+      "rsvps": 0,
+      "checkins": 0,
+      "engagement": 0,
+      "rating": 0,
+      "participationTrend": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "feedbackScore": 0
+    },
+    "createdAt": "2026-02-01T08:00:00.000Z",
+    "updatedAt": "2026-02-01T08:00:00.000Z"
+  },
+  {
+    "id": "e4",
+    "title": "Sustainability Forum Live",
+    "status": "live",
+    "date": "2026-04-24",
+    "location": "Virtual Event Center",
+    "attendees": 890,
+    "capacity": 2000,
+    "sessions": 2,
+    "speakers": 2,
+    "managerId": "u2",
+    "managerName": "Arjun Mehta",
+    "domain": "Tech Conferences",
+    "description": "Live discussion on global sustainability goals and corporate responsibility.",
+    "timeline": [
+      {
+        "time": "09:00 AM",
+        "title": "Opening Ceremony",
+        "speaker": "Arjun Mehta",
+        "location": "Virtual Stage",
+        "duration": "30 min",
+        "type": "keynote"
+      },
+      {
+        "time": "10:00 AM",
+        "title": "Panel: Green Energy",
+        "speaker": "Expert Panel",
+        "location": "Room A",
+        "duration": "1 hour",
+        "type": "panel"
+      }
+    ],
+    "stats": {
+      "rsvps": 1200,
+      "checkins": 890,
+      "engagement": 94.2,
+      "rating": 4.9,
+      "participationTrend": [
+        15,
+        35,
+        60,
+        85,
+        95,
+        100
+      ],
+      "feedbackScore": 96
+    },
+    "createdAt": "2026-03-01T08:00:00.000Z",
+    "updatedAt": "2026-04-24T08:00:00.000Z"
+  }
+]

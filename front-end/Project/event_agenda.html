@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wevents – Event Agenda</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="one-unit">
+      <div class="app">
+        <aside>
+          
+          <button class="back-btn" onclick="location.href = 'home.html'">
+            ← Back to Events
+          </button>
+          <ul class="menu">
+            <li data-page="dashboard">
+              <i class="fa-solid fa-table-columns"></i>Dashboard
+            </li>
+            <li data-page="event_agenda" class="active">
+              <i class="fa-solid fa-calendar"></i>Event Agenda
+            </li>
+            <li data-page="sessions">
+              <i class="fa-solid fa-desktop"></i>Sessions
+            </li>
+            <li data-page="attendance">
+              <i class="fa-solid fa-users"></i>Attendance
+            </li>
+            <li data-page="engagement">
+              <i class="fa-solid fa-chart-line"></i>Engagement
+            </li>
+            <li data-page="live">
+              <i class="fa-solid fa-comments"></i>Live Q&A
+            </li>
+            <li data-page="poll">
+              <i class="fa-solid fa-chart-bar"></i>Poll Activity
+            </li>
+            <li data-page="reports">
+              <i class="fa-solid fa-file-lines"></i>Reports
+            </li>
+            <li data-page="settings">
+              <i class="fa-solid fa-gear"></i>Settings
+            </li>
+          </ul>
+        </aside>
+
+        <div class="main">
+          <div class="navbar" style="position: sticky; top: 0; z-index: 100; background: #fff; border-bottom: 1px solid #e2e8f0; border-radius: 0;">
+            <div style="display:flex; align-items:center; gap:10px; color:var(--primary); font-size: 18px; font-weight: 700; margin-left: 10px;">
+              <div style="width: 32px; height: 32px; background: var(--primary); color: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center;"><i class="fa-regular fa-calendar"></i></div> Wevents.com
+            </div>
+            <div></div>
+            <div class="nav-right">
+              <i class="fa-regular fa-bell" style="cursor: pointer"></i>
+              <div class="profile-wrapper">
+                <div class="profile" id="profileBtn">
+                  <i class="fa-solid fa-user"></i>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                  <div class="ph">
+                    <div>
+                      <div style="font-weight: 600; font-size: 15px">
+                        Alex Thompson
+                      </div>
+                      <div style="font-size: 12px; opacity: 0.8">
+                        Lead Coordinator
+                      </div>
+                    </div>
+                    <div class="av">AT</div>
+                  </div>
+                  <div class="pb">
+                    <h4>My Account</h4>
+                    <div class="pi">
+                      <i class="fa-regular fa-user"></i>Alex Thompson
+                    </div>
+                    <div class="pi">
+                      <i class="fa-regular fa-envelope"></i>alex.t@evnt.com
+                    </div>
+                  </div>
+                  <div class="pf">
+                    <button class="logout-btn">
+                      <i class="fa-solid fa-right-from-bracket"></i> Sign Out
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ev-header">
+            <div>
+              <h2>Tech Mumbai Innovation Summit 2026</h2>
+              <p>March 15–17, 2026 · Jio World Convention Centre, Mumbai</p>
+            </div>
+            <div class="live-pill"><span class="dot"></span>Event Live</div>
+          </div>
+
+          <div class="content">
+            <div class="topbar">
+              <div>
+                <h2
+                  style="font-size: 26px; font-weight: 700; margin-bottom: 4px"
+                >
+                  Event Agenda
+                </h2>
+                <p class="subtext" style="margin: 0">
+                  All scheduled sessions for this event
+                </p>
+              </div>
+              <button class="btn btn-primary" onclick="openModal(-1)">
+                <i class="fa-solid fa-plus"></i>Add Session
+              </button>
+            </div>
+
+            <div class="filter-bar" style="margin-top: 16px">
+              <button
+                class="filter-btn active"
+                onclick="setFilter('all', this)"
+              >
+                All
+              </button>
+              <button class="filter-btn" onclick="setFilter('live', this)">
+                Live
+              </button>
+              <button class="filter-btn" onclick="setFilter('upcoming', this)">
+                Upcoming
+              </button>
+              <button class="filter-btn" onclick="setFilter('completed', this)">
+                Completed
+              </button>
+            </div>
+
+            <div id="sessions-container"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AGENDA MODAL -->
+      <div class="modal-overlay" id="agenda-modal">
+        <div class="modal">
+          <h3 id="am-title">Add Session</h3>
+          <div class="fg">
+            <label>Session Title</label
+            ><input id="a-title" placeholder="AI & Machine Learning Workshop" />
+          </div>
+          <div class="frow">
+            <div class="fg">
+              <label>Speaker</label
+              ><input id="a-speaker" placeholder="Prof. Rajesh Kumar" />
+            </div>
+            <div class="fg">
+              <label>Location</label
+              ><input id="a-location" placeholder="Workshop Hall 1" />
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fg">
+              <label>Time</label
+              ><input id="a-time" placeholder="11:00 AM – 12:30 PM" />
+            </div>
+            <div class="fg">
+              <label>Status</label>
+              <select id="a-status">
+                <option value="upcoming">Upcoming</option>
+                <option value="live">Live</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Attendees</label
+            ><input id="a-attendees" placeholder="234" type="number" />
+          </div>
+          <div class="ma">
+            <button class="bc" onclick="closeModal('agenda-modal')">
+              Cancel
+            </button>
+            <button class="bs" onclick="saveAgenda()">Save Session</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="toast"></div>
+      <script src="shared.js"></script>
+      <script src="event_agenda.js"></script>
+    </div>
+  </body>
+</html>

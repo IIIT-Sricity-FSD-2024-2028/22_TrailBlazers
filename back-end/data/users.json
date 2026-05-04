@@ -1,0 +1,108 @@
+[
+  {
+    "id": "u1",
+    "name": "Admin Root",
+    "email": "admin@wevents.com",
+    "role": "superuser",
+    "domain": "Platform Administration",
+    "status": "active",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "u2",
+    "name": "Rajesh Kumar",
+    "email": "rajesh@gmail.com",
+    "role": "eventmanager",
+    "domain": "Client Hosted Events",
+    "status": "active",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-01-01T00:00:00.000Z"
+  },
+  {
+    "id": "u3",
+    "name": "Rajesh Vardhan",
+    "email": "rajesh.new@gmail.com",
+    "role": "client",
+    "domain": "Marketing Events",
+    "status": "inactive",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "updatedAt": "2026-05-03T05:00:42.293Z"
+  },
+  {
+    "id": "u4",
+    "name": "Kavya Iyer",
+    "email": "kavya@gmail.com",
+    "role": "client",
+    "domain": "Marketing Events",
+    "status": "active",
+    "createdAt": "2026-01-02T00:00:00.000Z",
+    "updatedAt": "2026-01-02T00:00:00.000Z"
+  },
+  {
+    "id": "u5",
+    "name": "Ritu Sharma",
+    "email": "ritu@gmail.com",
+    "role": "client",
+    "domain": "Corporate Events",
+    "status": "active",
+    "createdAt": "2026-01-02T00:00:00.000Z",
+    "updatedAt": "2026-01-02T00:00:00.000Z"
+  },
+  {
+    "id": "u6",
+    "name": "Rahul Sharma",
+    "email": "rahul.s@gmail.com",
+    "role": "attendee",
+    "status": "active",
+    "createdAt": "2026-01-05T00:00:00.000Z",
+    "updatedAt": "2026-01-05T00:00:00.000Z"
+  },
+  {
+    "id": "u7",
+    "name": "Priya Patel",
+    "email": "priya.p@gmail.com",
+    "role": "attendee",
+    "status": "active",
+    "createdAt": "2026-01-05T00:00:00.000Z",
+    "updatedAt": "2026-01-05T00:00:00.000Z"
+  },
+  {
+    "id": "u8",
+    "name": "Alex Thompson",
+    "email": "alex.t@wevents.com",
+    "role": "osc",
+    "status": "active",
+    "createdAt": "2026-01-10T00:00:00.000Z",
+    "updatedAt": "2026-01-10T00:00:00.000Z"
+  },
+  {
+    "id": "u9",
+    "name": "Sujith R",
+    "email": "sujith.r@wevents.com",
+    "role": "osc",
+    "status": "active",
+    "createdAt": "2026-01-10T00:00:00.000Z",
+    "updatedAt": "2026-01-10T00:00:00.000Z"
+  },
+  {
+    "id": "u10",
+    "name": "Suhaas",
+    "email": "SuhaasB@gmail.com",
+    "role": "eventmanager",
+    "domain": "Innovation Tech",
+    "status": "active",
+    "createdAt": "2026-05-03T05:02:53.462Z",
+    "updatedAt": "2026-05-03T05:02:53.462Z"
+  },
+  {
+    "id": "u11",
+    "name": "Tharun",
+    "email": "Tharun@gmail.com",
+    "role": "eventmanager",
+    "domain": "Innovation Tech",
+    "status": "active",
+    "createdAt": "2026-05-03T05:07:20.562Z",
+    "updatedAt": "2026-05-03T05:07:20.562Z"
+  }
+]

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Analytics | Super User Dashboard | Wevents.com</title>
+    <meta name="description" content="Platform-wide analytics and event performance metrics">
+    <link rel="stylesheet" href="su-global.css">
+    <link rel="stylesheet" href="platform-analytics.css">
+</head>
+<body>
+    <aside class="su-sidebar"><div class="sidebar-label"><span class="sidebar-label-dot"></span> SUPER USER</div><ul class="sidebar-nav"><li><a class="sidebar-nav-item" href="dashboard.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg> Dashboard</a></li><li><a class="sidebar-nav-item" href="user-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> User Management</a></li><li><a class="sidebar-nav-item" href="event-management.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg> Event Management</a></li><li><a class="sidebar-nav-item" href="database-control.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg> Database Control</a></li><li><a class="sidebar-nav-item active" href="platform-analytics.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg> Platform Analytics</a></li><li><a class="sidebar-nav-item" href="system-health.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg> System Health</a></li><li><a class="sidebar-nav-item" href="audit-logs.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Audit Logs</a></li><li><a class="sidebar-nav-item" href="settings.html"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg> Settings</a></li></ul></aside>
+
+    <header class="su-header"><div class="header-left" style="display:flex; align-items:center;">
+            <div style="display:flex; align-items:center; gap:8px; margin-right:24px;">
+                <div style="background:var(--accent); color:white; width:30px; height:30px; border-radius:6px; display:flex; align-items:center; justify-content:center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /><rect x="8" y="14" width="3" height="3" fill="currentColor"/></svg>
+                </div>
+                <span style="font-weight:700; font-size:16px; color:var(--text-primary);">Wevents.com</span>
+            </div><button class="header-close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button><div class="header-title-group"><span class="header-title">Super User Control Panel</span></div></div><div class="header-right"><div class="header-status"><span class="header-status-dot"></span> All systems operational</div><div class="header-notif" id="notif-bell"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg><span class="header-notif-badge">3</span></div><div class="header-user" id="header-user"><div class="header-user-info"><span class="header-user-name">Amanda Phillips</span><span class="header-user-role">Super Admin</span></div><div class="header-avatar">AP</div><span class="header-user-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg></span><div class="header-dropdown" id="header-dropdown"><div class="dd-header">My Account</div><div class="dd-body"><div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Amanda Phillips</div><div class="dd-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M2 8l10 7 10-7"/></svg> amanda@wevents.com</div></div><button class="dd-logout" id="logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg> Logout</button></div></div></div></header>
+
+    <main class="su-main">
+        <div class="page-header">
+            <div class="page-header-row">
+                <div><h1>Platform Analytics</h1><p>Platform-wide analytics and event performance metrics</p></div>
+                <select class="filter-select" id="time-range">
+                    <option value="3m" selected>Last 3 Months</option>
+                    <option value="6m">Last 6 Months</option>
+                    <option value="1y">Last Year</option>
+                    <option value="all">All Time</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stats-grid cols-3">
+            <div class="stat-card"><div class="stat-card-top"><span class="stat-card-label">Events</span><div class="stat-card-icon orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div></div><div class="stat-card-value">244</div><div class="stat-card-sub">In selected period</div></div>
+            <div class="stat-card"><div class="stat-card-top"><span class="stat-card-label">Attendees</span><div class="stat-card-icon green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg></div></div><div class="stat-card-value">19,440</div><div class="stat-card-sub">Total attendees</div></div>
+            <div class="stat-card"><div class="stat-card-top"><span class="stat-card-label">New Users</span><div class="stat-card-icon blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div></div><div class="stat-card-value">2,449</div><div class="stat-card-sub">Registered in period</div></div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+            <!-- Line Chart -->
+            <div class="section-card chart-card">
+                <div class="section-card-header">
+                    <div><div class="section-card-title">Events Over Time</div><div class="section-card-subtitle">Event count and attendees by month</div></div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="line-chart"></canvas>
+                </div>
+                <div class="chart-legend">
+                    <span class="legend-item"><span class="legend-dot" style="background:#f97316"></span> Events</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#2563eb"></span> Attendees (÷100)</span>
+                </div>
+            </div>
+
+            <!-- Donut Chart -->
+            <div class="section-card chart-card">
+                <div class="section-card-header">
+                    <div><div class="section-card-title">Event Status Distribution</div><div class="section-card-subtitle">Breakdown by current status</div></div>
+                </div>
+                <div class="chart-container donut-container">
+                    <canvas id="donut-chart"></canvas>
+                    <div class="donut-center">
+                        <div class="donut-center-value">3,156</div>
+                        <div class="donut-center-label">Total</div>
+                    </div>
+                </div>
+                <div class="chart-legend">
+                    <span class="legend-item"><span class="legend-dot" style="background:#16a34a"></span> Completed (1,840)</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#f97316"></span> Active (624)</span>
+                    <span class="legend-item"><span class="legend-dot" style="background:#2563eb"></span> Queued (692)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Top Managers -->
+        <div class="section-card">
+            <div class="section-card-header">
+                <div><div class="section-card-title">Top Performing Managers</div><div class="section-card-subtitle">Ranked by events managed successfully</div></div>
+            </div>
+            <table class="data-table">
+                <thead><tr><th>Rank</th><th>Manager</th><th>Events Managed</th><th>Avg Rating</th><th>Success Rate</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="rank-badge rank-1">1</span></td><td><div class="user-cell"><div class="user-cell-avatar" style="background:#7c3aed">PS</div><span>Priya Sharma</span></div></td><td>42</td><td>⭐ 4.9</td><td><div class="progress-bar"><div class="progress-fill" style="width:98%"></div><span>98%</span></div></td></tr>
+                    <tr><td><span class="rank-badge rank-2">2</span></td><td><div class="user-cell"><div class="user-cell-avatar" style="background:#16a34a">RK</div><span>Riya Kapoor</span></div></td><td>38</td><td>⭐ 4.8</td><td><div class="progress-bar"><div class="progress-fill" style="width:96%"></div><span>96%</span></div></td></tr>
+                    <tr><td><span class="rank-badge rank-3">3</span></td><td><div class="user-cell"><div class="user-cell-avatar" style="background:#2563eb">AM</div><span>Arjun Mehta</span></div></td><td>35</td><td>⭐ 4.7</td><td><div class="progress-bar"><div class="progress-fill" style="width:94%"></div><span>94%</span></div></td></tr>
+                    <tr><td><span class="rank-badge">4</span></td><td><div class="user-cell"><div class="user-cell-avatar" style="background:#ea580c">VS</div><span>Vikram Singh</span></div></td><td>28</td><td>⭐ 4.5</td><td><div class="progress-bar"><div class="progress-fill" style="width:90%"></div><span>90%</span></div></td></tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div class="toast-container" id="toast-container"></div>
+    <script src="platform-analytics.js"></script>
+</body>
+</html>

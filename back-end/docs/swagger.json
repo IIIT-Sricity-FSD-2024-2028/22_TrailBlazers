@@ -1,0 +1,3107 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/events": {
+      "get": {
+        "description": "Retrieve a list of all events. Supports filtering by status and managerId. Accessible by eventmanager, client, osc, attendee, superuser.",
+        "operationId": "EventsController_findAll",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by status. Omit or leave empty to return all events.",
+            "schema": {
+              "enum": [
+                "pending",
+                "upcoming",
+                "live",
+                "completed"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "managerId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by manager user ID (e.g. u1, u2). Pass a user ID, not a role name.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "User role (superuser | eventmanager | client | osc | attendee)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of events returned successfully"
+          },
+          "401": {
+            "description": "Missing or invalid role header"
+          },
+          "403": {
+            "description": "Insufficient permissions"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get all events",
+        "tags": [
+          "Events"
+        ]
+      },
+      "post": {
+        "description": "Accessible by eventmanager and client. Superuser can also create events.",
+        "operationId": "EventsController_create",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager | client",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Event created successfully"
+          },
+          "400": {
+            "description": "Validation failed"
+          },
+          "403": {
+            "description": "Only eventmanager or client can create events"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Create a new event",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/events/stats/dashboard": {
+      "get": {
+        "description": "Returns aggregate stats: total events, RSVPs, ratings, engagement scores.",
+        "operationId": "EventsController_getDashboardStats",
+        "parameters": [
+          {
+            "name": "managerId",
+            "required": false,
+            "in": "query",
+            "description": "Filter stats for a specific manager",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "User role (superuser | eventmanager | client | osc)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dashboard stats returned"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get dashboard statistics",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/events/{id}": {
+      "get": {
+        "operationId": "EventsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Event ID (e.g. e1)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "User role (superuser | eventmanager | client | osc | attendee)",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event returned"
+          },
+          "404": {
+            "description": "Event not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get event by ID",
+        "tags": [
+          "Events"
+        ]
+      },
+      "put": {
+        "description": "Full update of an event. Eventmanager and client only.",
+        "operationId": "EventsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Event ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager | client",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event updated successfully"
+          },
+          "404": {
+            "description": "Event not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Update event (full replace)",
+        "tags": [
+          "Events"
+        ]
+      },
+      "patch": {
+        "description": "Update specific fields. Eventmanager and client only. Use for status changes (e.g. pending → live).",
+        "operationId": "EventsController_patch",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Event ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager | client",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Event patched"
+          },
+          "404": {
+            "description": "Event not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Partially update event",
+        "tags": [
+          "Events"
+        ]
+      },
+      "delete": {
+        "description": "Permanently remove an event. Eventmanager only (or superuser).",
+        "operationId": "EventsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Event ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Event deleted"
+          },
+          "404": {
+            "description": "Event not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Delete event",
+        "tags": [
+          "Events"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "description": "List all users. Eventmanager or superuser only. Optionally filter by role.",
+        "operationId": "UsersController_findAll",
+        "parameters": [
+          {
+            "name": "role",
+            "required": false,
+            "in": "query",
+            "description": "Filter by user role",
+            "schema": {
+              "enum": [
+                "superuser",
+                "eventmanager",
+                "client",
+                "osc",
+                "attendee"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Users list"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get all users",
+        "tags": [
+          "Users"
+        ]
+      },
+      "post": {
+        "description": "Create a new user account. Eventmanager or superuser only.",
+        "operationId": "UsersController_create",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User created"
+          },
+          "409": {
+            "description": "Email already exists"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Create a user",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/stats": {
+      "get": {
+        "operationId": "UsersController_getStats",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User stats"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get user statistics",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "UsersController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "User ID (e.g. u1)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User found"
+          },
+          "404": {
+            "description": "User not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get user by ID",
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "User ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUserDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "User updated"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Update user (partial)",
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "User ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User deleted"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Delete user",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/rsvps": {
+      "get": {
+        "description": "Accessible by superuser, eventmanager, client, and OSC.",
+        "operationId": "RsvpsController_findAll",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by event ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "pending",
+                "confirmed",
+                "cancelled",
+                "attended"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RSVP list"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get all RSVPs",
+        "tags": [
+          "RSVPs"
+        ]
+      },
+      "post": {
+        "description": "Attendee registers for an event. Phone must be exactly 10 digits.",
+        "operationId": "RsvpsController_create",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: attendee",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "attendee"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateRsvpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "RSVP created — returns ticket code"
+          },
+          "400": {
+            "description": "Validation error or invalid phone"
+          },
+          "409": {
+            "description": "Already registered for this event"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Create RSVP (Register for an event)",
+        "tags": [
+          "RSVPs"
+        ]
+      }
+    },
+    "/rsvps/my": {
+      "get": {
+        "description": "Attendee fetches their own RSVPs by email query param.",
+        "operationId": "RsvpsController_findMyRsvps",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "description": "Attendee email",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: attendee",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "attendee"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "User RSVPs"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get my RSVPs by email",
+        "tags": [
+          "RSVPs"
+        ]
+      }
+    },
+    "/rsvps/{id}": {
+      "get": {
+        "operationId": "RsvpsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "RSVP ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc | attendee",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RSVP details"
+          },
+          "404": {
+            "description": "RSVP not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get RSVP by ID",
+        "tags": [
+          "RSVPs"
+        ]
+      },
+      "patch": {
+        "description": "Update RSVP details or status. Attendees can cancel their own; OSC/eventmanager/client can update any.",
+        "operationId": "RsvpsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "RSVP ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc | attendee",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateRsvpDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "RSVP updated"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Update RSVP status",
+        "tags": [
+          "RSVPs"
+        ]
+      },
+      "delete": {
+        "operationId": "RsvpsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "RSVP ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | attendee",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "RSVP cancelled"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Cancel / delete RSVP",
+        "tags": [
+          "RSVPs"
+        ]
+      }
+    },
+    "/rsvps/checkin/{ticketCode}": {
+      "post": {
+        "description": "OSC scanner endpoint — validates and marks ticket as attended.",
+        "operationId": "RsvpsController_checkIn",
+        "parameters": [
+          {
+            "name": "ticketCode",
+            "required": true,
+            "in": "path",
+            "description": "Ticket code (e.g. TKT00001)",
+            "schema": {
+              "example": "TKT00001",
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | osc | eventmanager | client",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "osc"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Check-in successful"
+          },
+          "404": {
+            "description": "Invalid ticket"
+          },
+          "409": {
+            "description": "Already checked in"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Check-in attendee by ticket code",
+        "tags": [
+          "RSVPs"
+        ]
+      }
+    },
+    "/pending-requests": {
+      "get": {
+        "description": "Eventmanager views all client event hosting requests.",
+        "operationId": "PendingRequestsController_findAll",
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "Pending",
+                "Approved",
+                "Rejected"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of pending requests"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get all event requests",
+        "tags": [
+          "Pending Requests"
+        ]
+      },
+      "post": {
+        "description": "Client submits a request to host an event.",
+        "operationId": "PendingRequestsController_create",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | client | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePendingRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Request submitted"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Submit new event hosting request",
+        "tags": [
+          "Pending Requests"
+        ]
+      }
+    },
+    "/pending-requests/{id}": {
+      "get": {
+        "operationId": "PendingRequestsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Request ID (e.g. pr1)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager | client",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request details"
+          },
+          "404": {
+            "description": "Request not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get request by ID",
+        "tags": [
+          "Pending Requests"
+        ]
+      },
+      "delete": {
+        "operationId": "PendingRequestsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Request ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Request deleted"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Delete event request",
+        "tags": [
+          "Pending Requests"
+        ]
+      }
+    },
+    "/pending-requests/{id}/review": {
+      "patch": {
+        "description": "Eventmanager reviews a pending request. Approval requires managerId.",
+        "operationId": "PendingRequestsController_review",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Request ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewPendingRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Request reviewed"
+          },
+          "400": {
+            "description": "Already reviewed or missing managerId"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Approve or reject an event request",
+        "tags": [
+          "Pending Requests"
+        ]
+      }
+    },
+    "/notifications": {
+      "get": {
+        "operationId": "NotificationsController_findAll",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by event",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "isRead",
+            "required": false,
+            "in": "query",
+            "description": "Filter by read status (true/false)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications list"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get all notifications",
+        "tags": [
+          "Notifications"
+        ]
+      },
+      "post": {
+        "description": "OSC staff or client reports an issue; creates a notification for eventmanager.",
+        "operationId": "NotificationsController_create",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | osc | eventmanager | client",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Notification created"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Create notification / report issue",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/unread-count": {
+      "get": {
+        "operationId": "NotificationsController_getUnreadCount",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Unread count"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get unread notification count",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/{id}": {
+      "get": {
+        "operationId": "NotificationsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Notification ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get notification by ID",
+        "tags": [
+          "Notifications"
+        ]
+      },
+      "patch": {
+        "operationId": "NotificationsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Notification ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateNotificationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notification updated"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Update notification (mark read / resolve)",
+        "tags": [
+          "Notifications"
+        ]
+      },
+      "delete": {
+        "operationId": "NotificationsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Notification ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification deleted"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Delete notification",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/notifications/{id}/resolve": {
+      "patch": {
+        "operationId": "NotificationsController_resolve",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Notification ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notification resolved"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Resolve a notification",
+        "tags": [
+          "Notifications"
+        ]
+      }
+    },
+    "/teams": {
+      "get": {
+        "operationId": "TeamsController_findAll",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by event",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "active",
+                "break",
+                "offline"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team members list"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get all team members",
+        "tags": [
+          "Teams"
+        ]
+      },
+      "post": {
+        "description": "Assign a new OSC staff member to an event. Eventmanager or client.",
+        "operationId": "TeamsController_create",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager | client",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateTeamMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Team member added"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Add team member to event",
+        "tags": [
+          "Teams"
+        ]
+      }
+    },
+    "/teams/{eventId}/stats": {
+      "get": {
+        "operationId": "TeamsController_getStats",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "description": "Event ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team stats"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get team statistics for an event",
+        "tags": [
+          "Teams"
+        ]
+      }
+    },
+    "/teams/{id}": {
+      "get": {
+        "operationId": "TeamsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Team member ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team member details"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get team member by ID",
+        "tags": [
+          "Teams"
+        ]
+      },
+      "patch": {
+        "description": "OSC can update their own status; eventmanager/client can change any field.",
+        "operationId": "TeamsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Team member ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateTeamMemberDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Team member updated"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Update team member (status, role, event)",
+        "tags": [
+          "Teams"
+        ]
+      },
+      "delete": {
+        "operationId": "TeamsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Team member ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "eventmanager"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Team member removed"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Remove team member from event",
+        "tags": [
+          "Teams"
+        ]
+      }
+    },
+    "/polls": {
+      "get": {
+        "description": "Returns polls, optionally filtered by event or status. Accessible by client, eventmanager, osc, attendee, and superuser.",
+        "operationId": "PollsController_findAll",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by event ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by poll status",
+            "schema": {
+              "enum": [
+                "open",
+                "closed"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc | attendee",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Polls list returned"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get all polls",
+        "tags": [
+          "Polls"
+        ]
+      },
+      "post": {
+        "description": "Client or eventmanager creates a poll for an event. Requires at least 2 options.",
+        "operationId": "PollsController_create",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | client | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "client"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePollDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Poll created successfully"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Create a new poll",
+        "tags": [
+          "Polls"
+        ]
+      }
+    },
+    "/polls/{id}": {
+      "get": {
+        "operationId": "PollsController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Poll ID (e.g. poll1)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc | attendee",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Poll details"
+          },
+          "404": {
+            "description": "Poll not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get poll by ID",
+        "tags": [
+          "Polls"
+        ]
+      },
+      "patch": {
+        "description": "Client or eventmanager can update a poll. Updating options resets vote counts.",
+        "operationId": "PollsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Poll ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | client | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "client"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePollDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Poll updated"
+          },
+          "404": {
+            "description": "Poll not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Update poll (question, options, or status)",
+        "tags": [
+          "Polls"
+        ]
+      },
+      "delete": {
+        "description": "Client or eventmanager permanently removes a poll.",
+        "operationId": "PollsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Poll ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | client | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "client"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Poll deleted"
+          },
+          "404": {
+            "description": "Poll not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Delete a poll",
+        "tags": [
+          "Polls"
+        ]
+      }
+    },
+    "/polls/{id}/results": {
+      "get": {
+        "description": "Returns vote counts and percentage breakdown per option.",
+        "operationId": "PollsController_getResults",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Poll ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc | attendee",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Poll results with percentages"
+          },
+          "404": {
+            "description": "Poll not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get poll results with vote percentages",
+        "tags": [
+          "Polls"
+        ]
+      }
+    },
+    "/polls/{id}/vote": {
+      "post": {
+        "description": "Attendee votes on an open poll. Each attendee (by email) can vote only once per poll.",
+        "operationId": "PollsController_vote",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Poll ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: attendee",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "attendee"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VotePollDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Vote registered successfully"
+          },
+          "400": {
+            "description": "Poll is closed or invalid option"
+          },
+          "409": {
+            "description": "Already voted"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Vote on a poll",
+        "tags": [
+          "Polls"
+        ]
+      }
+    },
+    "/polls/{id}/close": {
+      "patch": {
+        "description": "Client or eventmanager closes the poll.",
+        "operationId": "PollsController_close",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Poll ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | client | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "client"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Poll closed"
+          },
+          "404": {
+            "description": "Poll not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Close a poll (stop accepting votes)",
+        "tags": [
+          "Polls"
+        ]
+      }
+    },
+    "/qna": {
+      "get": {
+        "description": "Returns all questions, optionally filtered by eventId or status. Accessible by client, eventmanager, osc, attendee, and superuser.",
+        "operationId": "QnaController_findAll",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": false,
+            "in": "query",
+            "description": "Filter by event ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "description": "Filter by answer status",
+            "schema": {
+              "enum": [
+                "unanswered",
+                "answered"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc | attendee",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Q&A list returned"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get all Q&A items",
+        "tags": [
+          "Q&A"
+        ]
+      },
+      "post": {
+        "description": "Attendee submits a question for the client/eventmanager to answer.",
+        "operationId": "QnaController_create",
+        "parameters": [
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: attendee",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "attendee"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateQuestionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Question submitted successfully"
+          },
+          "400": {
+            "description": "Validation error"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Ask a question about an event",
+        "tags": [
+          "Q&A"
+        ]
+      }
+    },
+    "/qna/my": {
+      "get": {
+        "description": "Attendee fetches all questions they have asked across events.",
+        "operationId": "QnaController_findMyQuestions",
+        "parameters": [
+          {
+            "name": "email",
+            "required": true,
+            "in": "query",
+            "description": "Attendee email",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: attendee",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "attendee"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Questions asked by this attendee"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get my questions",
+        "tags": [
+          "Q&A"
+        ]
+      }
+    },
+    "/qna/stats/{eventId}": {
+      "get": {
+        "description": "Returns total, answered, and unanswered counts.",
+        "operationId": "QnaController_getStats",
+        "parameters": [
+          {
+            "name": "eventId",
+            "required": true,
+            "in": "path",
+            "description": "Event ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Q&A stats"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get Q&A statistics for an event",
+        "tags": [
+          "Q&A"
+        ]
+      }
+    },
+    "/qna/{id}": {
+      "get": {
+        "operationId": "QnaController_findOne",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Q&A item ID (e.g. qna1)",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | eventmanager | client | osc | attendee",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Q&A item details"
+          },
+          "404": {
+            "description": "Q&A item not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Get Q&A item by ID",
+        "tags": [
+          "Q&A"
+        ]
+      },
+      "patch": {
+        "description": "Attendee can edit their own question text; client/eventmanager can also update.",
+        "operationId": "QnaController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Q&A item ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "superuser | attendee | client | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateQuestionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Q&A item updated"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Update a question",
+        "tags": [
+          "Q&A"
+        ]
+      },
+      "delete": {
+        "description": "Client or eventmanager permanently removes a Q&A entry.",
+        "operationId": "QnaController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Q&A item ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | client | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "client"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Q&A item deleted"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Delete a Q&A item",
+        "tags": [
+          "Q&A"
+        ]
+      }
+    },
+    "/qna/{id}/answer": {
+      "patch": {
+        "description": "Client or eventmanager provides an answer to an attendee question.",
+        "operationId": "QnaController_answer",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "description": "Q&A item ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "role",
+            "in": "header",
+            "description": "Must be: superuser | client | eventmanager",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "client"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnswerQuestionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Question answered successfully"
+          },
+          "404": {
+            "description": "Q&A item not found"
+          }
+        },
+        "security": [
+          {
+            "role-header": []
+          }
+        ],
+        "summary": "Answer an attendee question",
+        "tags": [
+          "Q&A"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "WEvents API",
+    "description": "\n## Event Management System REST API\n\nThis API powers the WEvents platform, supporting **five distinct roles** in a clear hierarchy:\n\n| Role | Header Value | Hierarchy | Description |\n|------|-------------|-----------|-------------|\n| **superuser** | `role: superuser` | 🔴 Top | Platform Administrator — unrestricted access to ALL endpoints |\n| **eventmanager** | `role: eventmanager` | 🟠 2nd | Event Manager — full CRUD on events, approves/rejects requests |\n| **client** | `role: client` | 🟡 3rd | Client — creates events, manages polls, answers attendee Q&A |\n| **osc** | `role: osc` | 🟢 4th | On-Site Coordinator — manages team, scanner, reports for assigned event |\n| **attendee** | `role: attendee` | 🔵 5th | Attendee — browse events, RSVP, ask questions, vote on polls |\n\n### Role Privilege Summary\n- **superuser**: Bypasses all role checks — can call any API regardless of the roles listed\n- **eventmanager**: Full event lifecycle management, user management, request approvals\n- **client**: Create events, manage polls, answer attendee questions, view event interactions\n- **osc**: Team management, check-in scanning, notifications for their assigned event\n- **attendee**: Browse events, RSVP, submit questions, vote on polls\n\n### Authentication\nAll protected endpoints require a **`role`** header. Pass the role string directly in the request header:\n```\nrole: eventmanager\n```\n\n### New in v2.0\n- 🆕 **Polls API** (`/polls`): Client creates polls, attendees vote, results with percentages\n- 🆕 **Q&A API** (`/qna`): Attendees ask questions, client/eventmanager answers them\n- 🆕 **client** role: Creates events, polls, and manages event interactions\n- 🔄 **superuser** renamed to **eventmanager** (superuser is now platform-level)\n- 🔄 **enduser** renamed to **attendee**\n\n### Data Management\nAll data is managed **in-memory** (no external database). Data resets when the server restarts.\n      ",
+    "version": "2.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "role-header": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "role",
+        "description": "User role (superuser | eventmanager | client | osc | attendee)"
+      }
+    },
+    "schemas": {
+      "TimelineSessionDto": {
+        "type": "object",
+        "properties": {
+          "time": {
+            "type": "string",
+            "example": "09:00 AM",
+            "description": "Start time of the session"
+          },
+          "title": {
+            "type": "string",
+            "example": "Keynote: Future of AI",
+            "description": "Session title"
+          },
+          "speaker": {
+            "type": "string",
+            "example": "Dr. Ananya Gupta",
+            "description": "Speaker name"
+          },
+          "location": {
+            "type": "string",
+            "example": "Main Auditorium",
+            "description": "Session location"
+          },
+          "duration": {
+            "type": "string",
+            "example": "1 hour",
+            "description": "Session duration"
+          },
+          "type": {
+            "type": "string",
+            "example": "keynote",
+            "description": "Session type (keynote, panel, workshop, talk, demo, break)"
+          }
+        },
+        "required": [
+          "time",
+          "title",
+          "speaker"
+        ]
+      },
+      "EventStatsDto": {
+        "type": "object",
+        "properties": {
+          "rsvps": {
+            "type": "number",
+            "example": 342
+          },
+          "checkins": {
+            "type": "number",
+            "example": 298
+          },
+          "engagement": {
+            "type": "number",
+            "example": 87.5
+          },
+          "rating": {
+            "type": "number",
+            "example": 4.8
+          },
+          "participationTrend": {
+            "example": [
+              10,
+              25,
+              45,
+              30,
+              55,
+              78
+            ],
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          },
+          "feedbackScore": {
+            "type": "number",
+            "example": 92
+          }
+        }
+      },
+      "CreateEventDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Global Tech Summit 2026",
+            "description": "Event title"
+          },
+          "status": {
+            "type": "string",
+            "example": "upcoming",
+            "enum": [
+              "pending",
+              "upcoming",
+              "live",
+              "completed"
+            ],
+            "description": "Event status"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-04-15",
+            "description": "Event date (YYYY-MM-DD)"
+          },
+          "location": {
+            "type": "string",
+            "example": "India Habitat Centre, New Delhi",
+            "description": "Event location"
+          },
+          "capacity": {
+            "type": "number",
+            "example": 500,
+            "description": "Maximum capacity of the event"
+          },
+          "domain": {
+            "type": "string",
+            "example": "Client Hosted Events",
+            "description": "Event domain/category"
+          },
+          "description": {
+            "type": "string",
+            "example": "Explore the future of technology with industry leaders.",
+            "description": "Event description"
+          },
+          "managerId": {
+            "type": "string",
+            "example": "u1",
+            "description": "ID of the event manager (superuser)"
+          },
+          "managerName": {
+            "type": "string",
+            "example": "Rajesh Kumar",
+            "description": "Name of the event manager"
+          },
+          "timeline": {
+            "description": "Event sessions/timeline",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineSessionDto"
+            }
+          },
+          "stats": {
+            "$ref": "#/components/schemas/EventStatsDto"
+          }
+        },
+        "required": [
+          "title",
+          "status",
+          "date",
+          "location",
+          "capacity",
+          "domain",
+          "description",
+          "managerId",
+          "managerName"
+        ]
+      },
+      "UpdateEventDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Updated Event Title"
+          },
+          "status": {
+            "type": "string",
+            "example": "live",
+            "enum": [
+              "pending",
+              "upcoming",
+              "live",
+              "completed"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-05-01"
+          },
+          "location": {
+            "type": "string",
+            "example": "Taj Hotel, Mumbai"
+          },
+          "capacity": {
+            "type": "number",
+            "example": 1000
+          },
+          "domain": {
+            "type": "string",
+            "example": "Tech Conferences"
+          },
+          "description": {
+            "type": "string",
+            "example": "Updated description."
+          },
+          "timeline": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineSessionDto"
+            }
+          },
+          "stats": {
+            "$ref": "#/components/schemas/EventStatsDto"
+          }
+        }
+      },
+      "CreateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Rajesh Kumar",
+            "description": "Full name of the user"
+          },
+          "email": {
+            "type": "string",
+            "example": "rajesh@gmail.com",
+            "description": "Unique email address"
+          },
+          "role": {
+            "type": "string",
+            "example": "eventmanager",
+            "enum": [
+              "superuser",
+              "eventmanager",
+              "client",
+              "osc",
+              "attendee"
+            ],
+            "description": "User role"
+          },
+          "domain": {
+            "type": "string",
+            "example": "Tech Conferences",
+            "description": "Domain (applicable for eventmanager and client)"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "role"
+        ]
+      },
+      "UpdateUserDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Rajesh Kumar Updated"
+          },
+          "email": {
+            "type": "string",
+            "example": "rajesh.new@gmail.com"
+          },
+          "role": {
+            "type": "string",
+            "example": "attendee",
+            "enum": [
+              "superuser",
+              "eventmanager",
+              "client",
+              "osc",
+              "attendee"
+            ]
+          },
+          "domain": {
+            "type": "string",
+            "example": "Marketing Events"
+          },
+          "status": {
+            "type": "string",
+            "example": "active",
+            "enum": [
+              "active",
+              "inactive",
+              "suspended"
+            ]
+          }
+        }
+      },
+      "CreateRsvpDto": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "example": "e1",
+            "description": "Event ID to RSVP for"
+          },
+          "name": {
+            "type": "string",
+            "example": "Rahul Sharma",
+            "description": "Attendee full name"
+          },
+          "email": {
+            "type": "string",
+            "example": "rahul.sharma@gmail.com",
+            "description": "Attendee email"
+          },
+          "phone": {
+            "type": "string",
+            "example": "9876543210",
+            "description": "Phone number — must be exactly 10 digits"
+          }
+        },
+        "required": [
+          "eventId",
+          "name",
+          "email",
+          "phone"
+        ]
+      },
+      "UpdateRsvpDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "example": "confirmed",
+            "enum": [
+              "pending",
+              "confirmed",
+              "cancelled",
+              "attended"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "example": "Rahul Sharma"
+          },
+          "email": {
+            "type": "string",
+            "example": "new.email@gmail.com"
+          }
+        }
+      },
+      "CreatePendingRequestDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Tech Innovation Summit 2026",
+            "description": "Proposed event name"
+          },
+          "location": {
+            "type": "string",
+            "example": "Pune, Maharashtra",
+            "description": "Proposed event location"
+          },
+          "expected": {
+            "type": "number",
+            "example": 500,
+            "description": "Expected number of attendees"
+          },
+          "client": {
+            "type": "string",
+            "example": "Priya Sharma",
+            "description": "Client / requester name"
+          },
+          "clientEmail": {
+            "type": "string",
+            "example": "priya.s@techcorp.com",
+            "description": "Client email"
+          },
+          "date": {
+            "type": "string",
+            "example": "2026-05-15",
+            "description": "Desired event date (YYYY-MM-DD)"
+          },
+          "description": {
+            "type": "string",
+            "example": "Annual technology conference featuring AI and blockchain workshops",
+            "description": "Event description"
+          },
+          "type": {
+            "type": "string",
+            "example": "In-Person",
+            "enum": [
+              "In-Person",
+              "Virtual",
+              "Hybrid"
+            ],
+            "description": "Event type"
+          }
+        },
+        "required": [
+          "name",
+          "location",
+          "expected",
+          "client",
+          "clientEmail",
+          "date",
+          "description",
+          "type"
+        ]
+      },
+      "ReviewPendingRequestDto": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "example": "approved",
+            "enum": [
+              "approved",
+              "rejected"
+            ],
+            "description": "Approval decision"
+          },
+          "managerId": {
+            "type": "string",
+            "example": "u1",
+            "description": "Manager ID to assign (required when approving)"
+          },
+          "managerName": {
+            "type": "string",
+            "example": "Rajesh Kumar",
+            "description": "Manager name"
+          },
+          "rejectionReason": {
+            "type": "string",
+            "example": "Budget constraints",
+            "description": "Reason for rejection"
+          }
+        },
+        "required": [
+          "decision"
+        ]
+      },
+      "CreateNotificationDto": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "example": "Scanner Error",
+            "description": "Notification title"
+          },
+          "desc": {
+            "type": "string",
+            "example": "QR scanner at Gate 2 is offline",
+            "description": "Notification description"
+          },
+          "priority": {
+            "type": "string",
+            "example": "high",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "description": "Priority level"
+          },
+          "reporter": {
+            "type": "string",
+            "example": "Alex Thompson",
+            "description": "Person reporting the issue"
+          },
+          "eventId": {
+            "type": "string",
+            "example": "e1",
+            "description": "Associated event ID"
+          }
+        },
+        "required": [
+          "title",
+          "desc",
+          "priority"
+        ]
+      },
+      "UpdateNotificationDto": {
+        "type": "object",
+        "properties": {
+          "isRead": {
+            "type": "boolean",
+            "example": true,
+            "description": "Mark as read"
+          },
+          "status": {
+            "type": "string",
+            "example": "resolved",
+            "enum": [
+              "open",
+              "resolved"
+            ]
+          }
+        }
+      },
+      "CreateTeamMemberDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "Alex Thompson",
+            "description": "Team member name"
+          },
+          "email": {
+            "type": "string",
+            "example": "alex.t@wevents.com",
+            "description": "Team member email"
+          },
+          "teamRole": {
+            "type": "string",
+            "example": "Scanner Operator",
+            "enum": [
+              "Scanner Operator",
+              "Coordinator",
+              "Manager",
+              "Support"
+            ],
+            "description": "Role in the team"
+          },
+          "eventId": {
+            "type": "string",
+            "example": "e1",
+            "description": "Event ID they are assigned to"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "teamRole",
+          "eventId"
+        ]
+      },
+      "UpdateTeamMemberDto": {
+        "type": "object",
+        "properties": {
+          "teamRole": {
+            "type": "string",
+            "example": "Manager",
+            "enum": [
+              "Scanner Operator",
+              "Coordinator",
+              "Manager",
+              "Support"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "example": "active",
+            "enum": [
+              "active",
+              "break",
+              "offline"
+            ]
+          },
+          "eventId": {
+            "type": "string",
+            "example": "e2",
+            "description": "Re-assign to different event"
+          }
+        }
+      },
+      "CreatePollDto": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "example": "e1",
+            "description": "Event ID this poll belongs to"
+          },
+          "question": {
+            "type": "string",
+            "example": "Which session did you enjoy most?",
+            "description": "The poll question"
+          },
+          "options": {
+            "example": [
+              "Keynote",
+              "Workshop A",
+              "Workshop B"
+            ],
+            "description": "List of answer options (min 2)",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "createdBy": {
+            "type": "string",
+            "example": "c1",
+            "description": "Client ID who created the poll"
+          }
+        },
+        "required": [
+          "eventId",
+          "question",
+          "options"
+        ]
+      },
+      "VotePollDto": {
+        "type": "object",
+        "properties": {
+          "option": {
+            "type": "string",
+            "example": "Workshop A",
+            "description": "The option the attendee is voting for"
+          },
+          "voterEmail": {
+            "type": "string",
+            "example": "rahul.s@gmail.com",
+            "description": "Voter email (attendee)"
+          }
+        },
+        "required": [
+          "option",
+          "voterEmail"
+        ]
+      },
+      "UpdatePollDto": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "example": "Updated question text?",
+            "description": "Update the poll question"
+          },
+          "options": {
+            "example": [
+              "Option A",
+              "Option B",
+              "Option C"
+            ],
+            "description": "Update poll options",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "status": {
+            "type": "string",
+            "example": "open",
+            "enum": [
+              "open",
+              "closed"
+            ],
+            "description": "Poll status"
+          }
+        }
+      },
+      "CreateQuestionDto": {
+        "type": "object",
+        "properties": {
+          "eventId": {
+            "type": "string",
+            "example": "e1",
+            "description": "Event ID the question belongs to"
+          },
+          "question": {
+            "type": "string",
+            "example": "What is the dress code for the event?",
+            "description": "The question asked by the attendee"
+          },
+          "askedBy": {
+            "type": "string",
+            "example": "rahul.s@gmail.com",
+            "description": "Email of the attendee asking the question"
+          }
+        },
+        "required": [
+          "eventId",
+          "question",
+          "askedBy"
+        ]
+      },
+      "AnswerQuestionDto": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "type": "string",
+            "example": "Smart casual attire is recommended.",
+            "description": "The answer provided by the client or eventmanager"
+          },
+          "answeredBy": {
+            "type": "string",
+            "example": "u4",
+            "description": "ID of the user providing the answer"
+          }
+        },
+        "required": [
+          "answer"
+        ]
+      },
+      "UpdateQuestionDto": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "example": "Is parking available at the venue?",
+            "description": "Updated question text"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wevents.com — Execute Perfect Events. Analyze Everything.</title>
+    <meta name="description" content="The complete platform for event execution and post-event analytics. Plan, execute, and measure your events with powerful insights that drive results." />
+    <link rel="stylesheet" href="globals.css" />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+
+    <!-- ═══════════════════════════════════════════════
+         NAVBAR
+    ════════════════════════════════════════════════ -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-inner">
+        <a href="#" class="nav-logo" aria-label="Wevents.com home">
+          <div class="logo-icon" aria-hidden="true">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="3" y="4" width="18" height="17" rx="2.5" stroke="#f97316" stroke-width="2"/>
+              <path d="M3 9.5h18" stroke="#f97316" stroke-width="2"/>
+              <path d="M8 2.5v3M16 2.5v3" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
+              <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#f97316"/>
+            </svg>
+          </div>
+          <span class="logo-text">Wevents.com</span>
+        </a>
+
+        <div class="nav-links">
+          <button class="nav-btn" id="btn-features">Features
+            <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="nav-btn" id="btn-benefits">Benefits
+            <svg class="chevron" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+
+          <a href="auth.html" class="nav-signin" id="btn-signin">Sign In</a>
+        </div>
+      </div>
+    </nav>
+
+    <!-- ═══════════════════════════════════════════════
+         HERO
+    ════════════════════════════════════════════════ -->
+    <section class="hero" id="home">
+      <div class="hero-inner">
+
+        <div class="hero-content">
+          <div class="hero-badge" aria-label="Transform Your Event Management">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1l1.5 4h4l-3.2 2.5 1.2 4L7 9l-3.5 2.5 1.2-4L1.5 5h4L7 1z" fill="#f97316"/></svg>
+            Transform Your Event Management
+          </div>
+
+          <h1 class="hero-heading">
+            <span class="hero-white">Execute Perfect Events.</span>
+            <span class="hero-orange">Analyze Everything.</span>
+          </h1>
+
+          <p class="hero-desc">
+            The complete platform for event execution and post-event analytics. Plan, execute, and measure your
+            events with powerful insights that drive results.
+          </p>
+
+          <a href="auth.html#signup" class="btn-primary" id="hero-get-started">
+            Get Started
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </a>
+
+          <div class="hero-stats">
+            <div class="hero-stat">
+              <span class="hstat-num">10,000+</span>
+              <span class="hstat-label">Events Managed</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hstat-num">98%</span>
+              <span class="hstat-label">Customer Satisfaction</span>
+            </div>
+            <div class="hero-stat">
+              <span class="hstat-num">500+</span>
+              <span class="hstat-label">Companies Trust Us</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual">
+          <div class="hero-frame">
+            <img
+              src="https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=700&q=80"
+              alt="Audience at a large professional event"
+              class="hero-img"
+              id="hero-event-image"
+              loading="eager"
+            />
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+         FEATURES
+    ════════════════════════════════════════════════ -->
+    <section class="features" id="features">
+      <div class="wave-divider" aria-hidden="true">
+        <svg viewBox="0 0 1440 60" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M0 0 C360 60 1080 60 1440 0 L1440 0 L0 0Z" fill="#1e35c8"/>
+        </svg>
+      </div>
+
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Powerful Features for Event Success</h2>
+          <p>Everything you need to plan, execute, and analyze your events in one comprehensive platform</p>
+        </div>
+
+        <div class="features-grid">
+
+          <!-- Card 1: Event Execution -->
+          <div class="feature-card" id="feature-execution">
+            <div class="fcard-icon orange-icon-bg">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="4" width="18" height="17" rx="2.5" stroke="#f97316" stroke-width="2"/>
+                <path d="M3 9.5h18" stroke="#f97316" stroke-width="2"/>
+                <path d="M8 2.5v3M16 2.5v3" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
+                <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#f97316"/>
+              </svg>
+            </div>
+            <h3>Event Execution</h3>
+            <p>Seamlessly manage your events from planning to execution with our intuitive tools and real-time updates.</p>
+            <ul class="fcard-list">
+              <li>
+                <span class="check-icon orange-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Real-time collaboration
+              </li>
+              <li>
+                <span class="check-icon orange-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Task automation
+              </li>
+              <li>
+                <span class="check-icon orange-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Mobile accessibility
+              </li>
+            </ul>
+          </div>
+
+          <!-- Card 2: Analytics Dashboard -->
+          <div class="feature-card" id="feature-analytics">
+            <div class="fcard-icon blue-icon-bg">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="18" height="18" rx="2.5" stroke="#3b5bd9" stroke-width="2"/>
+                <path d="M7 17v-4M12 17v-7M17 17v-10" stroke="#3b5bd9" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Analytics Dashboard</h3>
+            <p>Get deep insights into event performance with comprehensive analytics and customizable reports.</p>
+            <ul class="fcard-list">
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Custom dashboards
+              </li>
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Real-time metrics
+              </li>
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Export reports
+              </li>
+            </ul>
+          </div>
+
+          <!-- Card 3: Attendee Management -->
+          <div class="feature-card" id="feature-attendee">
+            <div class="fcard-icon blue-icon-bg">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8.5" cy="7" r="3" stroke="#3b5bd9" stroke-width="2"/>
+                <circle cx="15.5" cy="7" r="3" stroke="#3b5bd9" stroke-width="2"/>
+                <path d="M1 20c0-3.3 3.4-6 7.5-6M23 20c0-3.3-3.4-6-7.5-6M12 14c3.3 0 6 2.7 6 6H6c0-3.3 2.7-6 6-6z" stroke="#3b5bd9" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <h3>Attendee Management</h3>
+            <p>Track registrations, manage check-ins, and engage attendees before, during, and after events.</p>
+            <ul class="fcard-list">
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Registration forms
+              </li>
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                QR code check-ins
+              </li>
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Email campaigns
+              </li>
+            </ul>
+          </div>
+
+          <!-- Card 4: Performance Insights -->
+          <div class="feature-card" id="feature-performance">
+            <div class="fcard-icon orange-icon-bg">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 18L9 12L13 16L21 6" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 6h5v5" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3>Performance Insights</h3>
+            <p>Measure ROI, engagement rates, and key metrics to optimize future events and prove value.</p>
+            <ul class="fcard-list">
+              <li>
+                <span class="check-icon orange-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                ROI tracking
+              </li>
+              <li>
+                <span class="check-icon orange-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Engagement metrics
+              </li>
+              <li>
+                <span class="check-icon orange-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Trend analysis
+              </li>
+            </ul>
+          </div>
+
+          <!-- Card 5: Automation Tools -->
+          <div class="feature-card" id="feature-automation">
+            <div class="fcard-icon blue-icon-bg">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" stroke="#3b5bd9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3>Automation Tools</h3>
+            <p>Save time with intelligent automation for repetitive tasks, notifications, and workflows.</p>
+            <ul class="fcard-list">
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Auto-reminders
+              </li>
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Smart scheduling
+              </li>
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Smart after event analysis
+              </li>
+            </ul>
+          </div>
+
+          <!-- Card 6: RSVP Management -->
+          <div class="feature-card" id="feature-rsvp">
+            <div class="fcard-icon blue-icon-bg">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="#3b5bd9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M22 6l-10 7L2 6" stroke="#3b5bd9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <h3>RSVP Management</h3>
+            <p>Allow attendees to confirm their participation in advance and help organizers plan events more efficiently with real-time response tracking.</p>
+            <ul class="fcard-list">
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                RSVP confirmations
+              </li>
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Guest limit control
+              </li>
+              <li>
+                <span class="check-icon blue-check">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </span>
+                Response tracking dashboard
+              </li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+         BENEFITS
+    ════════════════════════════════════════════════ -->
+    <section class="benefits" id="benefits">
+      <div class="section-inner benefits-inner">
+
+        <div class="benefits-left">
+          <h2>Why Event Organizers Choose EventPulse</h2>
+          <p class="benefits-sub">Join thousands of event professionals who trust EventPulse to deliver exceptional experiences</p>
+
+          <div class="benefit-row" id="benefit-hours">
+            <div class="benefit-icon-wrap orange-border">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="9" stroke="#f97316" stroke-width="2"/>
+                <path d="M12 7v5.5l3.5 2" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="benefit-text">
+              <strong>Save 15+ Hours Per Event</strong>
+              <p>Automated workflows and smart tools reduce manual work significantly</p>
+            </div>
+          </div>
+
+          <div class="benefit-row" id="benefit-attendance">
+            <div class="benefit-icon-wrap blue-border">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="9" stroke="#3b5bd9" stroke-width="2"/>
+                <path d="M8 12.5l2.5 2.5 5-5" stroke="#3b5bd9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="benefit-text">
+              <strong>Increase Attendance by 40%</strong>
+              <p>Data-driven insights help optimize marketing and engagement strategies</p>
+            </div>
+          </div>
+
+          <div class="benefit-row" id="benefit-roi">
+            <div class="benefit-icon-wrap blue-border">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="9" stroke="#3b5bd9" stroke-width="2"/>
+                <path d="M8 12.5l2.5 2.5 5-5" stroke="#3b5bd9" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="benefit-text">
+              <strong>Prove Event ROI</strong>
+              <p>Comprehensive analytics make it easy to demonstrate value to stakeholders</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="benefits-right">
+          <div class="big-stat-card" id="big-stat-card">
+            <div class="big-stat-num">2.5x</div>
+            <p>Higher engagement rates compared to industry average</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+         PLATFORM STATISTICS
+    ════════════════════════════════════════════════ -->
+    <section class="platform-stats" id="statistics">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Platform Statistics</h2>
+          <p>Trusted by event organizers worldwide</p>
+        </div>
+
+        <div class="pstats-grid">
+
+          <div class="pstat-card" id="pstat-events">
+            <div class="pstat-icon pstat-orange">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="4" width="18" height="17" rx="2.5" stroke="white" stroke-width="2"/>
+                <path d="M3 9.5h18" stroke="white" stroke-width="2"/>
+                <path d="M8 2.5v3M16 2.5v3" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                <rect x="7" y="13" width="3" height="3" rx="0.5" fill="white"/>
+              </svg>
+            </div>
+            <div class="pstat-num">2,500+</div>
+            <div class="pstat-label">Events Conducted</div>
+          </div>
+
+          <div class="pstat-card" id="pstat-attendees">
+            <div class="pstat-icon pstat-blue">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="8.5" cy="7" r="3" stroke="white" stroke-width="2"/>
+                <circle cx="15.5" cy="7" r="3" stroke="white" stroke-width="2"/>
+                <path d="M2 20c0-3 2.9-5.5 6.5-5.5M22 20c0-3-2.9-5.5-6.5-5.5M12 14.5c2.8 0 5 2.2 5 5H7c0-2.8 2.2-5 5-5z" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="pstat-num">500K+</div>
+            <div class="pstat-label">Total Attendees</div>
+          </div>
+
+          <div class="pstat-card" id="pstat-satisfaction">
+            <div class="pstat-icon pstat-dark-blue">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M3 18L9 12L13 16L21 6" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M16 6h5v5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <div class="pstat-num">94%</div>
+            <div class="pstat-label">Satisfaction Rate</div>
+          </div>
+
+          <div class="pstat-card" id="pstat-attendance-rate">
+            <div class="pstat-icon pstat-orange">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="3" width="18" height="18" rx="2.5" stroke="white" stroke-width="2"/>
+                <path d="M7 17v-4M12 17v-7M17 17v-10" stroke="white" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="pstat-num">89%</div>
+            <div class="pstat-label">Avg. Attendance Rate</div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+         TESTIMONIALS
+    ════════════════════════════════════════════════ -->
+    <section class="testimonials" id="testimonials">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>What Our Customers Say</h2>
+          <p>Hear from event professionals who transformed their events with EventPulse</p>
+        </div>
+
+        <div class="testimonials-grid">
+
+          <div class="tcard" id="testimonial-sarah">
+            <div class="tcard-stars" aria-label="5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <p class="tcard-quote">"EventPulse has completely transformed how we manage our corporate events. The analytics dashboard gives us insights we never had before, and the automation saves us countless hours."</p>
+            <div class="tcard-author">
+              <div class="tcard-avatar orange-avatar">SJ</div>
+              <div>
+                <div class="tcard-name">Sarah Johnson</div>
+                <div class="tcard-role">Event Director, TechCorp</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tcard" id="testimonial-michael">
+            <div class="tcard-stars" aria-label="5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <p class="tcard-quote">"The RSVP management tool is a lifesaver! Real-time response tracking and guest limits have made our venue capacity planning incredibly smooth and stress-free."</p>
+            <div class="tcard-author">
+              <div class="tcard-avatar blue-avatar">MC</div>
+              <div>
+                <div class="tcard-name">Michael Chen</div>
+                <div class="tcard-role">Conference Organizer</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="tcard" id="testimonial-emily">
+            <div class="tcard-stars" aria-label="5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+            <p class="tcard-quote">"The post-event analytics are game-changing. We can now demonstrate clear ROI to our stakeholders and continuously improve our events based on real data."</p>
+            <div class="tcard-author">
+              <div class="tcard-avatar navy-avatar">ER</div>
+              <div>
+                <div class="tcard-name">Emily Rodriguez</div>
+                <div class="tcard-role">Marketing Manager, StartupHub</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+         FAQ
+    ════════════════════════════════════════════════ -->
+    <section class="faq" id="faq">
+      <div class="section-inner">
+        <div class="section-header">
+          <h2>Frequently Asked Questions</h2>
+          <p>Everything you need to know about EventPulse</p>
+        </div>
+
+        <div class="faq-list">
+
+          <details class="faq-item" id="faq-registration">
+            <summary class="faq-q">
+              Does your platform help in event registration?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </summary>
+            <div class="faq-a">
+              No, our platform does not provide full event registration. Instead, we offer RSVP management where attendees can confirm their attendance by providing basic details like name, email, and contact information. This streamlined approach focuses on gathering essential information without the complexity of full registration systems.
+            </div>
+          </details>
+
+          <details class="faq-item" id="faq-marketing">
+            <summary class="faq-q">
+              Does your platform help market our event?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </summary>
+            <div class="faq-a">
+              No, our platform does not provide marketing services for events. Wevent is focused on event execution, attendee management, and analytics. We recommend using dedicated marketing platforms and social media channels to promote your events, while Wevent handles the operational and analytical aspects.
+            </div>
+          </details>
+
+          <details class="faq-item" id="faq-different">
+            <summary class="faq-q">
+              How is Wevent different from other event management platforms?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </summary>
+            <div class="faq-a">
+              Wevent stands out by focusing on the complete event lifecycle - from execution to insights. Unlike traditional platforms that only handle registration or ticketing, we bridge the gap between event execution and performance analysis. Our real-time engagement tracking, comprehensive analytics comparing RSVP vs actual attendance, and seamless integration capabilities make data-driven decision making accessible to every event organizer. We prioritize actionable insights over complex features, helping you understand what truly matters: attendee engagement and event success.
+            </div>
+          </details>
+
+          <details class="faq-item" id="faq-join">
+            <summary class="faq-q">
+              How can attendees join an event?
+              <svg class="faq-chevron" width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </summary>
+            <div class="faq-a">
+              Attendees can join events through a simple RSVP process. Once they receive an event invitation or link, they submit their basic details (name, email, phone) to confirm attendance. For in-person events, they'll receive a QR code for quick check-in at the venue. For virtual or hybrid events, they'll get access links and instructions to join via integrated platforms like Zoom. The entire process is designed to be quick and hassle-free, ensuring maximum participation.
+            </div>
+          </details>
+
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+         CTA BANNER
+    ════════════════════════════════════════════════ -->
+    <section class="cta-section" id="cta">
+      <div class="cta-inner">
+        <h2>Ready to Transform Your Events?</h2>
+        <p>Join thousands of event professionals using EventPulse to create unforgettable experiences</p>
+        <a href="auth.html#signup" class="btn-primary btn-light" id="cta-get-started">
+          Get Started
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+        <div class="cta-note">No credit card required &bull; Free support included</div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════
+         FOOTER
+    ════════════════════════════════════════════════ -->
+    <footer class="footer" id="footer">
+      <div class="footer-inner">
+
+        <div class="footer-brand">
+          <div class="footer-logo">
+            <div class="logo-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3" y="4" width="18" height="17" rx="2.5" stroke="#f97316" stroke-width="2"/>
+                <path d="M3 9.5h18" stroke="#f97316" stroke-width="2"/>
+                <path d="M8 2.5v3M16 2.5v3" stroke="#f97316" stroke-width="2" stroke-linecap="round"/>
+                <rect x="7" y="13" width="3" height="3" rx="0.5" fill="#f97316"/>
+              </svg>
+            </div>
+            <span class="footer-logo-text">Wevents.com</span>
+          </div>
+          <p class="footer-tagline">The complete platform for event execution and analytics.</p>
+        </div>
+
+        <div class="footer-col">
+          <div class="footer-col-title">Product</div>
+          <ul class="footer-links">
+            <li><a href="#features" id="footer-features">Features</a></li>
+
+            <li><a href="#" id="footer-security">Security</a></li>
+            <li><a href="#" id="footer-updates">Updates</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <div class="footer-col-title">Company</div>
+          <ul class="footer-links">
+            <li><a href="#" id="footer-about">About</a></li>
+            <li><a href="#" id="footer-careers">Careers</a></li>
+            <li><a href="#" id="footer-blog">Blog</a></li>
+            <li><a href="#" id="footer-contact">Contact</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <div class="footer-col-title">Resources</div>
+          <ul class="footer-links">
+            <li><a href="#" id="footer-docs">Documentation</a></li>
+            <li><a href="#" id="footer-help">Help Center</a></li>
+            <li><a href="#" id="footer-api">API</a></li>
+            <li><a href="#" id="footer-community">Community</a></li>
+          </ul>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 Wevents.com. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script src="index.js"></script>
+  </body>
+</html>

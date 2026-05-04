@@ -1,0 +1,4 @@
+/* User Management specific styles */
+.stats-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+@media (max-width: 900px) { .stats-grid.cols-5 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 600px) { .stats-grid.cols-5 { grid-template-columns: repeat(2, 1fr); } }

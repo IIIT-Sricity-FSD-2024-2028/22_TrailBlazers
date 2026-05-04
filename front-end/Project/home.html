@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Wevents – My Events</title>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="one-unit">
+      <div class="app">
+        <div class="sidebar">
+          
+          <p class="role">Event Manager</p>
+          <button class="menu-btn">
+            <i class="fa-solid fa-bars"></i>My Events
+          </button>
+        </div>
+
+        <div class="main">
+          <!-- ── HEADER ── -->
+          <div class="navbar">
+            <div class="nav-left">
+              <div class="nav-logo-icon"><i class="fa-regular fa-calendar"></i></div>
+              <div class="nav-title-group">
+                <span class="nav-title">Wevents.com</span>
+                <span class="nav-subtitle">Event Manager Dashboard</span>
+              </div>
+            </div>
+            <div class="nav-right">
+              <div class="nav-status">
+                <span class="nav-status-dot"></span> All systems operational
+              </div>
+              <div class="nav-notif-wrap" id="notifBell">
+                <i class="fa-regular fa-bell"></i>
+                <span class="nav-badge">2</span>
+              </div>
+              <div class="profile-wrapper">
+                <div class="nav-user" id="profileBtn">
+                  <div class="nav-user-info">
+                    <span class="nav-user-name">Alex Thompson</span>
+                    <span class="nav-user-role">Lead Coordinator</span>
+                  </div>
+                  <div class="av" style="width:34px;height:34px;font-size:13px;">AT</div>
+                  <i class="fa-solid fa-chevron-down" style="font-size:11px;opacity:0.7;"></i>
+                </div>
+                <div class="profile-dropdown" id="profileDropdown">
+                  <div class="ph">
+                    <div>
+                      <div style="font-weight:600;font-size:15px;">Alex Thompson</div>
+                      <div style="font-size:12px;opacity:0.8;">Lead Coordinator</div>
+                    </div>
+                    <div class="av">AT</div>
+                  </div>
+                  <div class="pb">
+                    <h4>My Account</h4>
+                    <div class="pi"><i class="fa-regular fa-user"></i>Alex Thompson</div>
+                    <div class="pi"><i class="fa-regular fa-envelope"></i>alex.t@evnt.com</div>
+                    <div class="pi"><i class="fa-regular fa-shield"></i>Lead Coordinator</div>
+                  </div>
+                  <div class="pf">
+                    <button class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ev-header">
+            <div>
+              <h2>Event Manager Dashboard</h2>
+              <p>Manage all your events from here</p>
+            </div>
+          </div>
+
+          <div class="content">
+            <h2>My Events</h2>
+            <p class="subtext">
+              Manage your allocated events and review waiting list
+            </p>
+
+            <div class="stats" id="stats-container"></div>
+
+            <div class="topbar" style="margin-bottom: 14px">
+              <span class="sec-title" style="margin: 0">Allocated Events</span>
+              <button class="btn btn-primary" onclick="openEventModal(-1)">
+                <i class="fa-solid fa-plus"></i>Add Event
+              </button>
+            </div>
+            <div id="events-container"></div>
+
+            <div class="topbar" style="margin-top: 10px; margin-bottom: 14px">
+              <span class="sec-title" style="margin: 0">Waiting List</span>
+            </div>
+            <div class="w-grid" id="waiting-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- EVENT MODAL -->
+      <div class="modal-overlay" id="event-modal">
+        <div class="modal">
+          <h3 id="em-title">Add Event</h3>
+          <div class="fg">
+            <label>Event Title</label
+            ><input
+              id="f-title"
+              placeholder="Tech Mumbai Innovation Summit 2026"
+            />
+          </div>
+          <div class="fg">
+            <label>Client / Organiser</label
+            ><input id="f-client" placeholder="India Tech Council" />
+          </div>
+          <div class="frow">
+            <div class="fg">
+              <label>Date</label
+              ><input id="f-date" placeholder="March 15–17, 2026" />
+            </div>
+            <div class="fg">
+              <label>Location</label
+              ><input
+                id="f-location"
+                placeholder="Jio World Convention Centre"
+              />
+            </div>
+          </div>
+          <div class="frow">
+            <div class="fg">
+              <label>Expected Attendees</label
+              ><input id="f-people" placeholder="850 Expected" />
+            </div>
+            <div class="fg">
+              <label>Status</label>
+              <select id="f-status">
+                <option value="upcoming">Upcoming</option>
+                <option value="live">Live</option>
+              </select>
+            </div>
+          </div>
+          <div class="fg">
+            <label>Progress Note</label
+            ><input id="f-progress" placeholder="Day 1 of 3" />
+          </div>
+          <div class="ma">
+            <button class="bc" onclick="closeModal('event-modal')">
+              Cancel
+            </button>
+            <button class="bs" onclick="saveEvent()">Save Event</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="toast"></div>
+      <script src="shared.js"></script>
+      <script src="home.js"></script>
+    </div>
+  </body>
+</html>
