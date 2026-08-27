@@ -1,0 +1,37 @@
+<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="40" height="40" rx="12" fill="url(#bgGrad)"/>
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#DAF0FB" />
+      <stop offset="50%" stopColor="#FBE9F9" />
+      <stop offset="100%" stopColor="#E8F9F5" />
+    </linearGradient>
+    <linearGradient id="waveGradient" x1="4" y1="36" x2="36" y2="4" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#3B82F6" />
+      <stop offset="50%" stopColor="#8B5CF6" />
+      <stop offset="100%" stopColor="#EC4899" />
+    </linearGradient>
+    <linearGradient id="sparkleGrad" x1="22" y1="2" x2="36" y2="16" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stopColor="#EC4899" />
+      <stop offset="100%" stopColor="#F59E0B" />
+    </linearGradient>
+  </defs>
+  <path
+    d="M 6 24 C 9 14, 13 30, 18 17 C 22 26, 26 12, 31 20 C 33 23, 35 21, 36 19"
+    stroke="url(#waveGradient)"
+    stroke-width="3.8"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <path
+    d="M 8 28 C 11 20, 14 32, 18 22 C 22 30, 25 18, 29 24"
+    stroke="url(#waveGradient)"
+    stroke-width="1.8"
+    stroke-opacity="0.45"
+    stroke-linecap="round"
+  />
+  <path
+    d="M 29 4 L 30.5 8.5 L 35 10 L 30.5 11.5 L 29 16 L 27.5 11.5 L 23 10 L 27.5 8.5 Z"
+    fill="url(#sparkleGrad)"
+  />
+</svg>

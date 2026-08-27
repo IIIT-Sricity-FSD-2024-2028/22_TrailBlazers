@@ -1,0 +1,178 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --powder-blue: #DAF0FB;
+  --lavender-pink: #FBE9F9;
+  --mint-mist: #E8F9F5;
+  --soft-lavender: #E9E1FA;
+  --periwinkle: #DCE5FF;
+  --soft-peach: #FFE8DC;
+  --text-dark: #26334A;
+  --text-muted: #64748B;
+}
+
+body {
+  background-color: #DAF0FB;
+  color: #26334A;
+  font-family: 'Outfit', 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Gradient Text matching reference ("Measure.") */
+.text-gradient-purple-pink {
+  background: linear-gradient(135deg, #A855F7 0%, #EC4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Light Glassmorphism Token Surfaces */
+.glass-light {
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgba(255, 255, 255, 0.90);
+  box-shadow: 0 10px 30px -5px rgba(38, 51, 74, 0.05);
+}
+
+.glass-light-hover {
+  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-light-hover:hover {
+  background: rgba(255, 255, 255, 0.90);
+  transform: translateY(-4px);
+  border-color: rgba(255, 255, 255, 1);
+  box-shadow: 0 18px 40px -8px rgba(38, 51, 74, 0.10);
+}
+
+.glass-nav-light {
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.85);
+}
+
+.glass-modal-light {
+  background: #ffffff;
+  border: 1px solid rgba(226, 232, 240, 0.95);
+  box-shadow: 0 25px 60px -15px rgba(38, 51, 74, 0.25);
+}
+
+.glass-input-light {
+  background: rgba(255, 255, 255, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.90);
+  color: #26334A;
+  transition: all 0.2s ease;
+}
+
+.glass-input-light::placeholder {
+  color: #94A3B8;
+}
+
+.glass-input-light:focus {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #B5E1F7;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(181, 225, 247, 0.5);
+}
+
+/* Floating Pastel Background Blobs */
+@keyframes pastelFloat {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(2deg); }
+}
+
+.animate-pastel-float {
+  animation: pastelFloat 6s ease-in-out infinite;
+}
+
+/* Custom Soft Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #EBF6FD;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #B5E1F7;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #89CCF2;
+}
+
+/* Page & Dashboard Entrance Keyframe Animations */
+@keyframes pageOverlayFade {
+  0% { opacity: 0.85; }
+  100% { opacity: 0; }
+}
+
+@keyframes pageContentEntrance {
+  0% { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes heroContainerEntrance {
+  0% { opacity: 0; transform: translateY(16px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideUp {
+  0% { opacity: 0; transform: translateY(12px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeSlideLeft {
+  0% { opacity: 0; transform: translateX(16px); }
+  100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleFadeIn {
+  0% { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes cardStagger {
+  0% { opacity: 0; transform: translateY(14px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+.animate-hero-container {
+  animation: heroContainerEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-slide-up {
+  animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-fade-slide-left {
+  animation: fadeSlideLeft 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-scale-fade-in {
+  animation: scaleFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-card-stagger {
+  animation: cardStagger 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Accessibility: Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .animate-hero-container,
+  .animate-fade-slide-up,
+  .animate-fade-slide-left,
+  .animate-scale-fade-in,
+  .animate-card-stagger {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+

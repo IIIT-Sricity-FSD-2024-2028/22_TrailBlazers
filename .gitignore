@@ -1,4 +1,48 @@
+# ==============================================================================
+# Wavevents Event Management & Post-Event Analytics Platform
+# Root-Level .gitignore Configuration
+# ==============================================================================
+
+# 1. Dependencies
+**/node_modules/
 node_modules/
+
+# 2. Build & Generated Compilation Outputs
+backend/dist-nestjs/
 dist/
-.env
+**/dist/
+frontend/dist/
+**/*.tsbuildinfo
+**/*.js.map
+**/*.d.ts
+
+# 3. Runtime Logs
+backend/logs/*.log
+logs/*.log
 *.log
+
+# 4. User Uploaded Runtime Files (Preserve uploads directory via .gitkeep)
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# 5. Environment & Secret Configuration Files
+backend/.env
+frontend/.env
+frontend/.env.local
+frontend/.env.*.local
+.env
+*.env
+!.env.example
+
+# 6. Temporary & Scratch Files
+**/*.tmp
+**/*.temp
+**/scratch_*
+**/*.bak
+
+# 7. OS & Editor Specific Files
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
