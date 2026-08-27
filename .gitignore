@@ -39,6 +39,8 @@ frontend/.env.*.local
 **/*.temp
 **/scratch_*
 **/*.bak
+**/.vite/
+.vite/
 
 # 7. OS & Editor Specific Files
 .DS_Store
