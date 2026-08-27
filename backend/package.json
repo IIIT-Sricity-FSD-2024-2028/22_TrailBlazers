@@ -1,0 +1,45 @@
+{
+  "name": "wavevents-backend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node dist-nestjs/main.js",
+    "dev": "nest start --watch",
+    "build": "nest build && node -e \"require('fs').writeFileSync('dist-nestjs/package.json', JSON.stringify({type: 'commonjs'}))\"",
+    "build:nestjs": "nest build && node -e \"require('fs').writeFileSync('dist-nestjs/package.json', JSON.stringify({type: 'commonjs'}))\"",
+    "start:nestjs": "node dist-nestjs/main.js",
+    "dev:nestjs": "nest start --watch"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.2.1",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.2.1",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.2.1",
+    "@nestjs/swagger": "^11.4.7",
+    "@nestjs/throttler": "^6.5.0",
+    "@types/passport-jwt": "^4.0.1",
+    "bcryptjs": "^3.0.2",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.15.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.2",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@nestjs/cli": "^11.0.24",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0",
+    "@types/node": "^26.2.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
