@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
 export default function PageTransition({ children, pageKey }) {
-  const [displayChildren, setDisplayChildren] = useState(children);
   const [isTransitioning, setIsTransitioning] = useState(false);
 
   useEffect(() => {
     if (pageKey) {
       setIsTransitioning(true);
-      setDisplayChildren(children);
 
       const timer = setTimeout(() => {
         setIsTransitioning(false);
@@ -37,7 +35,7 @@ export default function PageTransition({ children, pageKey }) {
           animation: 'pageContentEntrance 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards'
         }}
       >
-        {displayChildren}
+        {children}
       </div>
     </div>
   );

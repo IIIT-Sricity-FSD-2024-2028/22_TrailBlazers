@@ -1,33 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
-import AuthModal from './components/AuthModal';
-import PaymentModal from './components/PaymentModal';
-import LandingPage from './pages/LandingPage';
-import Dashboard from './pages/Dashboard';
-import ExploreEvents from './pages/ExploreEvents';
-import EventDetails from './pages/EventDetails';
-import MyTickets from './pages/MyTickets';
-import CreateEvent from './pages/CreateEvent';
-import RevenueSpace from './pages/RevenueSpace';
-import EventManagerSpace from './pages/EventManagerSpace';
-import OnsiteCoordinatorSpace from './pages/OnsiteCoordinatorSpace';
-import AnalyticsSpace from './pages/AnalyticsSpace';
-import SuperAdminSpace from './pages/SuperAdminSpace';
-import DepartmentManagerSpace from './pages/DepartmentManagerSpace';
-import ITSupportSpace from './pages/ITSupportSpace';
-import ReportTechnicalIssueModal from './components/ReportTechnicalIssueModal';
-import PageTransition from './components/PageTransition';
-import NotificationToastContainer from './components/NotificationToastContainer';
-import { getDashboardForUser, isProtectedRoute, isStaffUser } from './utils/roleRoutes';
+import React, { useState, useEffect, useRef } from 'react';
+import Navbar from './shared/components/Navbar';
+import Footer from './shared/components/Footer';
+import AuthModal from './auth/AuthModal';
+import PaymentModal from './actors/attendee/components/PaymentModal';
+import LandingPage from './shared/pages/LandingPage';
+import Dashboard from './actors/client/pages/Dashboard';
+import ExploreEvents from './actors/attendee/pages/ExploreEvents';
+import EventDetails from './actors/attendee/pages/EventDetails';
+import MyTickets from './actors/attendee/pages/MyTickets';
+import CreateEvent from './actors/client/pages/CreateEvent';
+import RevenueSpace from './actors/revenue/pages/RevenueSpace';
+import EventManagerSpace from './actors/event-manager/pages/EventManagerSpace';
+import OnsiteCoordinatorSpace from './actors/onsite-coordinator/pages/OnsiteCoordinatorSpace';
+import AnalyticsSpace from './shared/pages/AnalyticsSpace';
+import SuperAdminSpace from './actors/admin/pages/SuperAdminSpace';
+import DepartmentManagerSpace from './actors/event-management/pages/DepartmentManagerSpace';
+import ITSupportSpace from './actors/admin/pages/ITSupportSpace';
+import ReportTechnicalIssueModal from './shared/components/ReportTechnicalIssueModal';
+import PageTransition from './shared/components/PageTransition';
+import NotificationToastContainer from './shared/components/NotificationToastContainer';
+import { getDashboardForUser, isProtectedRoute, isStaffUser } from './shared/utils/roleRoutes';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('landing');
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('ffsd_token') || null);
   const [events, setEvents] = useState([]);
+  const [eventsLoading, setEventsLoading] = useState(true);
+  const [eventsError, setEventsError] = useState(null);
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [headerSearch, setHeaderSearch] = useState('');
+  const isFetchingEventsRef = useRef(false);
 
   // Modal & Auth Notice Controls
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -35,6 +38,7 @@ export default function App() {
   const [authNotice, setAuthNotice] = useState('');
   const [pendingRedirect, setPendingRedirect] = useState(null);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [initialInviteCode, setInitialInviteCode] = useState('');
   const [isTechModalOpen, setIsTechModalOpen] = useState(false);
 
   useEffect(() => {
@@ -67,15 +71,35 @@ export default function App() {
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    if (selectedEvent) {
+      const updated = events.find((e) => e.id === selectedEvent.id);
+      if (updated && (updated.availableTickets !== selectedEvent.availableTickets || updated.updatedAt !== selectedEvent.updatedAt)) {
+        setSelectedEvent(updated);
+      }
+    }
+  }, [events]);
+
   const fetchEvents = async () => {
+    if (isFetchingEventsRef.current) return;
+    isFetchingEventsRef.current = true;
+    setEventsLoading((prev) => (events.length === 0 ? true : prev));
+    setEventsError(null);
     try {
       const res = await fetch('/api/events');
       if (res.ok) {
         const data = await res.json();
         setEvents(data.events || []);
+        setEventsError(null);
+      } else {
+        setEventsError('Failed to load events. Please try again.');
       }
     } catch (err) {
       console.error('Error fetching events:', err);
+      setEventsError('Network error while loading events.');
+    } finally {
+      setEventsLoading(false);
+      isFetchingEventsRef.current = false;
     }
   };
 
@@ -147,7 +171,7 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleAttendClick = (evt) => {
+  const handleAttendClick = (evt, options = {}) => {
     if (!user) {
       handleOpenAuth('login');
       return;
@@ -157,6 +181,7 @@ export default function App() {
       return;
     }
     setSelectedEvent(evt);
+    setInitialInviteCode(options?.inviteCode || '');
     setIsPaymentModalOpen(true);
   };
 
@@ -185,6 +210,9 @@ export default function App() {
           {activeTab === 'landing' && (
             <LandingPage
               events={events}
+              eventsLoading={eventsLoading}
+              eventsError={eventsError}
+              onRetryEvents={fetchEvents}
               onNavigate={(tab) => {
                 setActiveTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -294,6 +322,7 @@ export default function App() {
 
               {activeTab === 'event-details' && (
                 <EventDetails
+                  key={selectedEvent?.id}
                   event={selectedEvent}
                   user={user}
                   onBack={() => setActiveTab('explore')}
@@ -345,18 +374,27 @@ export default function App() {
       />
 
       <PaymentModal
+        key={selectedEvent?.id || 'no-event'}
         event={selectedEvent}
         isOpen={isPaymentModalOpen}
-        onClose={() => setIsPaymentModalOpen(false)}
+        initialInviteCode={initialInviteCode}
+        onClose={() => {
+          setIsPaymentModalOpen(false);
+          setInitialInviteCode('');
+        }}
         user={user}
         onPaymentComplete={() => {
           fetchEvents(); // Refresh available tickets count
         }}
         onViewMyTickets={() => {
+          setIsPaymentModalOpen(false);
+          setInitialInviteCode('');
           setActiveTab('my-tickets');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}
         onExploreMore={() => {
+          setIsPaymentModalOpen(false);
+          setInitialInviteCode('');
           setActiveTab('explore');
           window.scrollTo({ top: 0, behavior: 'smooth' });
         }}

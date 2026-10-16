@@ -11,7 +11,6 @@ node_modules/
 backend/dist-nestjs/
 dist/
 **/dist/
-frontend/dist/
 **/*.tsbuildinfo
 **/*.js.map
 **/*.d.ts
@@ -39,8 +38,6 @@ frontend/.env.*.local
 **/*.temp
 **/scratch_*
 **/*.bak
-**/.vite/
-.vite/
 
 # 7. OS & Editor Specific Files
 .DS_Store

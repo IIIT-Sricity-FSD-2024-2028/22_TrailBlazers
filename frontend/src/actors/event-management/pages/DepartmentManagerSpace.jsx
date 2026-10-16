@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { 
   Building, 
   Users, 
@@ -23,8 +24,12 @@ import {
   Calendar,
   Filter,
   Eye,
-  RefreshCw
+  RefreshCw,
+  UserPlus,
+  UserCheck,
+  X
 } from 'lucide-react';
+import UserManagementSection from '../../../shared/components/UserManagementSection';
 
 export default function DepartmentManagerSpace({ user, onNavigate }) {
   const [overview, setOverview] = useState(null);
@@ -38,6 +43,11 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
   const [actionLoading, setActionLoading] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState('');
 
+  // Issue Assignment Popover State
+  const [assignPopoverIssueId, setAssignPopoverIssueId] = useState(null);
+  const [assignSubmitting, setAssignSubmitting] = useState(false);
+  const [popoverError, setPopoverError] = useState('');
+
   // Event Management Head Specific State
   const [awaitingEvents, setAwaitingEvents] = useState([]);
   const [assignedEvents, setAssignedEvents] = useState([]);
@@ -45,6 +55,7 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignTargetEvent, setAssignTargetEvent] = useState(null);
   const [selectedManagerId, setSelectedManagerId] = useState('');
+  const [selectedCoordinatorId, setSelectedCoordinatorId] = useState('');
   const [assignError, setAssignError] = useState('');
   const [activeSubTab, setActiveSubTab] = useState('assignments'); // assignments, roster, issues
 
@@ -157,6 +168,8 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                   organizationName: e.organizationName || 'Tech Partner Forum',
                   category: e.category || 'Tech Conference',
                   eventDate: e.date || e.eventDate || '2026-09-25',
+                  startDate: e.startDate || e.date || e.eventDate || '2026-09-25',
+                  endDate: e.endDate || null,
                   startTime: e.startTime || '09:00 AM',
                   endTime: e.endTime || '05:00 PM',
                   venue: e.venue || 'Anna University Convention Centre',
@@ -282,6 +295,8 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
     setAssignTargetEvent(event);
     setAssignError('');
     setSelectedManagerId(event.eventManagerUserId || '');
+    const coordId = event.onsiteCoordinatorUserId || (Array.isArray(event.onsiteCoordinatorUserIds) && event.onsiteCoordinatorUserIds[0]) || '';
+    setSelectedCoordinatorId(coordId);
     setAssignModalOpen(true);
 
     try {
@@ -313,13 +328,14 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
           'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
-          eventManagerUserId: selectedManagerId || null
+          eventManagerUserId: selectedManagerId || null,
+          onsiteCoordinatorUserId: selectedCoordinatorId || null
         })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || data.message || 'Failed to submit assignment.');
 
-      setFeedbackMsg(`Event "${assignTargetEvent.eventName}" assigned to Event Manager successfully.`);
+      setFeedbackMsg(`Staff assigned to event "${assignTargetEvent.eventName}" successfully.`);
       setAssignModalOpen(false);
       setAssignTargetEvent(null);
       fetchData();
@@ -388,8 +404,193 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
     }
   };
 
+  const handleExecuteAssignment = async (issueId, staffUserId, staffName) => {
+    setAssignSubmitting(true);
+    setPopoverError('');
+    try {
+      const token = localStorage.getItem('ffsd_token');
+      const res = await fetch(`/api/hierarchy/issues/${issueId}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ assignedUserId: staffUserId })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Failed to assign issue.');
+      }
+
+      setAssignPopoverIssueId(null);
+      setFeedbackMsg(`Issue successfully assigned to ${staffName}.`);
+      fetchData();
+    } catch (err) {
+      setPopoverError(err.message);
+    } finally {
+      setAssignSubmitting(false);
+    }
+  };
+
   const myDeptData = overview?.departments?.[userDept];
   const members = teamMembers.length > 0 ? teamMembers : (myDeptData?.members || []);
+
+  const renderAssignAction = (iss) => {
+    const isResolved = iss.status === 'RESOLVED';
+    const isEscalatedToAdmin = iss.status === 'ESCALATED_TO_ADMIN';
+    const isAssigned = !!iss.assignedUserId;
+    const isOpen = assignPopoverIssueId === iss.id;
+
+    if (isResolved) {
+      return (
+        <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-100 text-emerald-950 border border-emerald-200">
+          RESOLVED
+        </span>
+      );
+    }
+
+    if (isEscalatedToAdmin) {
+      return (
+        <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-rose-600 text-white">
+          ESCALATED_TO_ADMIN
+        </span>
+      );
+    }
+
+    return (
+      <div className="relative inline-block text-left">
+        <div className="flex items-center gap-1.5">
+          {isAssigned && (
+            <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-sky-100 text-sky-900 border border-sky-200 flex items-center gap-1">
+              <Users className="w-3 h-3 text-sky-600" />
+              <span>Assigned: {iss.assignedUserName || 'Staff Member'}</span>
+            </span>
+          )}
+
+          <button
+            onClick={() => {
+              setPopoverError('');
+              setAssignPopoverIssueId(isOpen ? null : iss.id);
+            }}
+            className={`px-3 py-1.5 rounded-xl font-extrabold text-xs transition shadow-2xs flex items-center gap-1.5 cursor-pointer ${
+              isAssigned
+                ? 'bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-300'
+                : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+            }`}
+            title={isAssigned ? 'Reassign to another staff member' : 'Assign to available staff'}
+          >
+            {isAssigned ? (
+              <>
+                <UserCheck className="w-3.5 h-3.5 text-slate-600" />
+                <span>Reassign</span>
+              </>
+            ) : (
+              <>
+                <UserPlus className="w-3.5 h-3.5" />
+                <span>Assign To</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* STAFF SELECTION POPOVER */}
+        {isOpen && (
+          <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 rounded-2xl bg-white border border-slate-200/90 shadow-2xl z-50 p-4 space-y-3.5 animate-fadeIn">
+            {/* Popover Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-2.5">
+              <div>
+                <h4 className="text-xs font-extrabold text-[#26334A] uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>Assign Issue To</span>
+                </h4>
+                <p className="text-[10px] text-slate-500 truncate max-w-[220px]">
+                  {iss.category}: {iss.description}
+                </p>
+              </div>
+              <button
+                onClick={() => setAssignPopoverIssueId(null)}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Error Message if assignment fails */}
+            {popoverError && (
+              <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 text-xs font-semibold">
+                ✕ {popoverError}
+              </div>
+            )}
+
+            {/* Staff list */}
+            {members.length === 0 ? (
+              <div className="py-6 text-center text-xs text-slate-500 font-semibold">
+                No eligible staff members found in this department.
+              </div>
+            ) : (
+              <div className="max-h-64 overflow-y-auto space-y-2 pr-1 divide-y divide-slate-100">
+                {members.map((m, idx) => {
+                  const isCurrentAssignee = iss.assignedUserId === m.id;
+                  const isAvailable = m.isAvailable !== false && m.status !== 'ESCALATED';
+                  const activeIssuesCount = m.activeIssuesCount ?? (m.activeAssignmentsCount || 0);
+
+                  return (
+                    <div key={m.id || idx} className="pt-2 first:pt-0 flex items-center justify-between gap-3">
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-xs font-bold text-[#26334A] truncate">{m.name}</span>
+                          {isCurrentAssignee && (
+                            <span className="px-1.5 py-0.2 rounded text-[8px] font-extrabold bg-sky-100 text-sky-800 uppercase">
+                              Current
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[10px]">
+                          <span
+                            className={`px-2 py-0.5 rounded-full font-bold border ${
+                              isAvailable
+                                ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                : 'bg-slate-100 text-slate-600 border-slate-200'
+                            }`}
+                          >
+                            Status: {isAvailable ? 'Available' : 'Busy'}
+                          </span>
+                          <span className="text-slate-500 font-medium">
+                            Active Issues: <strong className="text-slate-700">{activeIssuesCount}</strong>
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="shrink-0">
+                        {isAvailable ? (
+                          <button
+                            disabled={assignSubmitting}
+                            onClick={() => handleExecuteAssignment(iss.id, m.id, m.name)}
+                            className="px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition shadow-2xs disabled:opacity-50 cursor-pointer"
+                          >
+                            {isCurrentAssignee ? 'Reassign' : 'Assign'}
+                          </button>
+                        ) : (
+                          <button
+                            disabled
+                            className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-400 font-extrabold text-xs cursor-not-allowed border border-slate-200"
+                            title={m.availabilityReason || 'Staff member is currently busy'}
+                          >
+                            Unavailable
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
   const deptIssues = issues.filter(i => i.department === userDept || (userDept === 'IT_SUPPORT' && i.issueType === 'TECHNICAL'));
 
   // Summary Metrics
@@ -543,11 +744,16 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                   {awaitingEvents.map(evt => (
                     <div key={evt.id} className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs space-y-4 hover:shadow-sm transition flex flex-col justify-between">
                       <div className="space-y-2">
-                        <div className="flex items-start justify-between">
-                          <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-100">
-                            {evt.category || 'General'}
-                          </span>
-                          <span className="text-[10px] font-bold text-amber-700 uppercase">Awaiting Manager</span>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-100">
+                              {evt.category || 'General'}
+                            </span>
+                            <span className="text-[9px] font-extrabold uppercase text-purple-700 bg-purple-50 px-2.5 py-0.5 rounded-md border border-purple-200">
+                              Escalated from Revenue
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-bold text-amber-700 uppercase shrink-0">Awaiting Manager</span>
                         </div>
                         <h4 className="text-base font-extrabold text-[#26334A]">{evt.eventName}</h4>
                         <p className="text-xs text-[#64748B] font-bold">{evt.organizationName}</p>
@@ -555,7 +761,11 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                         <div className="grid grid-cols-2 gap-2 text-xs p-3 rounded-2xl bg-slate-50 border border-slate-100">
                           <div>
                             <span className="text-slate-400 text-[10px] block">Date</span>
-                            <span className="font-bold text-[#26334A]">{evt.eventDate}</span>
+                            <span className="font-bold text-[#26334A]">
+                              {evt.startDate && evt.endDate && evt.startDate !== evt.endDate
+                                ? `${evt.startDate} to ${evt.endDate}`
+                                : (evt.startDate || evt.eventDate)}
+                            </span>
                             <span className="text-slate-500 block truncate text-[11px]">{evt.venue}</span>
                           </div>
                           <div>
@@ -564,6 +774,19 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                             <span className="text-slate-500 block text-[11px]">{evt.startTime} - {evt.endTime}</span>
                           </div>
                         </div>
+
+                        {evt.escalatedAt && (
+                          <div className="p-2.5 rounded-2xl bg-purple-50/70 border border-purple-100 text-[11px] text-purple-900 flex items-center justify-between">
+                            <span className="font-bold text-purple-800">
+                              Escalated: {evt.escalatedAt} {evt.escalatedByName ? `by ${evt.escalatedByName}` : ''}
+                            </span>
+                            {(evt.quotationValue || evt.contractPrice) && (
+                              <span className="font-mono font-bold text-indigo-950">
+                                Contract: ₹{Number(evt.quotationValue || evt.contractPrice).toLocaleString()}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </div>
 
                       <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
@@ -573,7 +796,7 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                           className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs transition shadow-2xs cursor-pointer flex items-center gap-1.5"
                         >
                           <Users className="w-3.5 h-3.5" />
-                          <span>Assign Manager</span>
+                          <span>Assign Staff</span>
                         </button>
                       </div>
                     </div>
@@ -642,7 +865,7 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                                 onClick={() => handleOpenAssignModal(evt)}
                                 className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-[#26334A] font-extrabold text-[11px] transition border border-slate-200 cursor-pointer flex items-center gap-1.5 inline-flex"
                               >
-                                <span>Reassign Manager</span>
+                                <span>Assign Staff</span>
                               </button>
                             </td>
                           </tr>
@@ -803,9 +1026,7 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                           </div>
 
                           <div className="flex flex-wrap items-center gap-2 shrink-0">
-                            <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${iss.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-950 border border-emerald-200' : iss.status === 'ESCALATED_TO_ADMIN' ? 'bg-rose-600 text-white' : 'bg-amber-100 text-amber-950 border border-amber-200'}`}>
-                              {iss.status}
-                            </span>
+                            {renderAssignAction(iss)}
                             
                             {iss.status !== 'RESOLVED' && iss.status !== 'ESCALATED_TO_ADMIN' && (
                               <>
@@ -836,19 +1057,23 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
         )}
 
         {/* EVENT MANAGER ASSIGNMENT / REASSIGNMENT MODAL */}
-        {assignModalOpen && assignTargetEvent && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-            <div className="w-full max-w-lg bg-white rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4">
+        {assignModalOpen && assignTargetEvent && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+            <div className="w-full max-w-lg bg-white rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
               <div>
                 <h3 className="text-lg font-black text-[#26334A] flex items-center gap-1.5">
                   <Users className="w-5 h-5 text-indigo-600" />
-                  <span>Assign Event Manager</span>
+                  <span>Assign Staff</span>
                 </h3>
-                <p className="text-xs text-[#64748B]">Assign a dedicated Event Manager to <strong>{assignTargetEvent.eventName}</strong></p>
+                <p className="text-xs text-[#64748B]">Assign an Event Manager and Onsite Coordinator to <strong>{assignTargetEvent.eventName}</strong></p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 text-xs space-y-1">
-                <p className="text-slate-500"><strong>Date:</strong> {assignTargetEvent.eventDate} ({assignTargetEvent.startTime} - {assignTargetEvent.endTime})</p>
+                <p className="text-slate-500">
+                  <strong>Date:</strong> {assignTargetEvent.startDate && assignTargetEvent.endDate && assignTargetEvent.startDate !== assignTargetEvent.endDate
+                    ? `${assignTargetEvent.startDate} to ${assignTargetEvent.endDate}`
+                    : (assignTargetEvent.startDate || assignTargetEvent.eventDate)} ({assignTargetEvent.startTime} - {assignTargetEvent.endTime})
+                </p>
                 <p className="text-slate-500"><strong>Venue:</strong> {assignTargetEvent.venue || 'TBD'}</p>
               </div>
 
@@ -870,10 +1095,39 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                     {staffAvailability
                       .filter(s => s.role === 'EVENT_MANAGER')
                       .map(s => {
-                        const isCurrent = assignTargetEvent.eventManagerUserId === s.id;
+                        const isCurrent = assignTargetEvent?.eventManagerUserId === s.id;
+                        const statusLabel = s.isAvailable || isCurrent
+                          ? (s.availabilityReason || `Available (${s.activeAssignmentsCount || 0}/${s.maxCapacity || 7} active events, ${s.totalWorkload ?? s.activeAssignmentsCount ?? 0}/${s.workloadThreshold || 15} workload)`)
+                          : `Busy: ${s.availabilityReason}`;
                         return (
                           <option key={s.id} value={s.id} disabled={!s.isAvailable && !isCurrent}>
-                            {s.name} ({s.isAvailable || isCurrent ? 'Available' : `Busy: ${s.availabilityReason}`})
+                            {s.name} ({statusLabel})
+                          </option>
+                        );
+                      })}
+                  </select>
+                </div>
+
+                {/* Onsite Coordinator Dropdown */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-black uppercase text-slate-500 tracking-wider">Onsite Coordinator</label>
+                  <select
+                    value={selectedCoordinatorId}
+                    onChange={(e) => setSelectedCoordinatorId(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs font-bold text-[#26334A] focus:outline-none focus:ring-2 focus:ring-indigo-100 bg-white cursor-pointer"
+                  >
+                    <option value="">Select Onsite Coordinator...</option>
+                    {staffAvailability
+                      .filter(s => s.role === 'ONSITE_COORDINATOR')
+                      .map(s => {
+                        const isCurrent = assignTargetEvent?.onsiteCoordinatorUserId === s.id ||
+                          (Array.isArray(assignTargetEvent?.onsiteCoordinatorUserIds) && assignTargetEvent.onsiteCoordinatorUserIds.includes(s.id));
+                        const statusLabel = s.isAvailable || isCurrent
+                          ? (s.activeAssignmentsCount > 0 ? `Available (${s.activeAssignmentsCount} active events)` : 'Available (0 active events)')
+                          : `Busy: ${s.availabilityReason}`;
+                        return (
+                          <option key={s.id} value={s.id} disabled={!s.isAvailable && !isCurrent}>
+                            {s.name} ({statusLabel})
                           </option>
                         );
                       })}
@@ -884,10 +1138,10 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                 <div className="flex gap-2 pt-2">
                   <button
                     type="submit"
-                    disabled={actionLoading || !selectedManagerId}
+                    disabled={actionLoading || (!selectedManagerId && !selectedCoordinatorId)}
                     className="flex-1 py-2.5 rounded-xl bg-indigo-600 disabled:opacity-50 text-white font-extrabold text-xs hover:bg-indigo-700 transition cursor-pointer shadow-2xs"
                   >
-                    {actionLoading ? 'Saving...' : 'Confirm Manager Assignment'}
+                    {actionLoading ? 'Saving...' : 'Assign Staff'}
                   </button>
                   <button
                     type="button"
@@ -899,13 +1153,14 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* RESOLUTION MODAL */}
-        {selectedIssue && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-            <div className="w-full max-w-lg bg-white rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4">
+        {selectedIssue && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+            <div className="w-full max-w-lg bg-white rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-extrabold text-[#26334A]">Department Manager Resolution</h3>
               <p className="text-xs text-[#64748B]">Resolving issue reported by <strong>{selectedIssue.reporterName}</strong></p>
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-[#26334A] font-medium">
@@ -939,13 +1194,14 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* ESCALATE TO ADMIN MODAL */}
-        {escalatingIssue && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-            <div className="w-full max-w-lg bg-white rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4">
+        {escalatingIssue && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+            <div className="w-full max-w-lg bg-white rounded-3xl p-6 border border-slate-200 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-extrabold text-rose-900">Escalate Issue to Super Admin</h3>
               <p className="text-xs text-[#64748B]">Escalating unresolved departmental issue to Executive Super Admin</p>
               <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 font-medium">
@@ -979,7 +1235,8 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
       </div>
@@ -1082,38 +1339,16 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
     ];
 
     const enrichedRevenueEvents = rawEvents.map(evt => {
-      let ticketPrice = Number(evt.ticketPrice) || 0;
-      if (ticketPrice <= 0) {
-        const hash = (evt.id || evt.eventName || 'evt').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        const defaultPrices = [350, 500, 750, 1000, 1200, 1500];
-        ticketPrice = defaultPrices[hash % defaultPrices.length];
-      }
+      const ticketPrice = Number(evt.ticketPrice) || 0;
+      let totalCapacity = Number(evt.totalCapacity || evt.totalTickets || evt.expectedAttendance) || 0;
 
-      let totalCapacity = Number(evt.totalCapacity || evt.totalTickets || evt.expectedAttendance) || 100;
-      if (totalCapacity <= 0) totalCapacity = 100;
-
-      let ticketsSold = Number(evt.ticketsSold) || 0;
-      if (ticketsSold === 0) {
-        const hash = (evt.id || evt.eventName || 'evt').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        const baselinePcts = [0.25, 0.35, 0.45, 0.60, 0.70];
-        const pct = baselinePcts[hash % baselinePcts.length];
-        ticketsSold = Math.max(8, Math.round(totalCapacity * pct));
-      }
-
-      let ticketSalesRevenue = Number(evt.ticketSalesRevenue) || 0;
-      if (ticketSalesRevenue === 0) {
-        ticketSalesRevenue = ticketsSold * ticketPrice;
-      }
-
-      let quotationValue = Number(evt.quotationValue) || 0;
-      if (quotationValue <= 0) {
-        const hash = (evt.id || evt.eventName || 'evt').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        const contractMultipliers = [650, 800, 1000, 1200, 1500];
-        const multiplier = contractMultipliers[hash % contractMultipliers.length];
-        quotationValue = Math.max(45000, Math.round((totalCapacity * multiplier) / 1000) * 1000);
-      }
-
-      const totalEventRevenue = Number(evt.totalEventRevenue) || (quotationValue + ticketSalesRevenue);
+      // Authentic metrics directly from backend records
+      const ticketsSold = Number(evt.ticketsSold) || 0;
+      const ticketSalesRevenue = Number(evt.ticketSalesRevenue) || 0;
+      const quotationValue = Number(evt.quotationValue) || 0;
+      const acceptedContractValue = Number(evt.acceptedContractValue) || quotationValue;
+      const clientPaymentsReceived = Number(evt.clientPaymentsReceived) || 0;
+      const totalEventRevenue = Number(evt.totalEventRevenue) || (acceptedContractValue + ticketSalesRevenue);
       const soldPercentage = totalCapacity > 0 ? Math.min(100, Math.round((ticketsSold / totalCapacity) * 100)) : 0;
 
       return {
@@ -1123,6 +1358,8 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
         ticketsSold,
         ticketSalesRevenue,
         quotationValue,
+        acceptedContractValue,
+        clientPaymentsReceived,
         commercialRevenue: quotationValue,
         totalEventRevenue,
         soldPercentage,
@@ -1831,21 +2068,19 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2 shrink-0">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${iss.status === 'RESOLVED' ? 'bg-emerald-100 text-emerald-900' : iss.status === 'ESCALATED_TO_ADMIN' ? 'bg-rose-600 text-white' : 'bg-amber-100 text-amber-900'}`}>
-                          {iss.status}
-                        </span>
+                        {renderAssignAction(iss)}
                         
                         {iss.status !== 'RESOLVED' && iss.status !== 'ESCALATED_TO_ADMIN' && (
                           <>
                             <button
                               onClick={() => setSelectedIssue(iss)}
-                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition shadow-2xs"
+                              className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs transition shadow-2xs cursor-pointer"
                             >
                               Resolve
                             </button>
                             <button
                               onClick={() => setEscalatingIssue(iss)}
-                              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs transition shadow-2xs flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs transition shadow-2xs flex items-center gap-1 cursor-pointer"
                             >
                               <ArrowUpRight className="w-3.5 h-3.5" />
                               <span>Escalate to Admin</span>
@@ -1862,10 +2097,15 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
         </div>
       </div>
 
+      {/* USER MANAGEMENT SECTION (IT Support Department Head / Manager) */}
+      {(userDept === 'IT_SUPPORT' || user?.role === 'SUPER_ADMIN') && (
+        <UserManagementSection user={user} accentColor="teal" />
+      )}
+
       {/* RESOLUTION MODAL */}
-      {selectedIssue && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg glass-modal-light rounded-3xl p-6 border border-white shadow-2xl space-y-4">
+      {selectedIssue && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-lg glass-modal-light rounded-3xl p-6 border border-white shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-extrabold text-[#26334A]">Department Manager Resolution</h3>
             <p className="text-xs text-[#64748B]">Resolving issue reported by <strong>{selectedIssue.reporterName}</strong></p>
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-[#26334A] font-medium">
@@ -1899,13 +2139,14 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ESCALATE TO ADMIN MODAL */}
-      {escalatingIssue && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg glass-modal-light rounded-3xl p-6 border border-white shadow-2xl space-y-4">
+      {escalatingIssue && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-lg glass-modal-light rounded-3xl p-6 border border-white shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-extrabold text-rose-900">Escalate Issue to Super Admin</h3>
             <p className="text-xs text-[#64748B]">Escalating unresolved departmental issue to Executive Super Admin</p>
             <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 font-medium">
@@ -1939,7 +2180,8 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
