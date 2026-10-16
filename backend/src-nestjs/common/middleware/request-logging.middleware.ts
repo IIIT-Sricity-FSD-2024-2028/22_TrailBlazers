@@ -35,8 +35,7 @@ export class RequestLoggingMiddleware implements NestMiddleware {
     res.on('finish', () => {
       const duration = Date.now() - startTime;
       const statusCode = res.statusCode;
-      const roleHeader = req.headers['x-role'] || req.headers['x-user-role'];
-      const role = (roleHeader ? String(roleHeader).trim().toUpperCase() : (req.user?.role || 'ANONYMOUS'));
+      const role = req.user?.role || 'ANONYMOUS';
       const requestId = req.id;
       const timestamp = new Date().toISOString();
 

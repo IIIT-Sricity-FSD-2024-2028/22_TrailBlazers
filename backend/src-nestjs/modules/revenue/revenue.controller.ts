@@ -9,6 +9,7 @@ import {
   UseGuards,
   HttpCode,
   HttpStatus,
+  ForbiddenException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -29,9 +30,9 @@ import { Roles } from '../../common/decorators/roles.decorator';
 @ApiTags('Revenue & Quotations')
 @Controller('revenue')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles('REVENUE')
+@Roles('REVENUE', 'DEPARTMENT_MANAGER', 'SUPER_ADMIN')
 @ApiBearerAuth()
-@ApiHeader({ name: 'x-role', required: false, description: 'User role (Requires REVENUE)' })
+@ApiHeader({ name: 'x-role', required: false, description: 'User role (Requires REVENUE or DEPARTMENT_MANAGER)' })
 export class RevenueController {
   constructor(
     private readonly revenueService: RevenueService,
@@ -103,14 +104,37 @@ export class RevenueController {
   }
 
   @Post('event-requests/:id/assign-manager')
-  @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Assign Event Manager to Event Request', description: 'Assign an available Event Manager with backend schedule overlap validation' })
+  @HttpCode(HttpStatus.FORBIDDEN)
+  @ApiOperation({ summary: 'Assign Event Manager to Event Request', description: 'Disabled - Event assignment is now managed by the Event Management Head' })
   @ApiParam({ name: 'id', description: 'Event Request ID' })
-  @ApiResponse({ status: 200, description: 'Event Manager assigned successfully' })
-  @ApiResponse({ status: 400, description: 'Manager unavailable or invalid role' })
-  async assignManager(@Param('id') id: string, @Body() body: any) {
-    const managerUserId = body.managerUserId || body.eventManagerUserId;
-    const onsiteCoordinatorUserId = body.onsiteCoordinatorUserId;
-    return this.revenueService.assignManager(id, managerUserId, onsiteCoordinatorUserId);
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async assignManager() {
+    throw new ForbiddenException('Access denied. Event assignment is now managed by the Event Management Head.');
+  }
+
+  @Post('event-requests/:id/escalate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Escalate Accepted Event to Event Management Department Head',
+    description: 'Revenue Team escalates an accepted commercial event to Event Management for operational assignment',
+  })
+  @ApiParam({ name: 'id', description: 'Event Request ID' })
+  @ApiResponse({ status: 200, description: 'Event escalated successfully' })
+  @ApiResponse({ status: 400, description: 'Quotation not accepted or already escalated' })
+  @ApiResponse({ status: 403, description: 'Forbidden' })
+  async escalateEvent(@Param('id') id: string, @Req() req: any) {
+    return this.revenueService.escalateToManagement(id, req.user);
+  }
+
+  @Post('events/:id/escalate')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Escalate Accepted Event to Event Management Department Head (Alias)',
+    description: 'Alias endpoint for escalating an accepted commercial event to Event Management',
+  })
+  @ApiParam({ name: 'id', description: 'Event Request ID' })
+  @ApiResponse({ status: 200, description: 'Event escalated successfully' })
+  async escalateEventAlias(@Param('id') id: string, @Req() req: any) {
+    return this.revenueService.escalateToManagement(id, req.user);
   }
 }

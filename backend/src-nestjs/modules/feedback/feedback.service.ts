@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -58,7 +59,7 @@ export class FeedbackService {
       userId,
     );
     if (existingFeedback) {
-      throw new BadRequestException(
+      throw new ConflictException(
         'You have already submitted feedback for this event.',
       );
     }
@@ -75,6 +76,7 @@ export class FeedbackService {
       });
 
       return {
+        success: true,
         message: 'Thank you! Your feedback has been submitted successfully.',
         feedbackId,
       };
@@ -83,12 +85,42 @@ export class FeedbackService {
         e.code === 'SQLITE_CONSTRAINT' ||
         (e.message && e.message.includes('UNIQUE'))
       ) {
-        throw new BadRequestException(
+        throw new ConflictException(
           'You have already submitted feedback for this event.',
         );
       }
       throw e;
     }
+  }
+
+  getAttendeeEventFeedbackStatus(eventId: string, user: any) {
+    const userId = user.id;
+    const event = this.feedbackRepo.findEventById(eventId);
+    const eventReq = this.feedbackRepo.findEventRequestById(eventId);
+
+    if (!event && !eventReq) {
+      throw new NotFoundException('Event not found.');
+    }
+
+    const ticket = this.feedbackRepo.findConfirmedTicketByUserAndEvent(userId, eventId);
+    const isClient = eventReq && eventReq.userId === userId;
+    const isEligible = Boolean(ticket || isClient);
+
+    const existing = this.feedbackRepo.findFeedbackByEventAndUser(eventId, userId);
+
+    return {
+      eventId,
+      hasSubmitted: Boolean(existing),
+      isEligible,
+      feedback: existing
+        ? {
+            id: existing.id,
+            rating: existing.rating,
+            comment: existing.comment,
+            createdAt: existing.createdAt,
+          }
+        : null,
+    };
   }
 
   // Feedback Survey Polls Methods
@@ -340,7 +372,7 @@ export class FeedbackService {
 
     const existing = this.feedbackRepo.findExistingResponse(pollId, user.id);
     if (existing) {
-      throw new BadRequestException(
+      throw new ConflictException(
         'You have already submitted feedback for this event.',
       );
     }
@@ -378,7 +410,7 @@ export class FeedbackService {
         (err.message.includes('UNIQUE constraint failed') ||
           err.message.includes('SQLITE_CONSTRAINT'))
       ) {
-        throw new BadRequestException(
+        throw new ConflictException(
           'You have already submitted feedback for this event.',
         );
       }

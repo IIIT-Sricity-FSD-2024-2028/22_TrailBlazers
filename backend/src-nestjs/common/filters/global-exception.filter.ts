@@ -35,7 +35,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         if (Array.isArray(resPayload.message)) {
           message = resPayload.message.join('; ');
         } else {
-          message = resPayload.error || resPayload.message || message;
+          message = resPayload.message || resPayload.error || message;
         }
       }
     } else if (exception instanceof Error) {
@@ -62,6 +62,7 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     // Preserve original Express API error response contract & custom payload properties
     response.status(status).json({
       error: message,
+      message: message,
       ...customPayload,
       requestId,
     });

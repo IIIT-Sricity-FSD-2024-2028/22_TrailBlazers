@@ -149,6 +149,7 @@ export class AnalyticsRepository {
       .find<any>('event_feedback', (f) => f.eventId === eventId)
       .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
       .map((f) => ({
+        userId: f.userId,
         rating: f.rating,
         comment: f.comment,
         createdAt: f.createdAt,
@@ -243,5 +244,29 @@ export class AnalyticsRepository {
       details: log.details || null,
       createdAt: nowStr,
     });
+  }
+
+  saveAnalyticsReport(report: any) {
+    const existing = this.store.findOne<any>(
+      'event_analytics_reports',
+      (r) => r.eventId === report.eventId,
+    );
+    if (existing) {
+      return this.store.update('event_analytics_reports', existing.id, report);
+    }
+    return this.store.create('event_analytics_reports', report);
+  }
+
+  findAnalyticsReportByEventId(eventId: string): any | null {
+    if (!eventId) return null;
+    return this.store.findOne<any>(
+      'event_analytics_reports',
+      (r) => r.eventId === eventId,
+    );
+  }
+
+  findAnalyticsReportById(id: string): any | null {
+    if (!id) return null;
+    return this.store.findById<any>('event_analytics_reports', id);
   }
 }

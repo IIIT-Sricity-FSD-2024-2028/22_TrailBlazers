@@ -32,13 +32,29 @@ import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 export class EventsFeedbackController {
   constructor(private readonly feedbackService: FeedbackService) {}
 
+  @Get(':id/feedback/status')
+  @ApiOperation({
+    summary: 'Get Attendee Feedback Status',
+    description: 'Check whether the authenticated attendee has already submitted feedback for this event',
+  })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Attendee feedback status returned' })
+  @ApiResponse({ status: 404, description: 'Event not found' })
+  async getFeedbackStatus(
+    @Param('id') id: string,
+    @Req() req: any,
+  ) {
+    return this.feedbackService.getAttendeeEventFeedbackStatus(id, req.user);
+  }
+
   @Post(':id/feedback')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Submit Event Rating Feedback', description: 'Submit 1-5 star rating and comment for a completed event' })
   @ApiParam({ name: 'id', description: 'Event ID' })
   @ApiResponse({ status: 201, description: 'Feedback submitted successfully' })
-  @ApiResponse({ status: 400, description: 'Invalid rating or feedback already submitted' })
+  @ApiResponse({ status: 400, description: 'Invalid rating' })
   @ApiResponse({ status: 403, description: 'Access denied. Only registered attendees can submit feedback' })
+  @ApiResponse({ status: 409, description: 'Conflict. You have already submitted feedback for this event' })
   async submitEventFeedback(
     @Param('id') id: string,
     @Body() dto: SubmitEventFeedbackDto,

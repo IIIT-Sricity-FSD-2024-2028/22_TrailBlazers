@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InMemoryStore } from './in-memory.store';
 import { NestLoggerService } from '../common/logging/logger.service';
+import {
+  getEventManagerMaxAssignedEvents,
+  getEventManagerWorkloadThreshold,
+  getEventManagerMaxCapacity,
+} from '../common/constants/event-manager-capacity.constant';
 
 @Injectable()
 export class RevenueRepository {
@@ -30,19 +35,51 @@ export class RevenueRepository {
       (q) => q.status === 'ACCEPTED',
     );
 
-    const qvAll = this.store.findAll<any>('quotation_versions');
+    const allQuotations = this.store.findAll<any>('quotations');
     let totalQuotationValue = 0;
     let acceptedQuotationValue = 0;
 
-    for (const qv of qvAll) {
-      const amt = Number(qv.totalAmount) || 0;
-      if (qv.status !== 'REJECTED') {
+    for (const q of allQuotations) {
+      const qv = this.store.findOne<any>(
+        'quotation_versions',
+        (v) => v.quotationId === q.id && Number(v.versionNumber) === Number(q.currentVersion),
+      );
+      const amt = Number(qv?.totalAmount || q.totalAmount) || 0;
+      if (q.status !== 'REJECTED') {
         totalQuotationValue += amt;
       }
-      if (qv.status === 'ACCEPTED') {
+      if (q.status === 'ACCEPTED') {
         acceptedQuotationValue += amt;
       }
     }
+
+    const allTickets = this.store.findAll<any>('tickets');
+    let totalTicketSalesRevenue = 0;
+    let totalTicketsSold = 0;
+    let totalRefunds = 0;
+
+    for (const t of allTickets) {
+      const regStatus = (t.registrationStatus || t.status || '').toUpperCase();
+      const payStatus = (t.paymentStatus || '').toUpperCase();
+
+      if (regStatus === 'REFUNDED' || payStatus === 'REFUNDED') {
+        const qty = Number(t.quantity) || 1;
+        const amt = Number(t.subtotal || t.totalAmount || (qty * (t.unitPrice || 0))) || 0;
+        totalRefunds += amt;
+        continue;
+      }
+
+      if (regStatus === 'CANCELLED' || payStatus === 'FAILED' || payStatus === 'PENDING') {
+        continue;
+      }
+
+      const qty = Number(t.quantity) || 1;
+      const amt = Number(t.subtotal || t.totalAmount || (qty * (t.unitPrice || 0))) || 0;
+      totalTicketsSold += qty;
+      totalTicketSalesRevenue += amt;
+    }
+
+    const netTicketSalesRevenue = Math.max(0, totalTicketSalesRevenue - totalRefunds);
 
     return {
       newRequests,
@@ -51,6 +88,120 @@ export class RevenueRepository {
       acceptedQuotes,
       totalQuotationValue,
       acceptedQuotationValue,
+      totalTicketSalesRevenue,
+      totalTicketsSold,
+      totalRefunds,
+      netTicketSalesRevenue,
+      totalCombinedRevenue: acceptedQuotationValue + netTicketSalesRevenue,
+    };
+  }
+
+  calculateEventRevenue(r: any) {
+    const eventId = r.id;
+    const eventName = (r.eventName || r.name || '').toLowerCase().trim();
+
+    // 1. Ticket Price
+    const ticketPrice = Number(r.ticketPrice) || 0;
+
+    // 2. Capacity
+    const totalCapacity = Number(r.totalTickets || r.expectedAttendance) || 0;
+
+    // 3. Dynamic Registered Tickets in Store (Actual Confirmed Tickets)
+    const allTickets = this.store.findAll<any>('tickets');
+    const matchingTickets = allTickets.filter((t) => {
+      if (t.eventId === eventId) return true;
+      if (t.eventId && (t.eventId === r.eventId || t.eventId === r.requestId)) return true;
+      const linkedEvent = this.store.findById<any>('events', t.eventId);
+      if (linkedEvent && (linkedEvent.name || '').toLowerCase().trim() === eventName) return true;
+      const linkedReq = this.store.findById<any>('event_requests', t.eventId);
+      if (linkedReq && (linkedReq.eventName || '').toLowerCase().trim() === eventName) return true;
+      return false;
+    });
+
+    let ticketsSold = 0;
+    let ticketSalesRevenue = 0;
+    let refunds = 0;
+
+    for (const t of matchingTickets) {
+      const regStatus = (t.registrationStatus || t.status || '').toUpperCase();
+      const payStatus = (t.paymentStatus || '').toUpperCase();
+
+      if (regStatus === 'REFUNDED' || payStatus === 'REFUNDED') {
+        const qty = Number(t.quantity) || 1;
+        const unitP = Number(t.unitPrice) || ticketPrice;
+        const subtotal = Number(t.subtotal || t.totalAmount) || (qty * unitP);
+        refunds += subtotal;
+        continue;
+      }
+
+      if (regStatus === 'CANCELLED' || payStatus === 'FAILED' || payStatus === 'PENDING') {
+        continue;
+      }
+
+      // Valid confirmed sale
+      const qty = Number(t.quantity) || 1;
+      const unitP = Number(t.unitPrice) || ticketPrice;
+      const subtotal = Number(t.subtotal || t.totalAmount) || (qty * unitP);
+      ticketsSold += qty;
+      ticketSalesRevenue += subtotal;
+    }
+
+    const netTicketSalesRevenue = Math.max(0, ticketSalesRevenue - refunds);
+
+    // 4. Commercial Contract / Quotation Value
+    let quotationValue = 0;
+    let quotationId = null;
+    let currentVersion = null;
+    let quotationStatus = null;
+    let acceptedContractValue = 0;
+    let clientPaymentsReceived = 0;
+
+    const q = this.store.findOne<any>('quotations', (q) => q.eventRequestId === eventId || q.eventId === eventId);
+    if (q) {
+      quotationId = q.id;
+      currentVersion = q.currentVersion;
+      quotationStatus = q.status;
+      const qv = this.store.findOne<any>(
+        'quotation_versions',
+        (v) => v.quotationId === q.id && Number(v.versionNumber) === Number(q.currentVersion),
+      );
+      if (qv && qv.totalAmount) {
+        quotationValue = Number(qv.totalAmount) || 0;
+      } else if (q.totalAmount) {
+        quotationValue = Number(q.totalAmount) || 0;
+      }
+
+      if (q.status === 'ACCEPTED' || r.status === 'COMMERCIAL_APPROVED') {
+        acceptedContractValue = quotationValue;
+      }
+
+      const qPayments = this.store.find<any>(
+        'payments',
+        (p) => (p.quotationId === q.id || p.eventRequestId === eventId) && p.status === 'SUCCESS',
+      );
+      clientPaymentsReceived = qPayments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+    }
+
+    const outstandingClientBalance = Math.max(0, acceptedContractValue - clientPaymentsReceived);
+    const soldPercentage = totalCapacity > 0 ? Math.min(100, Math.round((ticketsSold / totalCapacity) * 100)) : 0;
+
+    return {
+      quotationId,
+      currentVersion,
+      quotationStatus,
+      quotationValue,
+      acceptedContractValue,
+      clientPaymentsReceived,
+      outstandingClientBalance,
+      commercialRevenue: acceptedContractValue,
+      ticketPrice,
+      totalCapacity,
+      ticketsSold,
+      ticketSalesRevenue,
+      refunds,
+      netTicketSalesRevenue,
+      totalEventRevenue: acceptedContractValue + ticketSalesRevenue,
+      soldPercentage,
     };
   }
 
@@ -58,24 +209,17 @@ export class RevenueRepository {
     const reqs = this.store.findAll<any>('event_requests');
 
     const mapped = reqs.map((r) => {
-      const q = this.store.findOne<any>('quotations', (q) => q.eventRequestId === r.id);
-      let quotationValue = null;
-      if (q) {
-        const qv = this.store.findOne<any>(
-          'quotation_versions',
-          (v) => v.quotationId === q.id && Number(v.versionNumber) === Number(q.currentVersion),
-        );
-        if (qv) {
-          quotationValue = qv.totalAmount;
-        }
+      const revenueData = this.calculateEventRevenue(r);
+      let eventManagerName = r.eventManagerName || null;
+      if (!eventManagerName && r.eventManagerUserId) {
+        const mgr = this.store.findById<any>('users', r.eventManagerUserId);
+        eventManagerName = mgr ? mgr.name : null;
       }
 
       return {
         ...r,
-        quotationId: q ? q.id : null,
-        currentVersion: q ? q.currentVersion : null,
-        quotationStatus: q ? q.status : null,
-        quotationValue,
+        ...revenueData,
+        eventManagerName,
       };
     });
 
@@ -109,8 +253,16 @@ export class RevenueRepository {
     return reqs
       .map((r) => {
         const user = this.store.findById<any>('users', r.userId);
+        const revenueData = this.calculateEventRevenue(r);
+        let eventManagerName = r.eventManagerName || null;
+        if (!eventManagerName && r.eventManagerUserId) {
+          const mgr = this.store.findById<any>('users', r.eventManagerUserId);
+          eventManagerName = mgr ? mgr.name : null;
+        }
         return {
           ...r,
+          ...revenueData,
+          eventManagerName,
           clientName: user ? user.name : null,
         };
       })
@@ -123,8 +275,14 @@ export class RevenueRepository {
     if (!r) return null;
 
     const user = this.store.findById<any>('users', r.userId);
+    let eventManagerName = r.eventManagerName || null;
+    if (!eventManagerName && r.eventManagerUserId) {
+      const mgr = this.store.findById<any>('users', r.eventManagerUserId);
+      eventManagerName = mgr ? mgr.name : null;
+    }
     return {
       ...r,
+      eventManagerName,
       clientName: user ? user.name : null,
       clientEmail: user ? user.email : null,
       clientOrg: user ? user.organization : null,
@@ -215,6 +373,8 @@ export class RevenueRepository {
 
   findEventManagersWithAvailability(targetEventDate?: string, startTime?: string, endTime?: string) {
     const managers = this.store.find<any>('users', (u) => u.role === 'EVENT_MANAGER');
+    const maxCapacity = getEventManagerMaxAssignedEvents();
+    const workloadThreshold = getEventManagerWorkloadThreshold();
 
     const timeToMinutes = (tStr?: string) => {
       if (!tStr) return null;
@@ -243,10 +403,31 @@ export class RevenueRepository {
       );
 
       const activeAssignmentsCount = assignedReqs.length;
+      const openIssuesCount = this.store.find<any>(
+        'event_operational_issues',
+        (i) => i.assignedUserId === m.id && i.status !== 'RESOLVED',
+      ).length;
+      const quotationsCount = this.store.find<any>(
+        'quotations',
+        (q) =>
+          (q.assignedRevenueUserId === m.id || q.createdByUserId === m.id) &&
+          (q.status === 'DRAFT' || q.status === 'FINALIZED' || q.status === 'SENT'),
+      ).length;
+      const totalWorkload = activeAssignmentsCount + openIssuesCount + quotationsCount;
+
       let isAvailable = true;
       let availabilityReason = 'Available for assignment';
 
-      if (targetEventDate) {
+      // 1. Capacity Rule B (Maximum Capacity): manager is Busy when active events >= maxCapacity (7)
+      if (activeAssignmentsCount >= maxCapacity) {
+        isAvailable = false;
+        availabilityReason = `Event limit reached (${activeAssignmentsCount}/${maxCapacity} active events)`;
+      } else if (totalWorkload >= workloadThreshold) {
+        // 2. Capacity Rule A (Workload Threshold): manager is Busy when totalWorkload >= workloadThreshold (15)
+        isAvailable = false;
+        availabilityReason = `Workload threshold reached (${totalWorkload}/${workloadThreshold} workload points)`;
+      } else if (targetEventDate) {
+        // 3. Date / Time Slot Conflict Rule
         const sameDayReqs = assignedReqs.filter((r) => r.eventDate === targetEventDate);
 
         if (sameDayReqs.length > 0) {
@@ -274,6 +455,10 @@ export class RevenueRepository {
         }
       }
 
+      if (isAvailable) {
+        availabilityReason = `Available (${activeAssignmentsCount}/${maxCapacity} active events, ${totalWorkload}/${workloadThreshold} workload)`;
+      }
+
       return {
         id: m.id,
         name: m.name,
@@ -281,6 +466,7 @@ export class RevenueRepository {
         department: m.department || 'Event Operations',
         organization: m.organization || 'Wavevents',
         activeAssignmentsCount,
+        maxCapacity,
         isAvailable,
         availabilityStatus: isAvailable ? 'Available' : 'Busy',
         availabilityReason,

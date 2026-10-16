@@ -3,12 +3,12 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
-} from '@nestjs/common';
-import * as crypto from 'crypto';
-import { TicketsRepository } from '../../repositories/tickets.repository';
-import { InvitationsRepository } from '../../repositories/invitations.repository';
-import { NestLoggerService } from '../../common/logging/logger.service';
-import { RegisterTicketDto } from './dto/register-ticket.dto';
+} from "@nestjs/common";
+import * as crypto from "crypto";
+import { TicketsRepository } from "../../repositories/tickets.repository";
+import { InvitationsRepository } from "../../repositories/invitations.repository";
+import { NestLoggerService } from "../../common/logging/logger.service";
+import { RegisterTicketDto } from "./dto/register-ticket.dto";
 
 @Injectable()
 export class TicketsService {
@@ -20,55 +20,75 @@ export class TicketsService {
 
   registerTicket(dto: RegisterTicketDto, user: any) {
     const userId = user.id;
-    const { eventId, quantity, paymentMethod, inviteCode, invitationToken } = dto;
+    const { eventId, quantity, paymentMethod, inviteCode, invitationToken } =
+      dto;
     const rawInviteCode = inviteCode || (dto as any).invitationCode;
 
     // 1. Check user email verification status
     const dbUser = this.repository.findUserVerifiedStatus(userId);
     if (!dbUser || !dbUser.emailVerified) {
       throw new ForbiddenException(
-        'Email verification is required before registering for events. Please verify your email address.',
+        "Email verification is required before registering for events. Please verify your email address.",
       );
     }
 
     if (!eventId || !quantity || quantity <= 0) {
       throw new BadRequestException(
-        'Valid event ID and a quantity of at least 1 ticket are required.',
+        "Valid event ID and a quantity of at least 1 ticket are required.",
       );
     }
 
     // 2. Lookup Event
     const event = this.repository.findEventById(eventId);
     if (!event) {
-      throw new NotFoundException('Event not found.');
+      throw new NotFoundException("Event not found.");
+    }
+
+    // Check Event Lifecycle Status (PUBLISHED / COMPLETED / CANCELLED)
+    if (event.status === "COMPLETED") {
+      throw new BadRequestException(
+        "This event has already concluded and is no longer accepting ticket registrations.",
+      );
+    }
+    if (event.status === "CANCELLED") {
+      throw new BadRequestException(
+        "This event has been cancelled and tickets cannot be booked.",
+      );
     }
 
     // Check Event Registration Status (OPEN / PAUSED / CLOSED)
     const eventReq = this.repository.findEventById(eventId); // or findEventRequestById
-    const eventReqFallback = (this.repository as any).findEventRequestById ? (this.repository as any).findEventRequestById(eventId) : null;
-    const rawStatus = event.registrationStatus || (eventReqFallback ? eventReqFallback.registrationStatus : 'OPEN') || 'OPEN';
+    const eventReqFallback = (this.repository as any).findEventRequestById
+      ? (this.repository as any).findEventRequestById(eventId)
+      : null;
+    const rawStatus =
+      event.registrationStatus ||
+      (eventReqFallback ? eventReqFallback.registrationStatus : "OPEN") ||
+      "OPEN";
     const regStatus = String(rawStatus).toUpperCase();
 
-    if (regStatus === 'PAUSED') {
+    if (regStatus === "PAUSED") {
       throw new BadRequestException(
-        'Registration for this event is currently PAUSED by the Event Manager. Please try again later.',
+        "Registration for this event is currently PAUSED by the Event Manager. Please try again later.",
       );
     }
-    if (regStatus === 'CLOSED') {
-      throw new BadRequestException(
-        'Registration for this event is CLOSED.',
-      );
+    if (regStatus === "CLOSED") {
+      throw new BadRequestException("Registration for this event is CLOSED.");
     }
 
     let validatedInvitationId: string | null = null;
 
     // 3. Closed Event Private Invitation Validation
-    if (event.type === 'CLOSED' || event.accessType === 'CLOSED' || event.isPrivate) {
-      const codeOrToken = (invitationToken || rawInviteCode || '').trim();
+    if (
+      event.type === "CLOSED" ||
+      event.accessType === "CLOSED" ||
+      event.isPrivate
+    ) {
+      const codeOrToken = (invitationToken || rawInviteCode || "").trim();
 
       if (!codeOrToken) {
         throw new ForbiddenException(
-          'Invitation code or token is required to register for this private event.',
+          "Invitation code or token is required to register for this private event.",
         );
       }
 
@@ -80,23 +100,23 @@ export class TicketsService {
       if (inv) {
         inv = this.invitationsRepository.checkAndUpdateExpired(inv);
 
-        if (inv.status === 'revoked') {
+        if (inv.status === "revoked") {
           throw new ForbiddenException(
-            'This invitation has been revoked by the event manager.',
+            "This invitation has been revoked by the event manager.",
           );
         }
 
-        if (inv.status === 'expired') {
-          throw new ForbiddenException('This invitation has expired.');
+        if (inv.status === "expired") {
+          throw new ForbiddenException("This invitation has expired.");
         }
 
-        if (inv.status === 'accepted') {
+        if (inv.status === "accepted") {
           throw new ForbiddenException(
-            'This invitation has already been used to register for this event.',
+            "This invitation has already been used to register for this event.",
           );
         }
 
-        const authEmail = user.email ? user.email.toLowerCase().trim() : '';
+        const authEmail = user.email ? user.email.toLowerCase().trim() : "";
         if (inv.recipientEmail.toLowerCase().trim() !== authEmail) {
           throw new ForbiddenException(
             `This private invitation is issued specifically for ${inv.recipientEmail}. You are currently signed in as ${user.email}.`,
@@ -110,7 +130,7 @@ export class TicketsService {
           codeOrToken.toUpperCase() !== event.inviteCode.toUpperCase()
         ) {
           throw new ForbiddenException(
-            'Invalid invitation code or token for this private event.',
+            "Invalid invitation code or token for this private event.",
           );
         }
       }
@@ -130,26 +150,26 @@ export class TicketsService {
     const totalAmount = subtotal + platformFee;
 
     // 6. ID & Reference Generation
-    const ticketId = 'tkt_' + crypto.randomBytes(8).toString('hex');
+    const ticketId = "tkt_" + crypto.randomBytes(8).toString("hex");
     const ticketNumber =
-      'EVT-2026-' + Math.floor(100000 + Math.random() * 900000);
-    const paymentId = 'pay_' + crypto.randomBytes(8).toString('hex');
+      "EVT-2026-" + Math.floor(100000 + Math.random() * 900000);
+    const paymentId = "pay_" + crypto.randomBytes(8).toString("hex");
     const transactionId =
-      'TXN-2026-' + Math.floor(10000000 + Math.random() * 90000000);
+      "TXN-2026-" + Math.floor(10000000 + Math.random() * 90000000);
 
     const ticketData = {
       id: ticketId,
       ticketNumber,
       userId,
       eventId,
-      ticketType: 'Standard',
+      ticketType: "Standard",
       quantity,
       unitPrice,
       subtotal,
       platformFee,
       totalAmount,
-      paymentStatus: 'CONFIRMED',
-      registrationStatus: 'ACTIVE',
+      paymentStatus: "CONFIRMED",
+      registrationStatus: "ACTIVE",
     };
 
     const paymentData = {
@@ -157,9 +177,9 @@ export class TicketsService {
       ticketId,
       userId,
       amount: totalAmount,
-      paymentMethod: paymentMethod || 'UPI',
+      paymentMethod: paymentMethod || "UPI",
       transactionId,
-      status: 'SUCCESS',
+      status: "SUCCESS",
     };
 
     // 7. Atomic Transaction Execution
@@ -172,18 +192,17 @@ export class TicketsService {
       userId,
     });
 
-    const createdTicket =
-      this.repository.findTicketWithEventDetails(ticketId);
+    const createdTicket = this.repository.findTicketWithEventDetails(ticketId);
 
     return {
-      message: 'Ticket registration and payment confirmed successfully!',
+      message: "Ticket registration and payment confirmed successfully!",
       ticket: createdTicket,
       payment: {
         id: paymentId,
         transactionId,
         amount: totalAmount,
-        paymentMethod: paymentMethod || 'UPI',
-        status: 'SUCCESS',
+        paymentMethod: paymentMethod || "UPI",
+        status: "SUCCESS",
       },
     };
   }
@@ -193,10 +212,11 @@ export class TicketsService {
     return { tickets };
   }
 
+
   getTicketById(id: string, userId: string) {
     const ticket = this.repository.findUserTicketById(id, userId);
     if (!ticket) {
-      throw new NotFoundException('Ticket record not found.');
+      throw new NotFoundException("Ticket record not found.");
     }
     return { ticket };
   }

@@ -1,9 +1,10 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { EventRequestsRepository } from '../../repositories/event-requests.repository';
 import { NotificationHelperService } from '../notifications/notification-helper.service';
 import { NestLoggerService } from '../../common/logging/logger.service';
 import { CreateEventRequestDto } from './dto/create-event-request.dto';
+import { AnalyticsService } from '../analytics/analytics.service';
 
 @Injectable()
 export class EventRequestsService {
@@ -11,6 +12,7 @@ export class EventRequestsService {
     private readonly repository: EventRequestsRepository,
     private readonly notificationHelper: NotificationHelperService,
     private readonly logger: NestLoggerService,
+    private readonly analyticsService: AnalyticsService,
   ) {}
 
   async createEventRequest(dto: CreateEventRequestDto, userId: string) {
@@ -19,22 +21,38 @@ export class EventRequestsService {
       contactEmail,
       eventName,
       category,
-      eventDate,
       venue,
       location,
     } = dto;
+
+    const startDate = (dto.startDate || dto.eventDate || '').trim();
+    const endDate = (dto.endDate || (!dto.startDate && dto.eventDate ? dto.eventDate : '')).trim();
 
     if (
       !organizationName ||
       !contactEmail ||
       !eventName ||
       !category ||
-      !eventDate ||
+      !startDate ||
+      !endDate ||
       !venue ||
       !location
     ) {
       throw new BadRequestException(
-        'Please complete all required fields (Organization, Contact Email, Event Name, Category, Date, Venue, Location).',
+        'Please complete all required fields (Organization, Contact Email, Event Name, Category, Start Date, End Date, Venue, Location).',
+      );
+    }
+
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+      throw new BadRequestException(
+        'Start Date and End Date must be valid dates in YYYY-MM-DD format.',
+      );
+    }
+
+    if (startDate > endDate) {
+      throw new BadRequestException(
+        'Start Date must not be later than End Date (End Date must not be earlier than Start Date).',
       );
     }
 
@@ -52,7 +70,9 @@ export class EventRequestsService {
       description: dto.description,
       agenda: dto.agenda,
       category: dto.category,
-      eventDate: dto.eventDate,
+      startDate,
+      endDate,
+      eventDate: startDate,
       startTime: dto.startTime,
       endTime: dto.endTime,
       venue: dto.venue,
@@ -99,5 +119,52 @@ export class EventRequestsService {
   async getMyEventRequests(userId: string) {
     const requests = this.repository.findRequestsByUserId(userId);
     return { requests };
+  }
+
+  async getEventStats(eventId: string, user: any) {
+    if (!eventId) {
+      throw new BadRequestException('Event ID is required.');
+    }
+
+    let eventReq = this.repository.findRequestById(eventId);
+    if (!eventReq) {
+      const evt = this.repository.findEventById(eventId);
+      if (evt) {
+        eventReq = this.repository.findRequestById(evt.id) || evt;
+      }
+    }
+
+    if (!eventReq) {
+      throw new NotFoundException(`Event with ID ${eventId} not found.`);
+    }
+
+    // Client Authorization and Data Isolation:
+    // A client must only be able to view statistics for events that belong to that client
+    const userRole = (user?.role || '').toUpperCase();
+    const isOwner = eventReq.userId === user?.id || (eventReq as any).organizerUserId === user?.id;
+    const isAdmin = userRole === 'ADMIN' || userRole === 'SUPER_ADMIN';
+    const isAssignedManager = eventReq.eventManagerUserId === user?.id;
+
+    if (!isOwner && !isAdmin && !isAssignedManager) {
+      throw new ForbiddenException(
+        'Access denied. You are not authorized to view statistics for this event.',
+      );
+    }
+
+    const stats = this.repository.calculateEventStats(eventId);
+
+    return {
+      eventId,
+      ticketsSold: stats.ticketsSold,
+      attendeeCheckIns: stats.attendeeCheckIns,
+    };
+  }
+
+  async exportEventAnalytics(eventId: string, user: any) {
+    return this.analyticsService.getEventAnalyticsPdfReport(eventId, user);
+  }
+
+  async getEventReportStatus(eventId: string, user: any) {
+    return this.analyticsService.getEventReportStatus(eventId, user);
   }
 }

@@ -1,5 +1,5 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { InMemoryStore } from './in-memory.store';
+import { Injectable, BadRequestException } from "@nestjs/common";
+import { InMemoryStore } from "./in-memory.store";
 
 @Injectable()
 export class TicketsRepository {
@@ -7,19 +7,19 @@ export class TicketsRepository {
 
   findUserVerifiedStatus(userId: string) {
     if (!userId) return null;
-    if (userId.startsWith('eval_')) {
+    if (userId.startsWith("eval_")) {
       return { emailVerified: 1 };
     }
-    const u = this.store.findById<any>('users', userId);
+    const u = this.store.findById<any>("users", userId);
     return u ? { emailVerified: u.emailVerified } : null;
   }
 
   findEventById(eventId: string) {
     if (!eventId) return null;
-    const event = this.store.findById<any>('events', eventId);
+    const event = this.store.findById<any>("events", eventId);
     if (event) return event;
 
-    const req = this.store.findById<any>('event_requests', eventId);
+    const req = this.store.findById<any>("event_requests", eventId);
     if (req) {
       return {
         id: req.id,
@@ -29,16 +29,16 @@ export class TicketsRepository {
         category: req.category,
         date: req.eventDate,
         eventDate: req.eventDate,
-        startTime: req.startTime || '09:00 AM',
-        endTime: req.endTime || '05:00 PM',
+        startTime: req.startTime || "09:00 AM",
+        endTime: req.endTime || "05:00 PM",
         venue: req.venue,
         location: req.venue,
-        type: req.eventType || 'PUBLIC',
-        registrationStatus: req.registrationStatus || 'OPEN',
+        type: req.eventType || "PUBLIC",
+        registrationStatus: req.registrationStatus || "OPEN",
         ticketPrice: req.ticketPrice || 0,
         totalTickets: req.expectedAttendance || 100,
         availableTickets: req.expectedAttendance || 100,
-        status: 'PUBLISHED',
+        status: "PUBLISHED",
         description: req.additionalNotes || req.eventName,
         bannerUrl: req.bannerUrl || null,
         isEventRequest: true,
@@ -86,47 +86,49 @@ export class TicketsRepository {
       userId,
     } = params;
 
-    let event = this.store.findById<any>('events', eventId);
+    let event = this.store.findById<any>("events", eventId);
     let isRequestEvent = false;
     if (!event) {
-      event = this.store.findById<any>('event_requests', eventId);
+      event = this.store.findById<any>("event_requests", eventId);
       isRequestEvent = true;
     }
 
     if (!event) {
-      throw new BadRequestException('Event not found.');
+      throw new BadRequestException("Event not found.");
     }
 
-    const availableTickets = Number(event.availableTickets || event.expectedAttendance || 100);
+    const availableTickets = Number(
+      event.availableTickets || event.expectedAttendance || 100,
+    );
     if (availableTickets < quantity) {
       throw new BadRequestException(
-        'Insufficient ticket availability. The event has sold out or does not have enough remaining tickets.',
+        "Insufficient ticket availability. The event has sold out or does not have enough remaining tickets.",
       );
     }
 
-    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const nowStr = new Date().toISOString().replace("T", " ").substring(0, 19);
 
     // 1. Insert Ticket
-    this.store.create('tickets', {
+    this.store.create("tickets", {
       ...ticket,
       createdAt: nowStr,
       updatedAt: nowStr,
     });
 
     // 2. Insert Payment
-    this.store.create('payments', {
+    this.store.create("payments", {
       ...payment,
       createdAt: nowStr,
     });
 
     // 3. Decrement Available Tickets
     if (isRequestEvent) {
-      this.store.update<any>('event_requests', eventId, {
+      this.store.update<any>("event_requests", eventId, {
         expectedAttendance: Math.max(0, availableTickets - quantity),
         updatedAt: nowStr,
       });
     } else {
-      this.store.update<any>('events', eventId, {
+      this.store.update<any>("events", eventId, {
         availableTickets: Math.max(0, availableTickets - quantity),
         updatedAt: nowStr,
       });
@@ -134,8 +136,8 @@ export class TicketsRepository {
 
     // 4. Update Invitation status to accepted if invitation record was used
     if (validatedInvitationId) {
-      this.store.update<any>('event_invitations', validatedInvitationId, {
-        status: 'accepted',
+      this.store.update<any>("event_invitations", validatedInvitationId, {
+        status: "accepted",
         usedAt: nowStr,
         usedByUserId: userId,
         updatedAt: nowStr,
@@ -145,67 +147,97 @@ export class TicketsRepository {
 
   findTicketWithEventDetails(ticketId: string) {
     if (!ticketId) return null;
-    const t = this.store.findById<any>('tickets', ticketId);
+    const t = this.store.findById<any>("tickets", ticketId);
     if (!t) return null;
 
-    const e = this.store.findById<any>('events', t.eventId) || this.store.findById<any>('event_requests', t.eventId);
+    const e =
+      this.store.findById<any>("events", t.eventId) ||
+      this.store.findById<any>("event_requests", t.eventId);
     return {
       ...t,
-      eventName: e ? (e.name || e.eventName) : null,
-      eventDate: e ? (e.date || e.eventDate) : null,
+      eventName: e ? e.name || e.eventName : null,
+      eventDate: e ? e.date || e.eventDate : null,
       startTime: e ? e.startTime : null,
       venue: e ? e.venue : null,
-      location: e ? (e.location || e.venue) : null,
+      location: e ? e.location || e.venue : null,
       organizationName: e ? e.organizationName : null,
       bannerUrl: e ? e.bannerUrl : null,
     };
   }
 
+  totalTicketsPurchased(): number {
+    const tickets = this.store.findAll("tickets");
+    const results = tickets.reduce((total, result) => {
+      return total + result.quantity;
+    });
+    return results;
+  }
+
   findUserTickets(userId: string) {
     if (!userId) return [];
-    const tkts = this.store.find<any>('tickets', (t) => t.userId === userId);
+    const tkts = this.store.find<any>("tickets", (t) => t.userId === userId);
 
     const mapped = tkts.map((t) => {
-      const e = this.store.findById<any>('events', t.eventId) || this.store.findById<any>('event_requests', t.eventId);
+      const e =
+        this.store.findById<any>("events", t.eventId) ||
+        this.store.findById<any>("event_requests", t.eventId);
+
+      const candidateIds = new Set<string>();
+      if (t.eventId) candidateIds.add(t.eventId);
+      if (e) {
+        if (e.id) candidateIds.add(e.id);
+        if (e.eventRequestId) candidateIds.add(e.eventRequestId);
+      }
+
+      const hasFeedback = Boolean(
+        this.store.findOne<any>(
+          "event_feedback",
+          (f) => f.userId === userId && candidateIds.has(f.eventId),
+        ),
+      );
+
       return {
         ...t,
-        eventName: e ? (e.name || e.eventName) : null,
-        eventDate: e ? (e.date || e.eventDate) : null,
+        eventName: e ? e.name || e.eventName : null,
+        eventDate: e ? e.date || e.eventDate : null,
         startTime: e ? e.startTime : null,
         endTime: e ? e.endTime : null,
         venue: e ? e.venue : null,
-        location: e ? (e.location || e.venue) : null,
+        location: e ? e.location || e.venue : null,
         organizationName: e ? e.organizationName : null,
         bannerUrl: e ? e.bannerUrl : null,
         category: e ? e.category : null,
+        hasFeedbackSubmitted: hasFeedback,
       };
     });
 
     return mapped.sort((a, b) =>
-      (b.createdAt || '').localeCompare(a.createdAt || ''),
+      (b.createdAt || "").localeCompare(a.createdAt || ""),
     );
   }
 
   findUserTicketById(id: string, userId: string) {
     if (!id || !userId) return null;
     const t = this.store.findOne<any>(
-      'tickets',
+      "tickets",
       (t) => t.id === id && t.userId === userId,
     );
     if (!t) return null;
 
-    const e = this.store.findById<any>('events', t.eventId) || this.store.findById<any>('event_requests', t.eventId);
+    const e =
+      this.store.findById<any>("events", t.eventId) ||
+      this.store.findById<any>("event_requests", t.eventId);
     return {
       ...t,
-      eventName: e ? (e.name || e.eventName) : null,
-      eventDate: e ? (e.date || e.eventDate) : null,
+      eventName: e ? e.name || e.eventName : null,
+      eventDate: e ? e.date || e.eventDate : null,
       startTime: e ? e.startTime : null,
       endTime: e ? e.endTime : null,
       venue: e ? e.venue : null,
-      location: e ? (e.location || e.venue) : null,
+      location: e ? e.location || e.venue : null,
       organizationName: e ? e.organizationName : null,
       bannerUrl: e ? e.bannerUrl : null,
-      description: e ? (e.description || e.additionalNotes) : null,
+      description: e ? e.description || e.additionalNotes : null,
     };
   }
 }

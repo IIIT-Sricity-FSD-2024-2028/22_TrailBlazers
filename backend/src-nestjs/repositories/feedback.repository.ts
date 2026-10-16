@@ -38,6 +38,28 @@ export interface FeedbackQuestionRow {
 export class FeedbackRepository {
   constructor(private readonly store: InMemoryStore) {}
 
+  resolveCandidateEventIds(eventId: string): Set<string> {
+    const candidateIds = new Set<string>();
+    if (!eventId) return candidateIds;
+    candidateIds.add(eventId);
+
+    const event = this.store.findById<any>('events', eventId);
+    if (event && event.eventRequestId) {
+      candidateIds.add(event.eventRequestId);
+    }
+
+    const eventReq = this.store.findById<any>('event_requests', eventId);
+    if (eventReq) {
+      const linkedEvent = this.store.findOne<any>(
+        'events',
+        (e) => e.eventRequestId === eventReq.id,
+      );
+      if (linkedEvent) candidateIds.add(linkedEvent.id);
+    }
+
+    return candidateIds;
+  }
+
   // Core Event Feedback methods
   findEventById(id: string): any {
     if (!id) return null;
@@ -51,13 +73,17 @@ export class FeedbackRepository {
 
   findConfirmedTicketByUserAndEvent(userId: string, eventId: string): any {
     if (!userId || !eventId) return null;
+    const candidates = this.resolveCandidateEventIds(eventId);
     return (
       this.store.findOne<any>(
         'tickets',
         (t) =>
           t.userId === userId &&
-          t.eventId === eventId &&
-          t.paymentStatus === 'CONFIRMED',
+          candidates.has(t.eventId) &&
+          (t.paymentStatus === 'CONFIRMED' ||
+            t.paymentStatus === 'SUCCESS' ||
+            t.registrationStatus === 'CONFIRMED' ||
+            t.registrationStatus === 'ACTIVE'),
       ) || null
     );
   }
@@ -67,10 +93,11 @@ export class FeedbackRepository {
     userId: string,
   ): EventFeedbackRow | null {
     if (!eventId || !userId) return null;
+    const candidates = this.resolveCandidateEventIds(eventId);
     return (
       this.store.findOne<EventFeedbackRow>(
         'event_feedback',
-        (f) => f.eventId === eventId && f.userId === userId,
+        (f) => candidates.has(f.eventId) && f.userId === userId,
       ) || null
     );
   }
@@ -82,6 +109,14 @@ export class FeedbackRepository {
     rating: number;
     comment?: string;
   }): void {
+    const existing = this.findFeedbackByEventAndUser(data.eventId, data.userId);
+    if (existing) {
+      const err: any = new Error(
+        'UNIQUE constraint failed: event_feedback.eventId, event_feedback.userId',
+      );
+      err.code = 'SQLITE_CONSTRAINT';
+      throw err;
+    }
     const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
     this.store.create('event_feedback', {
       id: data.id,
@@ -166,7 +201,10 @@ export class FeedbackRepository {
       'tickets',
       (t) => t.userId === userId,
     );
-    const eventIds = new Set(attendeeTickets.map((t) => t.eventId));
+    const eventIds = new Set<string>();
+    attendeeTickets.forEach((t) => {
+      this.resolveCandidateEventIds(t.eventId).forEach((id) => eventIds.add(id));
+    });
     if (eventIds.size === 0) return [];
 
     const polls = this.store.find<FeedbackPollRow>(
@@ -177,11 +215,13 @@ export class FeedbackRepository {
     );
 
     const mapped = polls.map((p) => {
-      const evt = this.store.findById<any>('events', p.eventId);
+      const evt =
+        this.store.findById<any>('events', p.eventId) ||
+        this.store.findById<any>('event_requests', p.eventId);
       return {
         ...p,
-        eventName: evt ? evt.name : null,
-        eventDate: evt ? evt.date : null,
+        eventName: evt ? evt.name || evt.eventName : null,
+        eventDate: evt ? evt.date || evt.eventDate : null,
         venue: evt ? evt.venue : null,
       };
     });
@@ -265,6 +305,14 @@ export class FeedbackRepository {
     pollId: string;
     attendeeId: string;
   }): void {
+    const existing = this.findExistingResponse(data.pollId, data.attendeeId);
+    if (existing) {
+      const err: any = new Error(
+        'UNIQUE constraint failed: feedback_responses.pollId, feedback_responses.attendeeId',
+      );
+      err.code = 'SQLITE_CONSTRAINT';
+      throw err;
+    }
     const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
     this.store.create('feedback_responses', {
       id: data.id,

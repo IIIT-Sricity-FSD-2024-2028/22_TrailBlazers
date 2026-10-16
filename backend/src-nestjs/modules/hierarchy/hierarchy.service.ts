@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { HierarchyRepository } from '../../repositories/hierarchy.repository';
@@ -10,10 +11,18 @@ import { CreateIssueDto } from './dto/create-issue.dto';
 import { AssignIssueDto } from './dto/assign-issue.dto';
 import { EscalateIssueDto } from './dto/escalate-issue.dto';
 import { ResolveIssueDto } from './dto/resolve-issue.dto';
+import { EventAttendeeQueryDto } from './dto/event-attendee-query.dto';
 import { NotificationHelperService } from '../notifications/notification-helper.service';
+import {
+  getEventManagerMaxAssignedEvents,
+  getEventManagerWorkloadThreshold,
+  getEventManagerMaxCapacity,
+} from '../../common/constants/event-manager-capacity.constant';
 
 @Injectable()
 export class HierarchyService {
+  private static readonly assignmentLocks: Set<string> = new Set();
+
   constructor(
     private readonly hierarchyRepo: HierarchyRepository,
     private readonly notificationHelper: NotificationHelperService,
@@ -48,24 +57,7 @@ export class HierarchyService {
           )
           .map((m) => this.hierarchyRepo.enrichMemberActivity(m)),
       },
-      ONSITE_COORDINATION: {
-        id: 'ONSITE_COORDINATION',
-        name: 'Onsite Coordination',
-        manager:
-          allUsers.find(
-            (u) =>
-              u.role === 'DEPARTMENT_MANAGER' &&
-              u.department === 'ONSITE_COORDINATION',
-          ) || null,
-        members: allUsers
-          .filter(
-            (u) =>
-              u.department === 'ONSITE_COORDINATION' &&
-              u.role !== 'DEPARTMENT_MANAGER' &&
-              u.role !== 'SUPER_ADMIN',
-          )
-          .map((m) => this.hierarchyRepo.enrichMemberActivity(m)),
-      },
+
       REVENUE: {
         id: 'REVENUE',
         name: 'Revenue Operations',
@@ -106,8 +98,41 @@ export class HierarchyService {
       allUsers.find((u) => u.role === 'SUPER_ADMIN') || null;
 
     const stats = this.hierarchyRepo.getIssueStats();
+    const staff = this.hierarchyRepo.getDetailedStaffActivity();
 
-    return { superAdmin, departments, stats };
+    const revenueEvents = this.hierarchyRepo.getRevenueEvents();
+    const totalQuotationRevenue = revenueEvents.reduce((acc, evt) => acc + (Number(evt.quotationValue) || 0), 0);
+    const totalTicketSalesRevenue = revenueEvents.reduce((acc, evt) => acc + (Number(evt.ticketSalesRevenue) || 0), 0);
+    const totalCombinedRevenue = totalQuotationRevenue + totalTicketSalesRevenue;
+    const totalTicketsSold = revenueEvents.reduce((acc, evt) => acc + (Number(evt.ticketsSold) || 0), 0);
+    const totalCapacity = revenueEvents.reduce((acc, evt) => acc + (Number(evt.totalCapacity || evt.expectedAttendance) || 0), 0);
+    const overallSoldPercentage = totalCapacity > 0 ? Math.round((totalTicketsSold / totalCapacity) * 100) : 0;
+
+    const revenue = {
+      totalQuotationRevenue,
+      totalTicketSalesRevenue,
+      totalCombinedRevenue,
+      totalTicketsSold,
+      totalCapacity,
+      overallSoldPercentage,
+      events: revenueEvents,
+    };
+
+    return { superAdmin, departments, stats, staff, revenue };
+  }
+
+  getStaffActivity(filters: { search?: string; department?: string; role?: string }) {
+    const staff = this.hierarchyRepo.getDetailedStaffActivity(
+      filters.search,
+      filters.department,
+      filters.role,
+    );
+    return { staff };
+  }
+
+  getRevenueEvents() {
+    const events = this.hierarchyRepo.getRevenueEvents();
+    return { events };
   }
 
   getTeam(user: any) {
@@ -162,7 +187,7 @@ export class HierarchyService {
       targetDept = 'IT_SUPPORT';
     } else {
       const role = (user.role || '').toUpperCase();
-      if (role === 'ONSITE_COORDINATOR') targetDept = 'ONSITE_COORDINATION';
+      if (role === 'ONSITE_COORDINATOR') targetDept = 'EVENT_MANAGEMENT';
       else if (role === 'REVENUE') targetDept = 'REVENUE';
       else if (user.department) targetDept = user.department;
       else targetDept = 'EVENT_MANAGEMENT';
@@ -219,14 +244,100 @@ export class HierarchyService {
       throw new NotFoundException('Issue not found.');
     }
 
-    const targetAssigneeId = dto.assignedUserId || user.id;
-    const assignee = this.hierarchyRepo.getUserById(targetAssigneeId);
+    if (issue.status === 'RESOLVED') {
+      throw new BadRequestException('Resolved issues cannot be assigned or reassigned.');
+    }
 
-    this.hierarchyRepo.assignIssue(id, targetAssigneeId);
+    if (issue.status === 'ESCALATED_TO_ADMIN') {
+      throw new BadRequestException(
+        'Issues escalated to Super Admin cannot be reassigned at department level.',
+      );
+    }
+
+    const userRole = (user.role || '').toUpperCase();
+    const userDept = user.department || '';
+
+    const targetAssigneeId = dto.assignedUserId || user.id;
+
+    // Authorization checks:
+    if (userRole === 'DEPARTMENT_MANAGER') {
+      const issueDept =
+        issue.department ||
+        (issue.issueType === 'TECHNICAL' ? 'IT_SUPPORT' : 'EVENT_MANAGEMENT');
+      if (userDept !== issueDept && issueDept !== 'IT_SUPPORT') {
+        throw new ForbiddenException(
+          'Access denied. You can only assign issues within your department.',
+        );
+      }
+    } else if (userRole === 'IT_SUPPORT') {
+      // IT Support staff can self-assign (take ticket)
+      if (targetAssigneeId !== user.id) {
+        throw new ForbiddenException(
+          'IT Support staff can only take tickets for themselves.',
+        );
+      }
+    } else if (userRole !== 'SUPER_ADMIN') {
+      throw new ForbiddenException(
+        'Access denied. Department Manager authorization required.',
+      );
+    }
+
+    const assignee = this.hierarchyRepo.getUserById(targetAssigneeId);
+    if (!assignee) {
+      throw new NotFoundException('Selected staff member not found.');
+    }
+
+    // Role / department check for assignee
+    const issueDept =
+      issue.department ||
+      (issue.issueType === 'TECHNICAL' ? 'IT_SUPPORT' : 'EVENT_MANAGEMENT');
+    if (issueDept === 'IT_SUPPORT') {
+      if (assignee.department !== 'IT_SUPPORT' && assignee.role !== 'IT_SUPPORT') {
+        throw new BadRequestException(
+          'Selected staff member does not belong to the IT Support department.',
+        );
+      }
+    }
+
+    // Exclude Department Manager from regular staff assignment
+    if (assignee.role === 'DEPARTMENT_MANAGER') {
+      throw new BadRequestException(
+        'Issues must be assigned to staff members, not the Department Manager.',
+      );
+    }
+
+    // Availability validation on backend
+    const memberWithActivity = this.hierarchyRepo.enrichMemberActivity(assignee);
+    if (!memberWithActivity.isAvailable) {
+      throw new BadRequestException(
+        `Staff member ${assignee.name} is currently unavailable (${memberWithActivity.availabilityReason || 'Busy'}).`,
+      );
+    }
+
+    const wasAlreadyAssigned = issue.assignedUserId === targetAssigneeId;
+
+    this.hierarchyRepo.assignIssue(id, targetAssigneeId, assignee.name);
+
+    if (!wasAlreadyAssigned) {
+      try {
+        this.notificationHelper.createNotification({
+          recipientUserId: targetAssigneeId,
+          type: 'OPERATIONAL_ISSUE',
+          title: 'New Issue Assigned',
+          message: `New issue assigned to you: ${issue.category} - "${issue.description.substring(0, 50)}"`,
+          entityType: 'ISSUE',
+          entityId: id,
+        });
+      } catch (e) {}
+    }
+
+    const updatedIssue = this.hierarchyRepo.findIssueById(id);
 
     return {
-      message: `Issue assigned to ${assignee?.name || 'staff member'}.`,
+      success: true,
+      message: `Issue successfully assigned to ${assignee.name}.`,
       status: 'IN_PROGRESS',
+      issue: updatedIssue,
     };
   }
 
@@ -330,5 +441,193 @@ export class HierarchyService {
       message: 'Issue resolved successfully.',
       status: 'RESOLVED',
     };
+  }
+
+  getAwaitingAssignmentEvents(user: any) {
+    const role = (user.role || '').toUpperCase();
+    if (role !== 'SUPER_ADMIN' && !(role === 'DEPARTMENT_MANAGER' && user.department === 'EVENT_MANAGEMENT')) {
+      throw new ForbiddenException('Access denied. Event Management Head authorization required.');
+    }
+    const events = this.hierarchyRepo.getAwaitingAssignmentEvents();
+    return { events };
+  }
+
+  getAssignedEvents(user: any) {
+    const role = (user.role || '').toUpperCase();
+    if (role !== 'SUPER_ADMIN' && !(role === 'DEPARTMENT_MANAGER' && user.department === 'EVENT_MANAGEMENT')) {
+      throw new ForbiddenException('Access denied. Event Management Head authorization required.');
+    }
+    const events = this.hierarchyRepo.getAssignedEvents();
+    return { events };
+  }
+
+  getStaffAvailability(user: any, eventDate?: string, startTime?: string, endTime?: string) {
+    const role = (user.role || '').toUpperCase();
+    if (role !== 'SUPER_ADMIN' && !(role === 'DEPARTMENT_MANAGER' && user.department === 'EVENT_MANAGEMENT')) {
+      throw new ForbiddenException('Access denied. Event Management Head authorization required.');
+    }
+    const staff = this.hierarchyRepo.findStaffWithAvailability(eventDate, startTime, endTime);
+    return { staff };
+  }
+
+  assignStaff(id: string, dto: { eventManagerUserId?: string; onsiteCoordinatorUserId?: string }, user: any) {
+    const role = (user.role || '').toUpperCase();
+    if (role !== 'SUPER_ADMIN' && !(role === 'DEPARTMENT_MANAGER' && user.department === 'EVENT_MANAGEMENT')) {
+      throw new ForbiddenException('Access denied. Event Management Head authorization required.');
+    }
+
+    const existingReq = this.hierarchyRepo.findEventRequestById(id);
+    if (!existingReq) {
+      throw new NotFoundException('Event Request not found.');
+    }
+
+    // Concurrency protection safeguard
+    const lockKey = dto.eventManagerUserId || dto.onsiteCoordinatorUserId;
+    if (lockKey && HierarchyService.assignmentLocks.has(lockKey)) {
+      throw new ConflictException(
+        'A staff assignment operation is currently in progress for this staff member. Please retry momentarily.',
+      );
+    }
+    if (lockKey) {
+      HierarchyService.assignmentLocks.add(lockKey);
+    }
+
+    let eventReq: any;
+    try {
+      // Authoritative Event Manager Capacity & Conflict Validation
+      if (dto.eventManagerUserId) {
+        const managerUser = this.hierarchyRepo.getUserById(dto.eventManagerUserId);
+        if (!managerUser || managerUser.role !== 'EVENT_MANAGER') {
+          throw new BadRequestException('Selected user is not a valid Event Manager.');
+        }
+
+        // Check capacity only if assigning a new manager or reassigning from another manager
+        const isSameManager = existingReq.eventManagerUserId === dto.eventManagerUserId;
+        if (!isSameManager) {
+          const maxCapacity = getEventManagerMaxAssignedEvents(); // Hard Limit: 7
+          const workloadThreshold = getEventManagerWorkloadThreshold(); // Workload Threshold: 15
+          const currentActiveCount = this.hierarchyRepo.getManagerActiveAssignmentsCount(dto.eventManagerUserId, id);
+
+          // Rule B (Maximum Capacity): Hard maximum of 7 assigned active events
+          if (currentActiveCount >= maxCapacity) {
+            throw new BadRequestException(
+              `Event Manager ${managerUser.name} has reached maximum event capacity (${currentActiveCount}/${maxCapacity} active events). Cannot assign additional events.`,
+            );
+          }
+
+          // Rule A (Workload Threshold): Workload threshold of 15
+          const currentWorkload = this.hierarchyRepo.getManagerWorkload(dto.eventManagerUserId, id);
+          if (currentWorkload.totalWorkload >= workloadThreshold) {
+            throw new BadRequestException(
+              `Event Manager ${managerUser.name} has reached the workload threshold (${currentWorkload.totalWorkload}/${workloadThreshold} workload points). Cannot assign additional work.`,
+            );
+          }
+
+          // Validate date/time conflict
+          if (existingReq.eventDate) {
+            const conflict = this.hierarchyRepo.checkScheduleConflict(
+              dto.eventManagerUserId,
+              existingReq.eventDate,
+              existingReq.startTime,
+              existingReq.endTime,
+              id,
+            );
+            if (conflict) {
+              throw new BadRequestException(
+                `Event Manager ${managerUser.name} is already assigned to "${conflict.eventName}" on ${existingReq.eventDate}.`,
+              );
+            }
+          }
+        }
+      }
+
+      // Authoritative Onsite Coordinator Validation
+      if (dto.onsiteCoordinatorUserId) {
+        const coordUser = this.hierarchyRepo.getUserById(dto.onsiteCoordinatorUserId);
+        if (!coordUser || coordUser.role !== 'ONSITE_COORDINATOR') {
+          throw new BadRequestException('Selected user is not a valid Onsite Coordinator.');
+        }
+
+        const isSameCoord = existingReq.onsiteCoordinatorUserId === dto.onsiteCoordinatorUserId;
+        if (!isSameCoord && existingReq.eventDate) {
+          const conflict = this.hierarchyRepo.checkScheduleConflict(
+            dto.onsiteCoordinatorUserId,
+            existingReq.eventDate,
+            existingReq.startTime,
+            existingReq.endTime,
+            id,
+          );
+          if (conflict) {
+            throw new BadRequestException(
+              `Onsite Coordinator ${coordUser.name} is already assigned to "${conflict.eventName}" on ${existingReq.eventDate}.`,
+            );
+          }
+        }
+      }
+
+      eventReq = this.hierarchyRepo.assignStaff(id, dto.eventManagerUserId, dto.onsiteCoordinatorUserId);
+      if (!eventReq) {
+        throw new NotFoundException('Event Request not found.');
+      }
+    } finally {
+      if (lockKey) {
+        HierarchyService.assignmentLocks.delete(lockKey);
+      }
+    }
+
+    try {
+      if (dto.eventManagerUserId) {
+        this.notificationHelper.createNotification({
+          recipientUserId: dto.eventManagerUserId,
+          type: 'EVENT_MANAGER_ASSIGNED',
+          title: 'New Event Assignment',
+          message: `You have been assigned as Event Manager for "${eventReq.eventName}".`,
+          entityType: 'EVENT_REQUEST',
+          entityId: id,
+        });
+      }
+      if (dto.onsiteCoordinatorUserId) {
+        this.notificationHelper.createNotification({
+          recipientUserId: dto.onsiteCoordinatorUserId,
+          type: 'ONSITE_COORDINATOR_ASSIGNED',
+          title: 'New Onsite Assignment',
+          message: `You have been assigned as Onsite Coordinator for "${eventReq.eventName}".`,
+          entityType: 'EVENT_REQUEST',
+          entityId: id,
+        });
+      }
+    } catch (notifErr) {
+      // Ignore notification failures
+    }
+
+    return {
+      success: true,
+      message: 'Staff assigned/reassigned successfully.',
+      eventRequest: eventReq,
+    };
+  }
+
+  async getEventAttendees(
+    eventId: string,
+    query: EventAttendeeQueryDto,
+    user: any,
+  ) {
+    const userRole = (user?.role || '').toUpperCase();
+    if (userRole !== 'SUPER_ADMIN') {
+      throw new ForbiddenException(
+        `Access denied. Super Admin role authorization required. Provided role: '${user?.role || 'NONE'}'.`,
+      );
+    }
+
+    if (!eventId || !eventId.trim()) {
+      throw new BadRequestException('A valid eventId parameter is required.');
+    }
+
+    const data = this.hierarchyRepo.getEventAttendees(eventId, query);
+    if (!data) {
+      throw new NotFoundException(`Event with ID '${eventId}' was not found.`);
+    }
+
+    return data;
   }
 }

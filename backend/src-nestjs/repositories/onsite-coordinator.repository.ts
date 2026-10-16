@@ -5,26 +5,38 @@ import { InMemoryStore } from './in-memory.store';
 export class OnsiteCoordinatorRepository {
   constructor(private readonly store: InMemoryStore) {}
 
+  private isCoordinatorAssigned(r: any, coordinatorUserId: string): boolean {
+    if (!r) return false;
+    if (r.onsiteCoordinatorUserId === coordinatorUserId) return true;
+    if (
+      Array.isArray(r.onsiteCoordinatorUserIds) &&
+      r.onsiteCoordinatorUserIds.includes(coordinatorUserId)
+    ) {
+      return true;
+    }
+    return false;
+  }
+
   findEventAssignment(eventId: string) {
     if (!eventId) return null;
     const r = this.store.findById<any>('event_requests', eventId);
-    if (r) return { id: r.id, onsiteCoordinatorUserId: r.onsiteCoordinatorUserId };
+    if (r) return { id: r.id, onsiteCoordinatorUserId: r.onsiteCoordinatorUserId, onsiteCoordinatorUserIds: r.onsiteCoordinatorUserIds };
 
     const e = this.store.findById<any>('events', eventId);
-    if (e) return { id: e.id, onsiteCoordinatorUserId: e.onsiteCoordinatorUserId || 'usr_e2e_coord_1' };
+    if (e) return { id: e.id, onsiteCoordinatorUserId: e.onsiteCoordinatorUserId || 'usr_e2e_coord_1', onsiteCoordinatorUserIds: e.onsiteCoordinatorUserIds };
 
     return null;
   }
 
   isEventAssignedToCoordinator(eventId: string, coordinatorUserId: string): boolean {
     const eventReq = this.findEventAssignment(eventId);
-    return !!(eventReq && eventReq.onsiteCoordinatorUserId === coordinatorUserId);
+    return this.isCoordinatorAssigned(eventReq, coordinatorUserId);
   }
 
   getDashboardMetrics(coordinatorUserId: string, todayStr: string) {
     const assignedReqs = this.store.find<any>(
       'event_requests',
-      (r) => r.onsiteCoordinatorUserId === coordinatorUserId,
+      (r) => this.isCoordinatorAssigned(r, coordinatorUserId),
     );
     const assignedEvents = assignedReqs.length;
 
@@ -46,7 +58,7 @@ export class OnsiteCoordinatorRepository {
   findAssignedEvents(coordinatorUserId: string) {
     const reqs = this.store.find<any>(
       'event_requests',
-      (r) => r.onsiteCoordinatorUserId === coordinatorUserId,
+      (r) => this.isCoordinatorAssigned(r, coordinatorUserId),
     );
 
     const mapped = reqs.map((r) => {
@@ -69,7 +81,7 @@ export class OnsiteCoordinatorRepository {
   ) {
     let reqs = this.store.find<any>(
       'event_requests',
-      (r) => r.onsiteCoordinatorUserId === coordinatorUserId,
+      (r) => this.isCoordinatorAssigned(r, coordinatorUserId),
     );
 
     if (search && search.trim()) {

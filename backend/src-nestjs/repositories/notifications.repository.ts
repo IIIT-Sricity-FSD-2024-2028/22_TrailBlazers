@@ -27,7 +27,10 @@ export class NotificationsRepository {
     return this.store
       .find<NotificationRow>(
         'notifications',
-        (n) => n.recipientUserId === userId && (n.status === 'MISSED' || !n.status),
+        (n) =>
+          n.recipientUserId === userId &&
+          n.status !== 'DISMISSED' &&
+          n.status !== 'CLEARED',
       )
       .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
       .slice(0, limit);
@@ -49,7 +52,8 @@ export class NotificationsRepository {
       'notifications',
       (n) =>
         n.recipientUserId === userId &&
-        (n.status === 'MISSED' || !n.status) &&
+        n.status !== 'DISMISSED' &&
+        n.status !== 'CLEARED' &&
         (Number(n.isRead) === 0 || !n.isRead),
     );
   }

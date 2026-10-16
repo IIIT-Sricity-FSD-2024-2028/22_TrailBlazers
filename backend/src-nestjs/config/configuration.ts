@@ -10,4 +10,6 @@ export default () => ({
   logs: {
     directory: path.join(process.cwd(), 'logs'),
   },
+  eventManagerMaxAssignedEvents: parseInt(process.env.EVENT_MANAGER_MAX_ASSIGNED_EVENTS, 10) || 7,
+  eventManagerWorkloadThreshold: parseInt(process.env.EVENT_MANAGER_WORKLOAD_THRESHOLD, 10) || 15,
 });

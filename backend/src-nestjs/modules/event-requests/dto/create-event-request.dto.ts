@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateEventRequestDto {
@@ -38,10 +39,20 @@ export class CreateEventRequestDto {
   @IsNotEmpty({ message: 'Category is required.' })
   category: string;
 
-  @ApiProperty({ description: 'Event date (YYYY-MM-DD)', example: '2026-10-15' })
+  @ApiPropertyOptional({ description: 'Event date (legacy YYYY-MM-DD)', example: '2026-10-15' })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'Event date is required.' })
-  eventDate: string;
+  eventDate?: string;
+
+  @ApiPropertyOptional({ description: 'Event start date (YYYY-MM-DD)', example: '2026-10-15' })
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @ApiPropertyOptional({ description: 'Event end date (YYYY-MM-DD)', example: '2026-10-18' })
+  @IsOptional()
+  @IsString()
+  endDate?: string;
 
   @ApiPropertyOptional({ description: 'Start time (HH:MM)', example: '09:00' })
   @IsOptional()
@@ -70,7 +81,8 @@ export class CreateEventRequestDto {
 
   @ApiPropertyOptional({ description: 'Expected total attendee count', example: 500 })
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsNumber({}, { message: 'Expected attendance must be a valid number.' })
   expectedAttendance?: number;
 
   @ApiPropertyOptional({ description: 'Whether tickets are paid or free', example: true })
@@ -79,7 +91,8 @@ export class CreateEventRequestDto {
 
   @ApiPropertyOptional({ description: 'Commercial price per ticket', example: 150 })
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsNumber({}, { message: 'Ticket price must be a valid number.' })
   ticketPrice?: number;
 
   @ApiPropertyOptional({ description: 'Frequency (One-Time / Recurring)', example: 'One-Time' })
@@ -89,7 +102,8 @@ export class CreateEventRequestDto {
 
   @ApiPropertyOptional({ description: 'Recurring occurrences per week if applicable', example: 1 })
   @IsOptional()
-  @IsNumber()
+  @Type(() => Number)
+  @IsNumber({}, { message: 'Recurring per week must be a valid number.' })
   recurringPerWeek?: number;
 
   @ApiPropertyOptional({ description: 'Special requirements or additional comments', example: 'AV & catering needed' })

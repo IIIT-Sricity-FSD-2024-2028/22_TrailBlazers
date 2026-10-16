@@ -94,7 +94,7 @@ async function bootstrap() {
   const nestPort = configService.get<number>('nestPort') || 5001;
   const expressPort = configService.get<number>('expressPort') || 5000;
 
-  await app.listen(nestPort);
+  await app.listen(nestPort, '0.0.0.0');
 
   logger.log(
     `Wavevents NestJS Migration Server started on http://localhost:${nestPort}/api`,

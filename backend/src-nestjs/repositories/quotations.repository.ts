@@ -224,12 +224,30 @@ export class QuotationsRepository {
     currentVersion: number;
     eventReq: any;
     contractPrice: number;
+    termsData?: any;
   }) {
-    const { quotationId, currentVersion, eventReq } = params;
+    const { quotationId, currentVersion, eventReq, contractPrice, termsData } = params;
     const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    const advancePercent = termsData?.paymentSchedule?.advancePercent || 35;
+    const milestonePercent = termsData?.paymentSchedule?.milestonePercent || 45;
+    const finalPercent = termsData?.paymentSchedule?.finalPercent || 20;
+
+    const advanceAmount = Math.round(contractPrice * (advancePercent / 100));
+    const milestoneAmount = Math.round(contractPrice * (milestonePercent / 100));
+    const finalAmount = contractPrice - advanceAmount - milestoneAmount;
 
     this.store.update<any>('quotations', quotationId, {
       status: 'ACCEPTED',
+      termsAccepted: true,
+      acceptedPaymentSchedule: {
+        advancePercent,
+        advanceAmount,
+        milestonePercent,
+        milestoneAmount,
+        finalPercent,
+        finalAmount,
+      },
       updatedAt: nowStr,
     });
 
@@ -245,8 +263,24 @@ export class QuotationsRepository {
 
     this.store.update<any>('event_requests', eventReq.id, {
       status: 'COMMERCIAL_APPROVED',
-      operationalStatus: 'IN_PREPARATION',
+      operationalStatus: 'AWAITING_ESCALATION',
+      handoffStatus: 'AWAITING_ESCALATION',
+      escalatedToManagement: false,
+      contractPrice,
       updatedAt: nowStr,
+    });
+
+    // Create Audit Log for Acceptance with Terms
+    const auditLogId = 'qal_' + Math.random().toString(36).substring(2, 11);
+    this.store.create('quotation_audit_logs', {
+      id: auditLogId,
+      quotationId,
+      versionId: activeVersion?.id || '',
+      actorUserId: eventReq.userId,
+      actorName: eventReq.clientName || 'Client',
+      action: 'ACCEPTED_QUOTATION',
+      details: `Accepted quotation V${currentVersion} (Total: ₹${contractPrice.toLocaleString()}) with agreed Payment Schedule: 35% Advance (₹${advanceAmount.toLocaleString()}), 45% Milestone (₹${milestoneAmount.toLocaleString()}), 20% Final (₹${finalAmount.toLocaleString()}).`,
+      createdAt: nowStr,
     });
 
     const existingEvt = this.store.findById('events', eventReq.id);
@@ -277,6 +311,72 @@ export class QuotationsRepository {
         updatedAt: nowStr,
       });
     }
+  }
+
+  requestQuotationChangesTransaction(params: {
+    quotationId: string;
+    currentVersion: number;
+    eventReq: any;
+    clientUserId: string;
+    clientName: string;
+    requestedChanges: string;
+    reason?: string;
+    changeType?: string;
+  }) {
+    const {
+      quotationId,
+      currentVersion,
+      eventReq,
+      clientUserId,
+      clientName,
+      requestedChanges,
+      reason,
+      changeType,
+    } = params;
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+
+    const changeReqId = 'qcr_' + Math.random().toString(36).substring(2, 11);
+    this.store.create('quotation_change_requests', {
+      id: changeReqId,
+      quotationId,
+      eventRequestId: eventReq.id,
+      clientUserId,
+      clientName,
+      changeType: changeType || 'Payment Schedule Negotiation',
+      requestedChanges,
+      reason: reason || 'Payment schedule adjustment requested',
+      status: 'UNDER_NEGOTIATION',
+      createdAt: nowStr,
+    });
+
+    this.store.update<any>('quotations', quotationId, {
+      status: 'UNDER_NEGOTIATION',
+      updatedAt: nowStr,
+    });
+
+    this.store.update<any>('event_requests', eventReq.id, {
+      status: 'UNDER_NEGOTIATION',
+      updatedAt: nowStr,
+    });
+
+    const activeVersion = this.store.findOne<any>(
+      'quotation_versions',
+      (v) => v.quotationId === quotationId && Number(v.versionNumber) === Number(currentVersion),
+    );
+
+    const auditLogId = 'qal_' + Math.random().toString(36).substring(2, 11);
+    this.store.create('quotation_audit_logs', {
+      id: auditLogId,
+      quotationId,
+      versionId: activeVersion?.id || '',
+      actorUserId: clientUserId,
+      actorName: clientName,
+      action: 'NEGOTIATION_REQUESTED',
+      details: `Client requested terms negotiation: "${requestedChanges}"`,
+      createdAt: nowStr,
+    });
+
+    return changeReqId;
   }
 
   rejectQuotationTransaction(params: {

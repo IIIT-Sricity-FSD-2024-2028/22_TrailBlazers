@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Param,
   Query,
   Req,
@@ -172,7 +173,10 @@ export class AnalyticsController {
         );
       }
 
-      const analytics = this.analyticsService.calculateFullEventAnalytics(id);
+      const analytics = this.analyticsService.calculateFullEventAnalytics(
+        id,
+        req.user,
+      );
       if (!analytics) {
         throw new NotFoundException('Event not found.');
       }
@@ -283,7 +287,7 @@ export class AnalyticsController {
       if (!this.analyticsService.canViewEventAnalytics(req.user, id)) {
         throw new ForbiddenException('Access denied.');
       }
-      const feedback = this.analyticsService.calculateFeedback(id);
+      const feedback = this.analyticsService.calculateFeedback(id, req.user?.id);
       return { feedback };
     } catch (err) {
       if (err instanceof ForbiddenException) throw err;
@@ -291,11 +295,31 @@ export class AnalyticsController {
     }
   }
 
-  @Get('events/:id/report')
-  @ApiOperation({ summary: 'Export Analytics Report', description: 'Generate and download event analytics report in JSON or CSV format' })
+  @Get('events/:id/report-status')
+  @ApiOperation({
+    summary: 'Get Event Analytics Report Status',
+    description: 'Retrieve completion status and Event Manager report generation status',
+  })
   @ApiParam({ name: 'id', description: 'Event ID' })
-  @ApiQuery({ name: 'format', required: false, description: 'Report format (json / csv)' })
-  @ApiResponse({ status: 200, description: 'Analytics report payload or CSV file attachment' })
+  getReportStatus(@Req() req: any, @Param('id') id: string) {
+    return this.analyticsService.getEventReportStatus(id, req.user);
+  }
+
+  @Post('events/:id/generate-report')
+  @ApiOperation({
+    summary: 'Generate & Publish Event Analytics Report',
+    description: 'Event Manager or Admin generates and stores the official PDF analytics report',
+  })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  generateReport(@Req() req: any, @Param('id') id: string) {
+    return this.analyticsService.generateAndSaveReport(id, req.user);
+  }
+
+  @Get('events/:id/report')
+  @ApiOperation({ summary: 'Export Analytics Report', description: 'Generate and download event analytics report in PDF, JSON, or CSV format' })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiQuery({ name: 'format', required: false, description: 'Report format (pdf / json / csv)' })
+  @ApiResponse({ status: 200, description: 'Analytics report payload, PDF, or CSV file attachment' })
   getReport(
     @Req() req: any,
     @Param('id') id: string,
@@ -304,6 +328,18 @@ export class AnalyticsController {
   ) {
     try {
       const format = formatQuery || 'json';
+
+      if (format === 'pdf') {
+        const { buffer, filename, contentType } =
+          this.analyticsService.getEventAnalyticsPdfReport(id, req.user);
+        res.setHeader('Content-Type', contentType);
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${filename}"`,
+        );
+        res.setHeader('Content-Length', buffer.length);
+        return res.end(buffer);
+      }
 
       if (!this.analyticsService.canViewEventAnalytics(req.user, id)) {
         throw new ForbiddenException('Access denied.');
@@ -328,7 +364,11 @@ export class AnalyticsController {
 
       return res.json({ analytics, reportFormat: 'JSON' });
     } catch (err) {
-      if (err instanceof ForbiddenException || err instanceof NotFoundException) {
+      if (
+        err instanceof ForbiddenException ||
+        err instanceof NotFoundException ||
+        err instanceof BadRequestException
+      ) {
         throw err;
       }
       console.error('Error generating report:', err);

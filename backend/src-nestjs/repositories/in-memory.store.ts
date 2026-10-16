@@ -53,6 +53,7 @@ export class InMemoryStore {
       'event_change_requests',
       'analytics_audit_logs',
       'file_uploads',
+      'event_analytics_reports',
     ];
 
     for (const name of defaultCollections) {

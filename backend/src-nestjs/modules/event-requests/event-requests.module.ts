@@ -3,9 +3,10 @@ import { EventRequestsController } from './event-requests.controller';
 import { EventRequestsService } from './event-requests.service';
 import { EventRequestsRepository } from '../../repositories/event-requests.repository';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { AnalyticsModule } from '../analytics/analytics.module';
 
 @Module({
-  imports: [NotificationsModule],
+  imports: [NotificationsModule, AnalyticsModule],
   controllers: [EventRequestsController],
   providers: [EventRequestsService, EventRequestsRepository],
   exports: [EventRequestsService, EventRequestsRepository],

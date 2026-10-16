@@ -29,23 +29,30 @@ import { Roles } from '../../common/decorators/roles.decorator';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
-  @Get()
-  @Roles('IT_SUPPORT', 'SUPER_ADMIN', 'ADMIN')
-  @ApiOperation({ summary: 'List Users', description: 'Retrieve user accounts list (IT Support & Admin access)' })
-  @ApiResponse({ status: 200, description: 'Users list returned successfully' })
-  @ApiResponse({ status: 403, description: 'Forbidden. IT_SUPPORT or Admin role required' })
-  async getUsers() {
-    return this.usersService.getAllUsers();
+
+  @Get('/totalattendee')
+  totalUsers(){
+    return this.usersService.practiceTotalUsers();
   }
+  
+  @Get()
+  @Roles('IT_SUPPORT', 'DEPARTMENT_MANAGER', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'List Users', description: 'Retrieve user accounts list (IT Support, IT Manager, & Admin access)' })
+  @ApiResponse({ status: 200, description: 'Users list returned successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden. IT_SUPPORT, DEPARTMENT_MANAGER, or Admin role required' })
+  async getUsers(@Req() req: any) {
+    return this.usersService.getAllUsers(req.user);
+  }
+ 
 
   @Post()
-  @Roles('IT_SUPPORT', 'SUPER_ADMIN', 'ADMIN')
+  @Roles('IT_SUPPORT', 'DEPARTMENT_MANAGER', 'SUPER_ADMIN', 'ADMIN')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create User Account', description: 'Create a new user account with role selection (IT Support User Creation Workflow)' })
+  @ApiOperation({ summary: 'Create User Account', description: 'Create a new user account with role selection (IT Support & IT Manager User Creation Workflow)' })
   @ApiResponse({ status: 201, description: 'User created successfully with initial login credentials' })
   @ApiResponse({ status: 400, description: 'Invalid role or input parameters' })
   @ApiResponse({ status: 409, description: 'Email address already registered' })
-  @ApiResponse({ status: 403, description: 'Forbidden. Requires IT_SUPPORT or Admin role' })
+  @ApiResponse({ status: 403, description: 'Forbidden. Requires IT_SUPPORT, DEPARTMENT_MANAGER, or Admin role' })
   async createUser(@Body() dto: CreateUserDto, @Req() req: any) {
     return this.usersService.createUser(dto, req.user);
   }

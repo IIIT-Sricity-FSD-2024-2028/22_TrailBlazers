@@ -66,7 +66,10 @@ export class EventManagerService {
     if (!hasRegDeadline) missingItems.push('Registration Deadline');
 
     // 4. Onsite Coordinator Assignment
-    const hasCoordinator = !!request.onsiteCoordinatorUserId;
+    const hasCoordinator =
+      !!request.onsiteCoordinatorUserId ||
+      (Array.isArray(request.onsiteCoordinatorUserIds) &&
+        request.onsiteCoordinatorUserIds.length > 0);
     items.push({
       id: 'coordinator_assignment',
       label: 'Onsite Coordinator Assigned',
@@ -300,22 +303,29 @@ export class EventManagerService {
   }
 
   assignCoordinator(id: string, dto: AssignCoordinatorDto, user: any) {
-    const { coordinatorUserId } = dto;
     const actorUserId = user.id;
     const actorName = user.name || 'Event Manager';
 
-    if (!coordinatorUserId) {
-      throw new BadRequestException('Coordinator User ID is required.');
+    let targetIds: string[] = [];
+    if (dto.coordinatorUserIds && Array.isArray(dto.coordinatorUserIds)) {
+      targetIds = dto.coordinatorUserIds.filter(Boolean);
+    } else if (dto.coordinatorUserId) {
+      targetIds = [dto.coordinatorUserId];
     }
 
-    const targetCoordinator = this.repository.findUserById(coordinatorUserId);
-    if (
-      !targetCoordinator ||
-      targetCoordinator.role !== 'ONSITE_COORDINATOR'
-    ) {
-      throw new BadRequestException(
-        'Invalid coordinator assignment. Selected user does NOT have the ONSITE_COORDINATOR role.',
-      );
+    if (targetIds.length === 0) {
+      throw new BadRequestException('At least one Coordinator User ID is required.');
+    }
+
+    const validCoordinators: any[] = [];
+    for (const cid of targetIds) {
+      const u = this.repository.findUserById(cid);
+      if (!u || u.role !== 'ONSITE_COORDINATOR') {
+        throw new BadRequestException(
+          `Invalid coordinator assignment for user ID "${cid}". Selected user must have the ONSITE_COORDINATOR role.`,
+        );
+      }
+      validCoordinators.push(u);
     }
 
     const targetReq = this.repository.findEventDetailsById(id);
@@ -324,39 +334,42 @@ export class EventManagerService {
     }
 
     const auditLogId = 'eolog_' + crypto.randomBytes(8).toString('hex');
+    const coordinatorsSummary = validCoordinators.map(c => `${c.name} (${c.email})`).join(', ');
 
     this.repository.assignCoordinator({
       id,
-      coordinatorUserId,
+      coordinatorUserIds: validCoordinators.map(c => c.id),
       auditLogId,
       actorUserId,
       actorName,
-      coordinatorName: targetCoordinator.name,
-      coordinatorEmail: targetCoordinator.email,
+      coordinatorsSummary,
     });
 
-    // Notify assigned Onsite Coordinator & Client
+    // Notify assigned Onsite Coordinator(s) & Client
     try {
-      this.notificationHelper.createNotification({
-        recipientUserId: coordinatorUserId,
-        type: 'COORDINATOR_ASSIGNED',
-        title: 'New Event Assigned',
-        message: `${actorName} (Event Manager) assigned you as the Onsite Coordinator for "${targetReq.eventName}".`,
-        entityType: 'EVENT_REQUEST',
-        entityId: id,
-        senderUserId: actorUserId,
-        senderName: actorName,
-        senderRole: 'Event Manager',
-        eventName: targetReq.eventName,
-        deduplicate: true,
-      });
+      for (const targetCoordinator of validCoordinators) {
+        this.notificationHelper.createNotification({
+          recipientUserId: targetCoordinator.id,
+          type: 'COORDINATOR_ASSIGNED',
+          title: 'New Event Assigned',
+          message: `${actorName} (Event Manager) assigned you as Onsite Coordinator for "${targetReq.eventName}".`,
+          entityType: 'EVENT_REQUEST',
+          entityId: id,
+          senderUserId: actorUserId,
+          senderName: actorName,
+          senderRole: 'Event Manager',
+          eventName: targetReq.eventName,
+          deduplicate: true,
+        });
+      }
 
       if (targetReq.userId) {
+        const names = validCoordinators.map(c => c.name).join(', ');
         this.notificationHelper.createNotification({
           recipientUserId: targetReq.userId,
           type: 'COORDINATOR_ASSIGNED_CLIENT',
           title: 'Event Team Update',
-          message: `An Onsite Coordinator (${targetCoordinator.name}) has been assigned to your event "${targetReq.eventName}".`,
+          message: `Onsite Coordinator(s) (${names}) assigned to your event "${targetReq.eventName}".`,
           entityType: 'EVENT_REQUEST',
           entityId: id,
           senderUserId: actorUserId,
@@ -375,12 +388,12 @@ export class EventManagerService {
     }
 
     return {
-      message: `Onsite Coordinator ${targetCoordinator.name} assigned successfully!`,
-      coordinator: {
-        id: targetCoordinator.id,
-        name: targetCoordinator.name,
-        email: targetCoordinator.email,
-      },
+      message: `Onsite Coordinator(s) (${validCoordinators.map(c => c.name).join(', ')}) assigned successfully!`,
+      coordinators: validCoordinators.map(c => ({
+        id: c.id,
+        name: c.name,
+        email: c.email,
+      })),
     };
   }
 

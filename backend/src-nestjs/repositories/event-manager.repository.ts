@@ -42,6 +42,35 @@ export class EventManagerRepository {
     };
   }
 
+  private mapEventWithCoordinators(r: any) {
+    const client = this.store.findById<any>('users', r.userId);
+    const coordIds: string[] = Array.isArray(r.onsiteCoordinatorUserIds) && r.onsiteCoordinatorUserIds.length > 0
+      ? r.onsiteCoordinatorUserIds
+      : (r.onsiteCoordinatorUserId ? [r.onsiteCoordinatorUserId] : []);
+
+    const coordinators = coordIds.map((cid) => {
+      const u = this.store.findById<any>('users', cid);
+      return u
+        ? { id: u.id, name: u.name, email: u.email }
+        : { id: cid, name: cid, email: '' };
+    });
+
+    const coordinatorName = coordinators.length > 0 ? coordinators.map((c) => c.name).join(', ') : null;
+    const coordinatorEmail = coordinators.length > 0 ? coordinators.map((c) => c.email).filter(Boolean).join(', ') : null;
+
+    return {
+      ...r,
+      clientName: client ? client.name : null,
+      clientEmail: client ? client.email : null,
+      clientOrg: client ? client.organization : null,
+      coordinators,
+      coordinatorName,
+      coordinatorEmail,
+      onsiteCoordinatorUserIds: coordIds,
+      onsiteCoordinatorUserId: coordIds[0] || null,
+    };
+  }
+
   getPriorityEvents(limit = 10) {
     const reqs = this.store.find<any>(
       'event_requests',
@@ -52,18 +81,7 @@ export class EventManagerRepository {
         r.operationalStatus === 'READY',
     );
 
-    const mapped = reqs.map((r) => {
-      const client = this.store.findById<any>('users', r.userId);
-      const coord = r.onsiteCoordinatorUserId
-        ? this.store.findById<any>('users', r.onsiteCoordinatorUserId)
-        : null;
-      return {
-        ...r,
-        clientName: client ? client.name : null,
-        coordinatorName: coord ? coord.name : null,
-        coordinatorEmail: coord ? coord.email : null,
-      };
-    });
+    const mapped = reqs.map((r) => this.mapEventWithCoordinators(r));
 
     return mapped
       .sort((a, b) => (a.eventDate || '').localeCompare(b.eventDate || ''))
@@ -96,18 +114,7 @@ export class EventManagerRepository {
       reqs = reqs.filter((r) => r.operationalStatus === status);
     }
 
-    const mapped = reqs.map((r) => {
-      const client = this.store.findById<any>('users', r.userId);
-      const coord = r.onsiteCoordinatorUserId
-        ? this.store.findById<any>('users', r.onsiteCoordinatorUserId)
-        : null;
-      return {
-        ...r,
-        clientName: client ? client.name : null,
-        coordinatorName: coord ? coord.name : null,
-        coordinatorEmail: coord ? coord.email : null,
-      };
-    });
+    const mapped = reqs.map((r) => this.mapEventWithCoordinators(r));
 
     return mapped.sort((a, b) =>
       (a.eventDate || '').localeCompare(b.eventDate || ''),
@@ -119,19 +126,7 @@ export class EventManagerRepository {
     const r = this.store.findById<any>('event_requests', id);
     if (!r) return null;
 
-    const client = this.store.findById<any>('users', r.userId);
-    const coord = r.onsiteCoordinatorUserId
-      ? this.store.findById<any>('users', r.onsiteCoordinatorUserId)
-      : null;
-
-    return {
-      ...r,
-      clientName: client ? client.name : null,
-      clientEmail: client ? client.email : null,
-      clientOrg: client ? client.organization : null,
-      coordinatorName: coord ? coord.name : null,
-      coordinatorEmail: coord ? coord.email : null,
-    };
+    return this.mapEventWithCoordinators(r);
   }
 
   countInvitations(eventId: string): number {
@@ -246,27 +241,32 @@ export class EventManagerRepository {
 
   assignCoordinator(params: {
     id: string;
-    coordinatorUserId: string;
+    coordinatorUserIds: string[];
     auditLogId: string;
     actorUserId: string;
     actorName: string;
-    coordinatorName: string;
-    coordinatorEmail: string;
+    coordinatorsSummary: string;
   }) {
     const {
       id,
-      coordinatorUserId,
+      coordinatorUserIds,
       auditLogId,
       actorUserId,
       actorName,
-      coordinatorName,
-      coordinatorEmail,
+      coordinatorsSummary,
     } = params;
 
     const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
 
     this.store.update<any>('event_requests', id, {
-      onsiteCoordinatorUserId: coordinatorUserId,
+      onsiteCoordinatorUserIds: coordinatorUserIds,
+      onsiteCoordinatorUserId: coordinatorUserIds[0] || null,
+      updatedAt: nowStr,
+    });
+
+    this.store.update<any>('events', id, {
+      onsiteCoordinatorUserIds: coordinatorUserIds,
+      onsiteCoordinatorUserId: coordinatorUserIds[0] || null,
       updatedAt: nowStr,
     });
 
@@ -277,7 +277,7 @@ export class EventManagerRepository {
       actorName,
       actorRole: 'EVENT_MANAGER',
       action: 'ASSIGNED_COORDINATOR',
-      details: `Assigned Onsite Coordinator ${coordinatorName} (${coordinatorEmail}) to event.`,
+      details: `Assigned Onsite Coordinator(s) ${coordinatorsSummary} to event.`,
       createdAt: nowStr,
     });
   }

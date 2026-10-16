@@ -2,7 +2,7 @@
   "name": "wavevents-backend",
   "private": true,
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "node dist-nestjs/main.js",
     "dev": "nest start --watch",

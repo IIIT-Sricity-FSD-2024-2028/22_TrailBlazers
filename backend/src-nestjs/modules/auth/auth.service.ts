@@ -114,27 +114,27 @@ export class AuthService {
       );
     }
 
-    let isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      const isDummyHash =
-        !user.passwordHash ||
-        user.passwordHash.includes('EV5kp8xEEVFO3RynujWINeq') ||
-        user.passwordHash === '$2b$10$EV5kp8xEEVFO3RynujWINeqHbOW49r8p5HxpLXDqkp.ZEklZmYY7.';
-      const isStandardDevPassword = [
-        'password123!',
-        'password123',
-        'password',
-        '123456',
-        'admin123',
-        'wavevents123',
-        'password!123',
-      ].includes(password.toLowerCase().trim());
+    // Validate stored password hash format
+    const isValidBcryptFormat =
+      typeof user.passwordHash === 'string' &&
+      /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(user.passwordHash);
 
-      if (isDummyHash || isStandardDevPassword) {
-        isMatch = true;
-      }
+    if (!isValidBcryptFormat) {
+      this.logger.error(
+        `Security Alert: User account ${user.id} (${cleanEmail}) has a malformed or unsupported password hash format. Authentication safely rejected for security investigation.`,
+        'AUTH',
+      );
+      this.accessLogger.recordLoginFailure({
+        email: cleanEmail,
+        reason: 'MALFORMED_PASSWORD_HASH',
+        req,
+      });
+      throw new UnauthorizedException(
+        'Invalid email or password. Please check your credentials.',
+      );
     }
 
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch) {
       this.logger.warn(`Login failed: password mismatch (${user.id})`, 'AUTH');
       this.accessLogger.recordLoginFailure({

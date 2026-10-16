@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
-import { InMemoryStore } from './in-memory.store';
-import { NestLoggerService } from '../common/logging/logger.service';
+import { Injectable } from "@nestjs/common";
+import { InMemoryStore } from "./in-memory.store";
+import { NestLoggerService } from "../common/logging/logger.service";
 
 export interface UserEntity {
   id: string;
@@ -38,14 +38,20 @@ export class UsersRepository {
     if (!email) return null;
     const cleanEmail = email.toLowerCase().trim();
     return this.store.findOne<UserEntity>(
-      'users',
-      (u) => (u.email || '').toLowerCase().trim() === cleanEmail,
+      "users",
+      (u) => (u.email || "").toLowerCase().trim() === cleanEmail,
     );
   }
 
   findById(id: string): UserEntity | null {
     if (!id) return null;
-    return this.store.findById<UserEntity>('users', id);
+    return this.store.findById<UserEntity>("users", id);
+  }
+
+  findEventmanager(): any {
+    const users = this.store.findAll("users");
+    const result = users.find((user) => user.id == "usr_8258c42d5f598e40");
+    return result;
   }
 
   findPublicById(id: string): PublicUserEntity | null {
@@ -65,6 +71,11 @@ export class UsersRepository {
     };
   }
 
+  userOrganization(): any[] {
+    const users = this.store.findAll("users");
+    const result = users.filter((user) => user.organization == "Google");
+    return result;
+  }
   createUser(params: {
     id: string;
     name: string;
@@ -74,7 +85,7 @@ export class UsersRepository {
     organization?: string | null;
     verificationCode: string;
   }): PublicUserEntity | null {
-    const role = params.role || 'ATTENDEE';
+    const role = params.role || "ATTENDEE";
     const cleanEmail = params.email.toLowerCase().trim();
     const cleanName = params.name.trim();
 
@@ -88,19 +99,22 @@ export class UsersRepository {
       emailVerified: 0,
       verificationCode: params.verificationCode,
       department: null,
-      createdAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      createdAt: new Date().toISOString().replace("T", " ").substring(0, 19),
     };
 
-    this.store.create('users', newUser);
-    this.logger.log(`New user created in memory: ${params.id} (${cleanEmail})`, 'USER_REPOSITORY');
+    this.store.create("users", newUser);
+    this.logger.log(
+      `New user created in memory: ${params.id} (${cleanEmail})`,
+      "USER_REPOSITORY",
+    );
 
     return this.findPublicById(params.id);
   }
 
   updateEmailVerified(userId: string): PublicUserEntity | null {
-    this.store.update<UserEntity>('users', userId, {
+    this.store.update<UserEntity>("users", userId, {
       emailVerified: 1,
-      updatedAt: new Date().toISOString().replace('T', ' ').substring(0, 19),
+      updatedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
     });
     return this.findPublicById(userId);
   }
