@@ -261,51 +261,6 @@ export default function EventManagerSpace({ user, onNavigate }) {
     }
   };
 
-  const handleIssueInvitation = async ({ recipientEmail, recipientName }) => {
-    if (!selectedReqId || !recipientEmail) return;
-    setActionMsg('');
-    setActionError('');
-
-    try {
-      const res = await fetch(`/api/event-manager/events/${selectedReqId}/invitations`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify({ recipientEmail, recipientName })
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to issue invitation.');
-
-      setActionMsg(data.message);
-      handleOpenWorkspace(selectedReqId);
-    } catch (err) {
-      setActionError(err.message);
-    }
-  };
-
-  const handleRevokeInvitation = async (invId) => {
-    setActionMsg('');
-    setActionError('');
-
-    try {
-      const res = await fetch(`/api/event-manager/invitations/${invId}/revoke`, {
-        method: 'POST',
-        headers: getHeaders()
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to revoke invitation.');
-
-      setActionMsg(data.message);
-      handleOpenWorkspace(selectedReqId);
-    } catch (err) {
-      setActionError(err.message);
-    }
-  };
-
   const filteredEvents = eventsList.filter(evt => {
     const matchesSearch = !searchTerm || (
       evt.eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -414,11 +369,6 @@ export default function EventManagerSpace({ user, onNavigate }) {
 
               <QuickActions
                 onAssignCoordinatorClick={() => setIsCoordModalOpen(true)}
-                onSendInvitationsClick={() => {
-                  const target = eventsList.find(e => e.eventType === 'CLOSED') || eventsList[0];
-                  if (target) handleOpenWorkspace(target.id);
-                  else setActiveTab('workspace');
-                }}
                 onViewReadinessClick={() => {
                   if (eventsList.length > 0) handleOpenWorkspace(eventsList[0].id);
                   else setActiveTab('workspace');
@@ -525,8 +475,6 @@ export default function EventManagerSpace({ user, onNavigate }) {
           onSaveConfig={handleSaveConfiguration}
           onAssignCoordinator={handleAssignCoordinator}
           onMarkEventReady={handleMarkEventReady}
-          onIssueInvitation={handleIssueInvitation}
-          onRevokeInvitation={handleRevokeInvitation}
           actionMsg={actionMsg}
           actionError={actionError}
           loadingMarkReady={loadingMarkReady}
