@@ -2,50 +2,60 @@ import React from 'react';
 import { CheckCircle2, Clock, ShieldCheck, CalendarRange } from 'lucide-react';
 
 export default function EventManagerKpis({ metrics }) {
-  const m = metrics || {
-    approvedEvents: 7,
-    inPreparation: 1,
-    readyEvents: 2,
-    upcomingEvents: 7
+  const assigned = Number(metrics?.assignedEvents ?? metrics?.approvedEvents ?? 0);
+  const completed = Number(metrics?.completedEvents ?? 0);
+  const ongoing = Number(metrics?.ongoingEvents ?? metrics?.inPreparation ?? 0);
+  // Pending events are events in the manager's queue awaiting completion (Total Assigned minus Completed)
+  const pending = Number(
+    metrics?.upcomingEvents !== undefined
+      ? metrics.upcomingEvents
+      : Math.max(0, assigned - completed)
+  );
+
+  const m = {
+    assignedEvents: assigned,
+    ongoingEvents: ongoing,
+    completedEvents: completed,
+    pendingEvents: pending
   };
 
   const kpis = [
     {
-      title: 'APPROVED EVENTS',
-      count: m.approvedEvents,
-      subtitle: 'Ready to execute',
-      badge: '+2 this month',
-      badgeClass: 'bg-purple-100/80 text-purple-700 border-purple-200',
+      title: 'ASSIGNED EVENTS',
+      count: m.assignedEvents,
+      subtitle: 'Assigned to your queue',
+      badge: m.assignedEvents > 0 ? `${m.assignedEvents} Active` : '0 Active',
+      badgeClass: m.assignedEvents > 0 ? 'bg-purple-100/80 text-purple-700 border-purple-200' : 'bg-slate-100 text-slate-500 border-slate-200',
       icon: CheckCircle2,
       iconClass: 'bg-purple-100 text-purple-600',
       lineColor: '#8B5CF6'
     },
     {
-      title: 'IN PREPARATION',
-      count: m.inPreparation,
-      subtitle: 'Getting ready',
-      badge: '+1 this week',
-      badgeClass: 'bg-amber-100/80 text-amber-700 border-amber-200',
+      title: 'ONGOING / IN PREPARATION',
+      count: m.ongoingEvents,
+      subtitle: 'Under active operations',
+      badge: m.ongoingEvents > 0 ? `${m.ongoingEvents} In Progress` : '0 Ongoing',
+      badgeClass: m.ongoingEvents > 0 ? 'bg-amber-100/80 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-500 border-slate-200',
       icon: Clock,
       iconClass: 'bg-amber-100 text-amber-600',
       lineColor: '#F59E0B'
     },
     {
-      title: 'READY EVENTS',
-      count: m.readyEvents,
-      subtitle: 'Stage ready',
-      badge: 'Live soon',
-      badgeClass: 'bg-emerald-100/80 text-emerald-700 border-emerald-200',
+      title: 'COMPLETED EVENTS',
+      count: m.completedEvents,
+      subtitle: 'Successfully executed',
+      badge: m.completedEvents > 0 ? `${m.completedEvents} Completed` : '0 Completed',
+      badgeClass: m.completedEvents > 0 ? 'bg-emerald-100/80 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-500 border-slate-200',
       icon: ShieldCheck,
       iconClass: 'bg-emerald-100 text-emerald-600',
       lineColor: '#10B981'
     },
     {
-      title: 'UPCOMING TOTAL',
-      count: m.upcomingEvents,
-      subtitle: 'Next 90 days',
-      badge: 'Highly Active',
-      badgeClass: 'bg-indigo-100/80 text-indigo-700 border-indigo-200',
+      title: 'PENDING EVENTS',
+      count: m.pendingEvents,
+      subtitle: 'Awaiting completion',
+      badge: m.pendingEvents > 0 ? `${m.pendingEvents} Pending` : '0 Pending',
+      badgeClass: m.pendingEvents > 0 ? 'bg-indigo-100/80 text-indigo-700 border-indigo-200' : 'bg-slate-100 text-slate-500 border-slate-200',
       icon: CalendarRange,
       iconClass: 'bg-indigo-100 text-indigo-600',
       lineColor: '#6366F1'

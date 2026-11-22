@@ -22,7 +22,7 @@ export default function EventManagerHero({ user, onNavigate }) {
           </h1>
 
           <p className="text-sm text-slate-600 font-medium leading-relaxed">
-            Operational event preparation, readiness verification, onsite coordinator assignment, and private invitations – all in one place.
+            Operational event preparation, readiness verification, and onsite coordinator assignment – all in one place.
           </p>
 
           <div className="pt-2">
