@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Shield, Mail, Heart } from 'lucide-react';
 import WaveventsLogo from './WaveventsLogo';
+import { UIContext } from '../../context/UIContext';
 
-export default function Footer({ user, onNavigate, onOpenAuth }) {
+export default function Footer({ user, onNavigate: propOnNavigate, onOpenAuth: propOnOpenAuth }) {
+  const ui = useContext(UIContext);
+  const onNavigate = propOnNavigate || ui?.navigate;
+  const onOpenAuth = propOnOpenAuth || ui?.openAuth;
+
   const handleProtectedClick = (targetTab) => {
     if (!user) {
       if (onOpenAuth) {
@@ -10,7 +15,7 @@ export default function Footer({ user, onNavigate, onOpenAuth }) {
       }
       return;
     }
-    onNavigate(targetTab);
+    if (onNavigate) onNavigate(targetTab);
   };
 
   return (
