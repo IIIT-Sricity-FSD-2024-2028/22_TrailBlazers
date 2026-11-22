@@ -6,6 +6,12 @@ import { EVENT_IMAGES } from '../utils/assets';
 export default function EventCard({ event, onSelect }) {
   const isFree = Number(event.ticketPrice) === 0;
 
+  // Determine if the event is happening today
+  const todayStr = new Date().toISOString().substring(0, 10);
+  const start = event.startDate || event.eventDate || event.date;
+  const end = event.endDate || start;
+  const isToday = Boolean(start && end && start <= todayStr && end >= todayStr);
+
   // Fallback category images if bannerUrl is missing
   const getEventImage = () => {
     if (event.bannerUrl) return event.bannerUrl;
@@ -22,54 +28,60 @@ export default function EventCard({ event, onSelect }) {
       onClick={() => onSelect(event)}
       className="group relative rounded-3xl overflow-hidden border border-white/75 shadow-[0_15px_35px_rgba(6,182,212,0.10),_inset_0_1px_1px_rgba(255,255,255,0.85)] hover:shadow-[0_22px_45px_rgba(6,182,212,0.22)] hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between cursor-pointer h-full text-[#0F172A]"
       style={{
-        background: 'linear-gradient(135deg, rgba(232, 248, 250, 0.82) 0%, rgba(221, 243, 246, 0.72) 100%)',
+        background: 'linear-gradient(135deg, rgba(232, 248, 250, 0.95) 0%, rgba(221, 243, 246, 0.90) 100%)',
         backdropFilter: 'blur(20px)',
         WebkitBackdropFilter: 'blur(20px)',
       }}
     >
-      <div>
-        {/* Crisp Banner Image Container */}
-        <div className="relative h-56 w-full overflow-hidden bg-slate-900">
-          <img
-            src={getEventImage()}
-            alt={event.name}
-            className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
-          />
-          
-          {/* Subtle Bottom Image Gradient */}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/15 to-transparent pointer-events-none" />
+      {/* Crisp Banner Image Container */}
+      <div className="relative h-56 w-full overflow-hidden bg-slate-900 shrink-0">
+        <img
+          src={getEventImage()}
+          alt={event.name}
+          className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500 ease-out"
+        />
+        
+        {/* Subtle Bottom Image Gradient */}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/15 to-transparent pointer-events-none" />
 
-          {/* Floating Badges */}
-          <div className="absolute top-3.5 left-3.5 flex items-center gap-2 flex-wrap z-10">
-            <span className="px-3.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-extrabold text-[#0F172A] shadow-md border border-white">
-              {event.category}
+        {/* Floating Badges */}
+        <div className="absolute top-3.5 left-3.5 flex items-center gap-2 flex-wrap z-10">
+          {isToday && (
+            <span className="px-3 py-1 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider shadow-lg border border-rose-300 flex items-center gap-1.5 animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-white" />
+              Happening Today
             </span>
-            <StatusBadge status={event.type} />
-            <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold shadow-md border ${
-              (event.registrationStatus || 'OPEN').toUpperCase() === 'OPEN'
-                ? 'bg-emerald-500 text-white border-white/50'
-                : (event.registrationStatus || 'OPEN').toUpperCase() === 'PAUSED'
-                ? 'bg-amber-500 text-white border-white/50'
-                : 'bg-slate-700 text-white border-white/30'
-            }`}>
-              Reg: {(event.registrationStatus || 'OPEN').toUpperCase()}
-            </span>
-          </div>
-
-          {/* Price Badge */}
-          <div className="absolute bottom-3.5 right-3.5 z-10">
-            <span className={`px-3.5 py-1 rounded-full text-xs font-extrabold shadow-lg border ${
-              isFree 
-                ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-white/50' 
-                : 'bg-slate-950/85 backdrop-blur-md text-white border-white/30'
-            }`}>
-              {isFree ? 'FREE PASS' : `₹${Number(event.ticketPrice).toLocaleString()}`}
-            </span>
-          </div>
+          )}
+          <span className="px-3.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-extrabold text-[#0F172A] shadow-md border border-white">
+            {event.category}
+          </span>
+          <StatusBadge status={event.type} />
+          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold shadow-md border ${
+            (event.registrationStatus || 'OPEN').toUpperCase() === 'OPEN'
+              ? 'bg-emerald-500 text-white border-white/50'
+              : (event.registrationStatus || 'OPEN').toUpperCase() === 'PAUSED'
+              ? 'bg-amber-500 text-white border-white/50'
+              : 'bg-slate-700 text-white border-white/30'
+          }`}>
+            Reg: {(event.registrationStatus || 'OPEN').toUpperCase()}
+          </span>
         </div>
 
-        {/* High-Contrast Light Sea-Blue Glass Body Content */}
-        <div className="p-6 space-y-3.5 bg-[#E0F7FA]/30 backdrop-blur-md">
+        {/* Price Badge */}
+        <div className="absolute bottom-3.5 right-3.5 z-10">
+          <span className={`px-3.5 py-1 rounded-full text-xs font-extrabold shadow-lg border ${
+            isFree 
+              ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white border-white/50' 
+              : 'bg-slate-950/85 backdrop-blur-md text-white border-white/30'
+          }`}>
+            {isFree ? 'FREE PASS' : `₹${Number(event.ticketPrice).toLocaleString()}`}
+          </span>
+        </div>
+      </div>
+
+      {/* High-Contrast Light Sea-Blue Glass Body & Footer Container */}
+      <div className="p-6 flex-1 flex flex-col justify-between space-y-4 bg-[#E0F7FA]/30 backdrop-blur-md">
+        <div className="space-y-3.5">
           {/* Organization Name Header */}
           <div className="text-[11px] font-extrabold text-[#0891B2] tracking-wider uppercase">
             {event.organizationName}
@@ -88,11 +100,19 @@ export default function EventCard({ event, onSelect }) {
           {/* Information Rows: Date & Location */}
           <div className="space-y-2.5 pt-3 border-t border-cyan-200/60">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-[#CFFAFE]/80 text-[#0891B2] flex items-center justify-center shrink-0 border border-[#A5F3FC] shadow-2xs font-bold">
+              <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs font-bold ${
+                isToday ? 'bg-rose-100 text-rose-600 border-rose-300' : 'bg-[#CFFAFE]/80 text-[#0891B2] border-[#A5F3FC]'
+              }`}>
                 <Calendar className="w-3.5 h-3.5" />
               </div>
-              <span className="text-xs font-semibold text-[#1E293B]">
-                {event.date} • {event.startTime}
+              <span className={`text-xs ${isToday ? 'font-bold text-rose-700' : 'font-semibold text-[#1E293B]'}`}>
+                {isToday ? (
+                  <span>LIVE TODAY • {event.startTime}</span>
+                ) : event.endDate && event.endDate !== (event.startDate || event.date) ? (
+                  `${event.startDate || event.date} to ${event.endDate} • ${event.startTime}`
+                ) : (
+                  `${event.startDate || event.date || event.eventDate} • ${event.startTime}`
+                )}
               </span>
             </div>
 
@@ -106,19 +126,19 @@ export default function EventCard({ event, onSelect }) {
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Card Bottom Footer: Ticket Count & Primary Action CTA */}
-      <div className="p-6 pt-0 flex items-center justify-between gap-3 mt-auto bg-[#E0F7FA]/30 backdrop-blur-md">
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50/90 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>{event.availableTickets} tickets left</span>
+        {/* Card Bottom Footer: Ticket Count & Primary Action CTA */}
+        <div className="pt-2 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50/90 border border-emerald-200 text-[11px] font-bold text-emerald-800 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{event.availableTickets} tickets left</span>
+          </div>
+
+          <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0F172A] hover:bg-cyan-700 text-white text-xs font-extrabold transition-all duration-200 shadow-xs group-hover:shadow-md cursor-pointer">
+            <span>View Event</span>
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
-
-        <button className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0F172A] hover:bg-cyan-700 text-white text-xs font-extrabold transition-all duration-200 shadow-xs group-hover:shadow-md">
-          <span>View Event</span>
-          <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-        </button>
       </div>
     </div>
   );
