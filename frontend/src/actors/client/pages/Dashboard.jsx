@@ -1,21 +1,74 @@
-import React, { useState, useEffect } from 'react';
-import { Ticket, Calendar, PlusCircle, ArrowRight, ShieldCheck, Clock, Layers, Sparkles, Building2, Heart, BarChart3, MapPin, Eye, Mail, Trash2, CheckCircle2, FileText, DollarSign, MessageSquare, Users, Radio, X, CheckSquare, Plus, HelpCircle } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { createPortal } from 'react-dom';
+import { Ticket, Calendar, PlusCircle, ArrowRight, ShieldCheck, Clock, Layers, Sparkles, Building2, Heart, BarChart3, MapPin, Eye, Mail, Trash2, CheckCircle2, FileText, DollarSign, MessageSquare, Users, Radio, X, CheckSquare, Plus, HelpCircle, UserCheck, RefreshCw, Download, AlertCircle, RotateCcw } from 'lucide-react';
 import EventCard from '../../../shared/components/EventCard';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
 import QuotationViewModal from '../components/QuotationViewModal';
 import ChangeRequestModal from '../components/ChangeRequestModal';
 import TicketModal from '../../attendee/components/TicketModal';
+import CancelEventModal from '../../event-manager/components/CancelEventModal';
+import { fetchClientRequests, fetchClientChangeRequests, fetchEventStats, fetchReportStatus } from '../../../store/requests-actions';
+import { fetchMyTickets, fetchMyRefunds } from '../../../store/tickets-actions';
+import { UIContext } from '../../../context/UIContext';
 
-export default function Dashboard({ user, events = [], onNavigate, onSelectEvent, onVerifyEmailPrompt }) {
-  const [myTickets, setMyTickets] = useState([]);
-  const [myRequests, setMyRequests] = useState([]);
-  const [myChangeRequests, setMyChangeRequests] = useState([]);
-  const [invitations, setInvitations] = useState([]);
-  const [newInvEmail, setNewInvEmail] = useState('');
-  const [newInvName, setNewInvName] = useState('');
-  const [invSuccessMsg, setInvSuccessMsg] = useState('');
-  const [invErrorMsg, setInvErrorMsg] = useState('');
-  const [loading, setLoading] = useState(true);
+const isEventStartedOrCompleted = (evt) => {
+  if (!evt) return false;
+  const status = (evt.status || '').toUpperCase();
+  const opStatus = (evt.operationalStatus || '').toUpperCase();
+  if (
+    ['COMPLETED', 'ONGOING', 'IN_PROGRESS', 'LIVE'].includes(status) ||
+    ['COMPLETED', 'ONGOING', 'IN_PROGRESS', 'LIVE'].includes(opStatus)
+  ) {
+    return true;
+  }
+  const dateStr = evt.startDate || evt.date || evt.eventDate;
+  if (!dateStr) return false;
+  const timeStr = evt.startTime || '09:00 AM';
+  try {
+    const dMatch = String(dateStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dMatch) {
+      const year = parseInt(dMatch[1], 10);
+      const month = parseInt(dMatch[2], 10) - 1;
+      const day = parseInt(dMatch[3], 10);
+      let hours = 0;
+      let minutes = 0;
+      if (timeStr) {
+        const tMatch = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+        if (tMatch) {
+          hours = parseInt(tMatch[1], 10);
+          minutes = parseInt(tMatch[2], 10);
+          const meridiem = tMatch[3] ? tMatch[3].toUpperCase() : null;
+          if (meridiem === 'PM' && hours < 12) hours += 12;
+          if (meridiem === 'AM' && hours === 12) hours = 0;
+        }
+      }
+      const eventTime = new Date(year, month, day, hours, minutes, 0, 0);
+      if (!isNaN(eventTime.getTime()) && eventTime.getTime() <= Date.now()) {
+        return true;
+      }
+    } else {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime()) && parsed.getTime() <= Date.now()) {
+        return true;
+      }
+    }
+  } catch (e) {
+    // Ignore parse errors
+  }
+  return false;
+};
+
+export default function Dashboard({ user: propsUser, events = [], onNavigate: propOnNavigate, onSelectEvent, onVerifyEmailPrompt }) {
+  const dispatch = useDispatch();
+  const ui = useContext(UIContext);
+  const onNavigate = propOnNavigate || ui?.navigate;
+  const reduxUser = useSelector((state) => state.auth.user);
+  const user = propsUser || reduxUser;
+
+  const { requests: myRequests, changeRequests: myChangeRequests, eventStats: selectedStats, reportStatus, loading: requestsLoading } = useSelector((state) => state.requests);
+  const { tickets: myTickets, refunds: myRefunds } = useSelector((state) => state.tickets);
+  const [loading, setLoading] = useState(false);
 
   // Ticket Modal State for Registered Event Cards
   const [selectedTicketForModal, setSelectedTicketForModal] = useState(null);
@@ -32,6 +85,123 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
   // Client Event Workspace Modal State
   const [selectedWorkspaceReq, setSelectedWorkspaceReq] = useState(null);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
+
+  // Live Event Statistics State
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsError, setStatsError] = useState('');
+
+  // Client Refunds State
+  const [cancelModalEvent, setCancelModalEvent] = useState(null);
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [claimFeedback, setClaimFeedback] = useState({ text: '', type: '' });
+
+  const handleFetchEventStats = async (eventId) => {
+    if (!eventId) return;
+    setStatsLoading(true);
+    setStatsError('');
+    try {
+      await dispatch(fetchEventStats(eventId));
+    } catch (err) {
+      setStatsError(err.message || 'Failed to load statistics');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+  const fetchReportStatusData = async (eventId) => {
+    if (!eventId) return;
+    try {
+      await dispatch(fetchReportStatus(eventId));
+    } catch (err) {
+      console.error('Failed to fetch report status', err);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedWorkspaceReq && isWorkspaceOpen) {
+      document.body.style.overflow = 'hidden';
+      handleFetchEventStats(selectedWorkspaceReq.id);
+      fetchReportStatusData(selectedWorkspaceReq.id);
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') setIsWorkspaceOpen(false);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        window.removeEventListener('keydown', handleKeyDown);
+        const activeModals = document.querySelectorAll('[data-wavevents-modal="true"]');
+        if (activeModals.length <= 1) {
+          document.body.style.overflow = '';
+        }
+      };
+    } else {
+      setStatsError('');
+    }
+    setExportLoading(false);
+    setExportError('');
+    setExportSuccess('');
+  }, [selectedWorkspaceReq?.id, isWorkspaceOpen]);
+
+  // Event Analytics Export State
+  const [exportLoading, setExportLoading] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const [exportSuccess, setExportSuccess] = useState('');
+
+  const handleExportAnalytics = async (eventId, eventName) => {
+    if (!eventId || exportLoading) return;
+    setExportLoading(true);
+    setExportError('');
+    setExportSuccess('');
+
+    try {
+      const token = localStorage.getItem('ffsd_token');
+      const res = await fetch(`/api/event-requests/${eventId}/export-analytics`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      if (!res.ok) {
+        let errMsg = 'Failed to export event analytics report';
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch {
+          // not json
+        }
+        throw new Error(errMsg);
+      }
+
+      const disposition = res.headers.get('Content-Disposition') || '';
+      let filename = '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) {
+        filename = match[1];
+      } else {
+        const cleanName = (eventName || 'Event')
+          .replace(/[^a-zA-Z0-9_-]/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '');
+        filename = `Wavevents_Event_Analytics_${cleanName}_${eventId}.pdf`;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      setExportSuccess(`Analytics report downloaded successfully: ${filename}`);
+      setTimeout(() => setExportSuccess(''), 6000);
+    } catch (err) {
+      setExportError(err.message || 'Error downloading analytics report');
+    } finally {
+      setExportLoading(false);
+    }
+  };
 
   // Session Poll Modal State
   const [activePollSession, setActivePollSession] = useState(null);
@@ -98,45 +268,17 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
 
   useEffect(() => {
     fetchDashboardData();
-  }, [user]);
+  }, [user, dispatch]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('ffsd_token');
-      if (!token) return;
-
-      const headers = { 'Authorization': `Bearer ${token}` };
-
-      // Fetch user's tickets
-      const resTickets = await fetch('/api/tickets/my', { headers });
-      if (resTickets.ok) {
-        const data = await resTickets.json();
-        setMyTickets(data.tickets || []);
-      }
-
-      // Fetch user's event requests
-      const resReqs = await fetch('/api/event-requests/my', { headers });
-      if (resReqs.ok) {
-        const data = await resReqs.json();
-        setMyRequests(data.requests || []);
-      }
-
-      // Fetch user's change requests
-      const resCR = await fetch('/api/change-requests/my', { headers });
-      if (resCR.ok) {
-        const data = await resCR.json();
-        setMyChangeRequests(data.changeRequests || []);
-      }
-
-      // Fetch invitations for private event if user is manager or admin
-      if (user && (user.role === 'EVENT_MANAGER' || user.role === 'SUPER_ADMIN' || user.id === 'usr_admin')) {
-        const resInvs = await fetch('/api/invitations/event/evt-4', { headers });
-        if (resInvs.ok) {
-          const data = await resInvs.json();
-          setInvitations(data.invitations || []);
-        }
-      }
+      await Promise.all([
+        dispatch(fetchMyTickets()),
+        dispatch(fetchClientRequests()),
+        dispatch(fetchClientChangeRequests()),
+        dispatch(fetchMyRefunds()),
+      ]);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     } finally {
@@ -144,49 +286,29 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
     }
   };
 
-  const handleCreateInvitation = async (e) => {
-    e.preventDefault();
-    setInvSuccessMsg('');
-    setInvErrorMsg('');
+  const handleClaimQuotationRefund = async (quotationId, eventId) => {
+    setClaimLoading(true);
+    setClaimFeedback({ text: '', type: '' });
     try {
       const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/invitations/create', {
+      const res = await fetch('/api/refunds/request', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          Authorization: `Bearer ${token}`
         },
-        body: JSON.stringify({
-          eventId: 'evt-4',
-          recipientEmail: newInvEmail,
-          recipientName: newInvName,
-          expiresInDays: 7
-        })
+        body: JSON.stringify({ quotationId, eventId, reason: 'Client requested contract refund' })
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to issue invitation.');
-
-      setInvSuccessMsg(`Invitation issued! Code: ${data.invitation.inviteCode} | Token: ${data.invitation.invitationToken}`);
-      setNewInvEmail('');
-      setNewInvName('');
-      fetchDashboardData();
-    } catch (err) {
-      setInvErrorMsg(err.message);
-    }
-  };
-
-  const handleRevokeInvitation = async (invId) => {
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/invitations/${invId}/revoke`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        fetchDashboardData();
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || 'Failed to submit refund claim.');
       }
+      setClaimFeedback({ text: 'Contract refund request submitted successfully to the Revenue Team.', type: 'success' });
+      await fetchDashboardData();
     } catch (err) {
-      console.error('Error revoking invitation:', err);
+      setClaimFeedback({ text: err.message, type: 'error' });
+    } finally {
+      setClaimLoading(false);
     }
   };
 
@@ -423,120 +545,7 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
         </div>
       </section>
 
-      {/* 5. PRIVATE EVENT INVITATION SECURITY MANAGEMENT PANEL */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-base font-extrabold text-[#26334A] flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-amber-600" />
-            <span>Private Event Invitation Management</span>
-          </h3>
-          <span className="text-xs font-bold text-amber-800 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
-            {invitations.length} Issued Invitations
-          </span>
-        </div>
-
-        <div className="p-6 rounded-3xl glass-light border border-white shadow-sm space-y-6">
-          
-          {/* Issue New Invitation Form */}
-          <form onSubmit={handleCreateInvitation} className="space-y-3 p-4 rounded-2xl bg-white/70 border border-slate-200/80">
-            <div className="text-xs font-extrabold text-[#26334A] flex items-center gap-2">
-              <Mail className="w-4 h-4 text-indigo-600" />
-              <span>Issue Recipient-Bound Invitation (Private Event: Private Executive Leadership Roundtable)</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <input
-                type="email"
-                required
-                value={newInvEmail}
-                onChange={(e) => setNewInvEmail(e.target.value)}
-                placeholder="Recipient Email (e.g. attendee@company.com)"
-                className="px-3.5 py-2 glass-input-light rounded-xl text-xs font-medium focus:border-indigo-400"
-              />
-              <input
-                type="text"
-                value={newInvName}
-                onChange={(e) => setNewInvName(e.target.value)}
-                placeholder="Recipient Name (Optional)"
-                className="px-3.5 py-2 glass-input-light rounded-xl text-xs font-medium focus:border-indigo-400"
-              />
-              <button
-                type="submit"
-                className="py-2 px-4 rounded-xl bg-[#26334A] hover:bg-slate-800 text-white font-extrabold text-xs transition shadow-xs flex items-center justify-center gap-1.5"
-              >
-                <PlusCircle className="w-4 h-4" />
-                <span>Issue Invitation Token</span>
-              </button>
-            </div>
-
-            {invSuccessMsg && (
-              <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold break-all">
-                ✓ {invSuccessMsg}
-              </div>
-            )}
-            {invErrorMsg && (
-              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold">
-                ✕ {invErrorMsg}
-              </div>
-            )}
-          </form>
-
-          {/* Invitation Tracking Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead>
-                <tr className="border-b border-slate-200 text-[#64748B] font-extrabold uppercase tracking-wider">
-                  <th className="pb-3 px-2">Recipient Email</th>
-                  <th className="pb-3 px-2">Invite Code</th>
-                  <th className="pb-3 px-2">Token</th>
-                  <th className="pb-3 px-2">Status</th>
-                  <th className="pb-3 px-2">Expires At</th>
-                  <th className="pb-3 px-2 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-medium text-[#26334A]">
-                {invitations.map((inv) => {
-                  const statusColors = {
-                    pending: 'bg-amber-100 text-amber-900 border-amber-200',
-                    accepted: 'bg-emerald-100 text-emerald-900 border-emerald-200',
-                    revoked: 'bg-rose-100 text-rose-900 border-rose-200',
-                    expired: 'bg-slate-100 text-slate-700 border-slate-200'
-                  };
-                  return (
-                    <tr key={inv.id} className="hover:bg-white/50 transition">
-                      <td className="py-3 px-2 font-bold">{inv.recipientEmail}</td>
-                      <td className="py-3 px-2 font-mono font-bold text-indigo-700">{inv.inviteCode}</td>
-                      <td className="py-3 px-2 font-mono text-[11px] text-slate-500 max-w-[140px] truncate" title={inv.invitationToken}>
-                        {inv.invitationToken}
-                      </td>
-                      <td className="py-3 px-2">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider border ${statusColors[inv.status] || 'bg-slate-100'}`}>
-                          {inv.status}
-                        </span>
-                      </td>
-                      <td className="py-3 px-2 text-slate-500 text-[11px]">{inv.expiresAt}</td>
-                      <td className="py-3 px-2 text-right">
-                        {inv.status === 'pending' && (
-                          <button
-                            onClick={() => handleRevokeInvitation(inv.id)}
-                            className="px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 font-extrabold text-[11px] transition border border-rose-200 flex items-center gap-1 ml-auto"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                            Revoke
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-        </div>
-      </section>
-
-      {/* 6. CLIENT COMMERCIAL PROPOSALS & QUOTATIONS SECTION */}
+      {/* 5. CLIENT COMMERCIAL PROPOSALS & QUOTATIONS SECTION */}
       {myRequests.length > 0 && (
         <section className="space-y-4">
           <div className="flex items-center justify-between">
@@ -564,7 +573,9 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
                       <div>
                         <h4 className="font-extrabold text-[#26334A] text-base">{req.eventName}</h4>
-                        <p className="text-xs text-[#64748B] font-medium">{req.organizationName} • {req.eventDate} • {req.venue}</p>
+                        <p className="text-xs text-[#64748B] font-medium">
+                          {req.organizationName} • {req.startDate && req.endDate && req.startDate !== req.endDate ? `${req.startDate} to ${req.endDate}` : (req.startDate || req.eventDate)} • {req.venue}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap">
                         <StatusBadge status={req.operationalStatus || req.status} />
@@ -598,17 +609,36 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
                           <Sparkles className="w-3.5 h-3.5" />
                           <span>Request Change</span>
                         </button>
+                        {req.operationalStatus !== 'CANCELLED' && req.status !== 'CANCELLED' && (
+                          isEventStartedOrCompleted(req) ? (
+                            <span
+                              className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 border border-slate-200 font-extrabold text-xs shadow-2xs flex items-center gap-1.5"
+                              title="This event cannot be cancelled because it has already started or has been completed."
+                            >
+                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{req.operationalStatus === 'COMPLETED' || req.status === 'COMPLETED' ? 'Completed – Cancellation Unavailable' : 'Ongoing – Cancellation Unavailable'}</span>
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => setCancelModalEvent(req)}
+                              className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                            >
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Cancel Event</span>
+                            </button>
+                          )
+                        )}
                       </div>
                     </div>
 
                     {/* Grid: Event Team & Recent Activity Timeline */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
                       
-                      {/* Event Team Box */}
+                      {/* Event Team & Attendance Statistics Box */}
                       <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-100 space-y-2">
                         <div className="font-extrabold text-indigo-900 flex items-center gap-1.5">
                           <Users className="w-4 h-4 text-indigo-600" />
-                          <span>ASSIGNED EVENT TEAM</span>
+                          <span>ASSIGNED EVENT TEAM & ATTENDANCE</span>
                         </div>
                         <div className="space-y-1.5 pt-1">
                           <div className="flex items-center justify-between p-2 rounded-xl bg-white/80 border border-white">
@@ -622,6 +652,28 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
                             <span className={`font-extrabold ${req.onsiteCoordinatorName ? 'text-teal-900' : 'text-slate-400 font-normal italic'}`}>
                               {req.onsiteCoordinatorName || 'Pending Assignment'} {req.onsiteCoordinatorEmail ? `(${req.onsiteCoordinatorEmail})` : ''}
                             </span>
+                          </div>
+
+                          {/* Tickets Sold & Check-ins Statistics */}
+                          <div className="grid grid-cols-2 gap-2 pt-1 border-t border-indigo-100">
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-white/90 border border-white shadow-2xs">
+                              <span className="font-semibold text-slate-600 flex items-center gap-1">
+                                <Ticket className="w-3.5 h-3.5 text-indigo-600" />
+                                <span>Tickets Sold:</span>
+                              </span>
+                              <span className="font-extrabold text-indigo-900 text-sm">
+                                {req.ticketsSold != null ? req.ticketsSold.toLocaleString() : '0'}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between p-2 rounded-xl bg-white/90 border border-white shadow-2xs">
+                              <span className="font-semibold text-slate-600 flex items-center gap-1">
+                                <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Attendee Check-ins:</span>
+                              </span>
+                              <span className="font-extrabold text-emerald-900 text-sm">
+                                {req.attendeeCheckIns != null ? req.attendeeCheckIns.toLocaleString() : '0'}
+                              </span>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -716,202 +768,635 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
         </section>
       )}
 
-      {/* CLIENT EVENT WORKSPACE MODAL */}
-      {isWorkspaceOpen && selectedWorkspaceReq && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-4xl max-h-[90vh] overflow-y-auto glass-modal-light rounded-3xl p-6 sm:p-8 border border-white shadow-2xl space-y-6">
-            
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-indigo-100 text-indigo-900 border border-indigo-200">
-                    Client Event Workspace
-                  </span>
-                  <StatusBadge status={selectedWorkspaceReq.operationalStatus || selectedWorkspaceReq.status} />
-                </div>
-                <h2 className="text-2xl font-extrabold text-[#26334A] mt-2">
-                  {selectedWorkspaceReq.eventName}
-                </h2>
-                <p className="text-xs text-[#64748B] font-medium">
-                  {selectedWorkspaceReq.organizationName} • {selectedWorkspaceReq.category}
-                </p>
-              </div>
+      {/* 6. CLIENT REFUND SETTLEMENTS & COMMERCIAL POLICY BREAKDOWN */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-extrabold text-[#26334A] flex items-center gap-2">
+            <RotateCcw className="w-5 h-5 text-amber-600" />
+            <span>Event Refunds & Financial Settlements</span>
+          </h3>
+          <span className="text-xs font-bold text-amber-900 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+            {myRefunds.length} Refund Records
+          </span>
+        </div>
 
-              <button
-                onClick={() => setIsWorkspaceOpen(false)}
-                className="p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+        {claimFeedback.text && (
+          <div className={`p-4 rounded-2xl font-bold text-xs flex items-center gap-2 ${
+            claimFeedback.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'
+          }`}>
+            {claimFeedback.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
+            <span>{claimFeedback.text}</span>
+          </div>
+        )}
+
+        {myRefunds.length === 0 ? (
+          <div className="p-8 rounded-3xl glass-light border border-white text-center space-y-2">
+            <RotateCcw className="w-8 h-8 text-slate-300 mx-auto" />
+            <h4 className="text-sm font-extrabold text-slate-700">No Active Event Refunds</h4>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              You do not have any cancelled events or pending refund settlements.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {myRefunds.map((ref) => (
+              <div
+                key={ref.id}
+                className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4 hover:shadow-md transition"
               >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* SECTION A: EVENT INFORMATION */}
-            <div className="space-y-3">
-              <h3 className="text-sm font-extrabold text-indigo-900 uppercase tracking-wider flex items-center gap-2">
-                <Building2 className="w-4 h-4 text-indigo-600" />
-                <span>A. Event Details & Profile</span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
-                <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 space-y-1">
-                  <span className="text-[10px] font-extrabold text-slate-500 uppercase block">Date & Time</span>
-                  <span className="font-extrabold text-[#26334A]">{selectedWorkspaceReq.eventDate}</span>
-                  <span className="text-[11px] text-slate-500 block">{selectedWorkspaceReq.startTime} - {selectedWorkspaceReq.endTime}</span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 space-y-1">
-                  <span className="text-[10px] font-extrabold text-slate-500 uppercase block">Venue & Location</span>
-                  <span className="font-extrabold text-[#26334A]">{selectedWorkspaceReq.venue}</span>
-                  <span className="text-[11px] text-slate-500 block">{selectedWorkspaceReq.location}</span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 space-y-1">
-                  <span className="text-[10px] font-extrabold text-slate-500 uppercase block">Expected Capacity</span>
-                  <span className="font-extrabold text-[#26334A]">{selectedWorkspaceReq.expectedAttendance} Attendees</span>
-                  <span className="text-[11px] text-slate-500 block">{selectedWorkspaceReq.eventType}</span>
-                </div>
-                <div className="p-3.5 rounded-2xl bg-white/90 border border-slate-200/80 space-y-1">
-                  <span className="text-[10px] font-extrabold text-slate-500 uppercase block">Commercial Status</span>
-                  <span className="font-extrabold text-indigo-700">{selectedWorkspaceReq.status}</span>
-                  <span className="text-[11px] text-slate-500 block">Quotation: {selectedWorkspaceReq.quotationStatus || 'FINALIZED'}</span>
-                </div>
-              </div>
-              {selectedWorkspaceReq.description && (
-                <div className="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-100 text-xs text-[#26334A]">
-                  <strong className="font-extrabold">Description:</strong> {selectedWorkspaceReq.description}
-                </div>
-              )}
-            </div>
-
-            {/* SECTION B: EVENT TEAM */}
-            <div className="space-y-3 pt-2">
-              <h3 className="text-sm font-extrabold text-purple-900 uppercase tracking-wider flex items-center gap-2">
-                <Users className="w-4 h-4 text-purple-600" />
-                <span>B. Assigned Operations Team</span>
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
-                <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-1">
-                  <div className="font-extrabold text-purple-950 flex items-center gap-1.5">
-                    <CheckSquare className="w-4 h-4 text-purple-700" />
-                    <span>Event Manager</span>
-                  </div>
-                  <div className="font-bold text-[#26334A]">
-                    {selectedWorkspaceReq.eventManagerName || 'Pending Assignment'}
-                  </div>
-                  {selectedWorkspaceReq.eventManagerEmail && (
-                    <div className="text-[11px] text-purple-800 font-medium">
-                      Email: {selectedWorkspaceReq.eventManagerEmail}
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg">
+                        {ref.refundNumber}
+                      </span>
+                      <StatusBadge status={ref.status} />
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 border border-purple-200">
+                        {ref.customerType}
+                      </span>
                     </div>
-                  )}
-                </div>
+                    <h4 className="text-lg font-extrabold text-[#26334A]">{ref.eventName}</h4>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Event Date: <strong>{ref.eventDate || 'N/A'}</strong>
+                    </p>
+                  </div>
 
-                <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-200 space-y-1">
-                  <div className="font-extrabold text-teal-950 flex items-center gap-1.5">
-                    <Radio className="w-4 h-4 text-teal-700" />
-                    <span>Onsite Coordinator</span>
-                  </div>
-                  <div className="font-bold text-[#26334A]">
-                    {selectedWorkspaceReq.onsiteCoordinatorName || 'Pending Assignment'}
-                  </div>
-                  {selectedWorkspaceReq.onsiteCoordinatorEmail && (
-                    <div className="text-[11px] text-teal-800 font-medium">
-                      Email: {selectedWorkspaceReq.onsiteCoordinatorEmail}
+                  <div className="text-left sm:text-right space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                      Final Refundable Balance
+                    </span>
+                    <div className="text-2xl font-black text-emerald-700 font-mono">
+                      ₹{Number(ref.refundableAmount || 0).toLocaleString()}
                     </div>
-                  )}
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      Paid: ₹{Number(ref.totalPaidAmount || ref.originalPaymentAmount || 0).toLocaleString()}
+                      {ref.deductionAmount > 0 && ` • Deductions: -₹${Number(ref.deductionAmount).toLocaleString()}`}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            {/* SECTION C: EVENT AGENDA & SESSIONS */}
-            <div className="space-y-3 pt-2">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-indigo-600" />
-                  <span>C. Event Agenda & Sessions</span>
-                </h3>
-              </div>
+                {/* 3-Stage Payment Schedule Breakdown Banner (for B2B Client) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center text-xs">
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Amount Paid</span>
+                    <span className="text-sm font-black text-slate-900 font-mono">
+                      ₹{Number(ref.totalPaidAmount || ref.originalPaymentAmount || 0).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Verified Collections</span>
+                  </div>
 
-              {/* Sessions list */}
-              {(() => {
-                const sessionsList = (selectedWorkspaceReq.sessions && selectedWorkspaceReq.sessions.length > 0)
-                  ? selectedWorkspaceReq.sessions
-                  : [
-                      {
-                        id: `sess_default_1_${selectedWorkspaceReq.id}`,
-                        title: `${selectedWorkspaceReq.eventName} — Opening Keynote & Workshop`,
-                        hall: selectedWorkspaceReq.venue || 'Main Auditorium',
-                        startTime: selectedWorkspaceReq.startTime || '09:00 AM',
-                        endTime: selectedWorkspaceReq.endTime || '12:00 PM',
-                        speakerName: 'Lead Keynote Speaker',
-                        status: 'SCHEDULED',
-                      },
-                      {
-                        id: `sess_default_2_${selectedWorkspaceReq.id}`,
-                        title: `${selectedWorkspaceReq.eventName} — Technical Deep Dive & Interactive Q&A`,
-                        hall: 'Seminar Hall B',
-                        startTime: '01:30 PM',
-                        endTime: '05:00 PM',
-                        speakerName: 'Industry Panel Speaker',
-                        status: 'SCHEDULED',
-                      }
-                    ];
+                  <div className="p-3 rounded-2xl bg-rose-50/60 border border-rose-100">
+                    <span className="text-[10px] font-bold text-rose-700 uppercase block">Contractual / Verified Deductions</span>
+                    <span className="text-sm font-black text-rose-900 font-mono">
+                      -₹{Number(ref.deductionAmount || 0).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-rose-600 block mt-0.5 truncate" title={ref.deductionReason}>
+                      {ref.deductionReason || 'No deductions applied'}
+                    </span>
+                  </div>
 
-                return (
-                  <div className="space-y-3">
-                    {sessionsList.map((sess, idx) => (
-                      <div key={sess.id || idx} className="p-4 rounded-2xl bg-white/90 border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase bg-purple-100 text-purple-900">
-                              SESSION #{idx + 1}
-                            </span>
-                            <span className="text-xs font-bold text-slate-500">{sess.startTime} - {sess.endTime}</span>
-                            <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-900 uppercase">
-                              {sess.status || 'SCHEDULED'}
-                            </span>
-                          </div>
-                          <h4 className="text-sm font-extrabold text-[#26334A]">{sess.title}</h4>
-                          <p className="text-xs text-[#64748B] font-medium">
-                            📍 {sess.hall || sess.venue || 'Main Hall'} • 🎤 Speaker: {sess.speakerName || sess.speaker || 'Assigned Expert'}
-                          </p>
+                  <div className="p-3 rounded-2xl bg-indigo-50/60 border border-indigo-100">
+                    <span className="text-[10px] font-bold text-indigo-700 uppercase block">Payment Schedule Alignment</span>
+                    <span className="text-xs font-black text-indigo-950 block">
+                      35% Advance • 45% Milestone • 20% Final
+                    </span>
+                    <span className="text-[10px] text-indigo-700 block mt-0.5">Per Contract Terms</span>
+                  </div>
+                </div>
+
+                {/* Cancellation Context & Terms Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                      Cancellation Reason
+                    </span>
+                    <p className="text-slate-800 font-medium">
+                      "{ref.cancellationReason || 'Event cancelled per contract agreement.'}"
+                    </p>
+                    {ref.cancellationInitiatorName && (
+                      <div className="text-[10px] text-slate-400 pt-1">
+                        Initiator: {ref.cancellationInitiatorName} ({ref.cancellationInitiatorRole}) at {ref.cancellationTimestamp}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                      Settlement Details & Terms
+                    </span>
+                    {ref.refundTransactionId ? (
+                      <div className="space-y-0.5">
+                        <div className="text-emerald-800 font-bold">
+                          Settlement Reference: <span className="font-mono">{ref.refundTransactionId}</span>
                         </div>
-
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            onClick={() => {
-                              setActivePollSession(sess);
-                              fetchSessionPolls(selectedWorkspaceReq.id, sess.id);
-                              setPollFeedback('');
-                            }}
-                            className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
-                          >
-                            <BarChart3 className="w-3.5 h-3.5" />
-                            <span>Session Polls</span>
-                          </button>
+                        <div className="text-[10px] text-slate-500">
+                          Disbursed via {ref.refundMethod || 'Original Method'} on {ref.refundedAt}
                         </div>
                       </div>
-                    ))}
+                    ) : ref.status === 'REJECTED' ? (
+                      <div className="text-rose-700 font-medium">
+                        Rejected: {ref.rejectionReason}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 font-medium">
+                        Managed by the REVENUE department. Payout reference will appear here upon completion.
+                      </p>
+                    )}
+                    {ref.cancellationTerms && (
+                      <p className="text-[10px] text-slate-400 pt-1">
+                        Terms: {ref.cancellationTerms}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Claim Refund button if status === 'ELIGIBLE' */}
+                {ref.status === 'ELIGIBLE' && (
+                  <div className="flex justify-end pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => handleClaimQuotationRefund(ref.quotationId, ref.eventId)}
+                      disabled={claimLoading}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-700 hover:to-indigo-700 text-white font-extrabold text-xs shadow-xs cursor-pointer transition flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Request Contract Refund Review</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* CANCEL EVENT MODAL FOR CLIENT */}
+      {cancelModalEvent && (
+        <CancelEventModal
+          event={cancelModalEvent}
+          onClose={() => setCancelModalEvent(null)}
+          onSuccess={() => {
+            fetchDashboardData();
+          }}
+        />
+      )}
+
+      {/* CLIENT EVENT WORKSPACE MODAL */}
+      {isWorkspaceOpen && selectedWorkspaceReq && typeof document !== 'undefined' && createPortal(
+        <div
+          data-wavevents-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsWorkspaceOpen(false);
+          }}
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 md:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+        >
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white rounded-3xl shadow-2xl border border-slate-100 flex flex-col overflow-hidden text-[#26334A]">
+            
+            {/* Top Brand Gradient Ribbon */}
+            <div className="h-2.5 bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 shrink-0" />
+
+            {/* Close Button */}
+            <button
+              onClick={() => setIsWorkspaceOpen(false)}
+              aria-label="Close Workspace Modal"
+              className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition z-10 cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Scrollable Modal Body */}
+            <div className="p-5 sm:p-7 md:p-8 overflow-y-auto space-y-6">
+              
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1">
+                      <Layers className="w-3 h-3 text-indigo-600" />
+                      Client Event Workspace
+                    </span>
+                    <StatusBadge status={selectedWorkspaceReq.operationalStatus || selectedWorkspaceReq.status} />
+                  </div>
+                  <h2 className="text-2xl font-black text-slate-900 tracking-tight">
+                    {selectedWorkspaceReq.eventName}
+                  </h2>
+                  <p className="text-xs text-slate-500 font-medium">
+                    {selectedWorkspaceReq.organizationName} • {selectedWorkspaceReq.category}
+                  </p>
+                </div>
+              </div>
+
+              {/* SECTION A: EVENT INFORMATION */}
+              <div className="space-y-3">
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Building2 className="w-3.5 h-3.5 text-indigo-600" />
+                  <span>A. Event Details & Profile</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs">
+                  <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/80 space-y-1">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Date & Time</span>
+                    <span className="font-extrabold text-slate-900 block">
+                      {selectedWorkspaceReq.startDate && selectedWorkspaceReq.endDate && selectedWorkspaceReq.startDate !== selectedWorkspaceReq.endDate
+                        ? `${selectedWorkspaceReq.startDate} to ${selectedWorkspaceReq.endDate}`
+                        : (selectedWorkspaceReq.startDate || selectedWorkspaceReq.eventDate)}
+                    </span>
+                    <span className="text-[11px] text-slate-500 block">{selectedWorkspaceReq.startTime} - {selectedWorkspaceReq.endTime}</span>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/80 space-y-1">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Venue & Location</span>
+                    <span className="font-extrabold text-slate-900 block truncate">{selectedWorkspaceReq.venue}</span>
+                    <span className="text-[11px] text-slate-500 block truncate">{selectedWorkspaceReq.location}</span>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/80 space-y-1">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Expected Capacity</span>
+                    <span className="font-extrabold text-slate-900 block">{selectedWorkspaceReq.expectedAttendance} Attendees</span>
+                    <span className="text-[11px] text-slate-500 block">{selectedWorkspaceReq.eventType}</span>
+                  </div>
+                  <div className="p-3.5 rounded-2xl bg-slate-50/90 border border-slate-200/80 space-y-1">
+                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Commercial Status</span>
+                    <span className="font-extrabold text-indigo-700 block">{selectedWorkspaceReq.status}</span>
+                    <span className="text-[11px] text-slate-500 block">Quotation: {selectedWorkspaceReq.quotationStatus || 'FINALIZED'}</span>
+                  </div>
+                </div>
+                {selectedWorkspaceReq.description && (
+                  <div className="p-3.5 rounded-2xl bg-indigo-50/50 border border-indigo-100 text-xs text-slate-800">
+                    <strong className="font-black text-indigo-950">Description: </strong>
+                    <span className="font-medium text-slate-700">{selectedWorkspaceReq.description}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* SECTION B: EVENT TEAM */}
+              <div className="space-y-3 pt-2">
+                <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-purple-600" />
+                  <span>B. Assigned Operations Team</span>
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-1.5">
+                    <div className="font-black text-purple-950 flex items-center gap-1.5">
+                      <UserCheck className="w-4 h-4 text-purple-700" />
+                      <span>Event Manager</span>
+                    </div>
+                    <div className="font-extrabold text-slate-900 text-sm">
+                      {selectedWorkspaceReq.eventManagerName || 'Pending Assignment'}
+                    </div>
+                    {selectedWorkspaceReq.eventManagerEmail ? (
+                      <div className="text-[11px] text-purple-800 font-medium font-mono">
+                        {selectedWorkspaceReq.eventManagerEmail}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 font-medium">Assigned upon quotation approval</div>
+                    )}
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-teal-50/70 border border-teal-200 space-y-1.5">
+                    <div className="font-black text-teal-950 flex items-center gap-1.5">
+                      <Radio className="w-4 h-4 text-teal-700" />
+                      <span>Onsite Coordinator</span>
+                    </div>
+                    <div className="font-extrabold text-slate-900 text-sm">
+                      {selectedWorkspaceReq.onsiteCoordinatorName || 'Pending Assignment'}
+                    </div>
+                    {selectedWorkspaceReq.onsiteCoordinatorEmail ? (
+                      <div className="text-[11px] text-teal-800 font-medium font-mono">
+                        {selectedWorkspaceReq.onsiteCoordinatorEmail}
+                      </div>
+                    ) : (
+                      <div className="text-[11px] text-slate-400 font-medium">Assigned prior to event execution</div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION C: LIVE ATTENDANCE & TICKETING METRICS */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <BarChart3 className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>C. Real-Time Ticketing & Attendance</span>
+                  </h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      fetchEventStats(selectedWorkspaceReq.id);
+                      fetchReportStatus(selectedWorkspaceReq.id);
+                    }}
+                    disabled={statsLoading || reportStatusLoading}
+                    className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 transition cursor-pointer"
+                  >
+                    <RefreshCw className={`w-3 h-3 ${statsLoading || reportStatusLoading ? 'animate-spin' : ''}`} />
+                    <span>Refresh Metrics</span>
+                  </button>
+                </div>
+
+                {statsError && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center justify-between">
+                    <span>⚠️ {statsError}</span>
+                    <button
+                      type="button"
+                      onClick={() => fetchEventStats(selectedWorkspaceReq.id)}
+                      className="font-bold underline cursor-pointer"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-200 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-indigo-900 uppercase tracking-wider">Tickets Sold</span>
+                      <Ticket className="w-4 h-4 text-indigo-600" />
+                    </div>
+                    <div className="text-2xl font-black text-indigo-950">
+                      {statsLoading ? (
+                        <span className="text-slate-400 text-base font-normal animate-pulse">Loading...</span>
+                      ) : (
+                        (selectedStats?.ticketsSold != null ? selectedStats.ticketsSold : (selectedWorkspaceReq.ticketsSold ?? 0)).toLocaleString()
+                      )}
+                    </div>
+                    <div className="text-[11px] text-indigo-700 font-medium">
+                      Confirmed tickets issued
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-emerald-900 uppercase tracking-wider">Checked In</span>
+                      <UserCheck className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="text-2xl font-black text-emerald-950">
+                      {statsLoading ? (
+                        <span className="text-slate-400 text-base font-normal animate-pulse">Loading...</span>
+                      ) : (
+                        (selectedStats?.attendeeCheckIns != null ? selectedStats.attendeeCheckIns : (selectedWorkspaceReq.attendeeCheckIns ?? 0)).toLocaleString()
+                      )}
+                    </div>
+                    <div className="text-[11px] text-emerald-700 font-medium">
+                      Verified onsite arrivals
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-purple-50/70 border border-purple-200 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-black text-purple-900 uppercase tracking-wider">Attendance Rate</span>
+                      <BarChart3 className="w-4 h-4 text-purple-600" />
+                    </div>
+                    <div className="text-2xl font-black text-purple-950">
+                      {(() => {
+                        const t = selectedStats?.ticketsSold ?? selectedWorkspaceReq.ticketsSold ?? 0;
+                        const c = selectedStats?.attendeeCheckIns ?? selectedWorkspaceReq.attendeeCheckIns ?? 0;
+                        return t > 0 ? `${((c / t) * 100).toFixed(1)}%` : '0.0%';
+                      })()}
+                    </div>
+                    <div className="text-[11px] text-purple-700 font-medium">
+                      Onsite turnout percentage
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION D: EXECUTIVE ANALYTICS REPORT (COMPLETION-BASED EXPORT) */}
+              {(() => {
+                const isCompleted = reportStatus?.isCompleted ?? (
+                  selectedWorkspaceReq.operationalStatus === 'COMPLETED' ||
+                  selectedWorkspaceReq.status === 'COMPLETED'
+                );
+                const reportExists = Boolean(reportStatus?.reportExists);
+                const reportData = reportStatus?.report;
+
+                return (
+                  <div className="space-y-3 pt-2">
+                    <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>D. Executive Analytics Report</span>
+                    </h3>
+
+                    <div className="p-4 sm:p-5 rounded-2xl border bg-slate-50/80 border-slate-200/90 space-y-3">
+                      {/* Case A: Event Not Completed */}
+                      {!isCompleted ? (
+                        <div className="space-y-3">
+                          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-900">
+                            <Clock className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                            <div className="space-y-0.5">
+                              <span className="font-extrabold text-xs block">Analytics Report Available Post-Completion</span>
+                              <p className="text-xs text-amber-800">
+                                The analytics report will be available after the event is completed.
+                              </p>
+                              <p className="text-[11px] text-amber-700">
+                                Current operational status: <strong>{selectedWorkspaceReq.operationalStatus || selectedWorkspaceReq.status || 'IN_PROGRESS'}</strong>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                            <div className="text-xs text-slate-500 font-medium">
+                              Official post-event performance, attendance rates, and revenue audit require final event completion.
+                            </div>
+                            <button
+                              type="button"
+                              disabled
+                              title="The analytics report will be available after the event is completed."
+                              className="px-4 py-2.5 rounded-xl bg-slate-200 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed shrink-0"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Export Analytics PDF</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : !reportExists ? (
+                        /* Case B: Event Completed, But Report Not Yet Generated */
+                        <div className="space-y-3">
+                          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-sky-50/80 border border-sky-200 text-sky-900">
+                            <AlertCircle className="w-5 h-5 text-sky-600 shrink-0 mt-0.5" />
+                            <div className="space-y-0.5">
+                              <span className="font-extrabold text-xs block">Event Completed — Awaiting Event Manager Report</span>
+                              <p className="text-xs text-sky-800">
+                                The event is completed. The Event Manager's analytics report is not available yet.
+                              </p>
+                              <p className="text-[11px] text-sky-700">
+                                The assigned Event Manager ({selectedWorkspaceReq.eventManagerName || 'Operations Team'}) is preparing the formal audit report.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                            <div className="text-xs text-slate-500 font-medium">
+                              Report compilation in progress. Please check back shortly or refresh status.
+                            </div>
+                            <button
+                              type="button"
+                              disabled
+                              title="The Event Manager's analytics report is not available yet."
+                              className="px-4 py-2.5 rounded-xl bg-slate-200 text-slate-400 font-bold text-xs flex items-center justify-center gap-2 cursor-not-allowed shrink-0"
+                            >
+                              <RefreshCw className="w-3.5 h-3.5" />
+                              <span>Report Pending Review</span>
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        /* Case C: Event Completed And Report Generated */
+                        <div className="space-y-3">
+                          <div className="flex items-start gap-3 p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 text-emerald-900">
+                            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                            <div className="space-y-0.5">
+                              <span className="font-extrabold text-xs block">Official Event Manager Analytics Report Ready</span>
+                              <p className="text-xs text-emerald-800">
+                                Persisted executive analytics report generated by <strong>{reportData?.generatedByName || selectedWorkspaceReq.eventManagerName || 'Event Manager'}</strong> on {reportData?.generatedAt || 'recent audit'}.
+                              </p>
+                              <p className="text-[11px] text-emerald-700">
+                                Verified metrics: {selectedStats?.ticketsSold ?? selectedWorkspaceReq.ticketsSold ?? 0} tickets sold • {selectedStats?.attendeeCheckIns ?? selectedWorkspaceReq.attendeeCheckIns ?? 0} attendees checked in.
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
+                            <div className="text-xs text-slate-500 font-medium">
+                              Official PDF report ready for download with audit stamp and performance metrics.
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleExportAnalytics(selectedWorkspaceReq.id, selectedWorkspaceReq.eventName)}
+                              disabled={exportLoading}
+                              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-black text-xs shadow-md shadow-indigo-500/20 hover:shadow-lg transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 shrink-0"
+                            >
+                              {exportLoading ? (
+                                <>
+                                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                  <span>Downloading Official PDF...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Export Analytics PDF</span>
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {exportSuccess && (
+                        <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                          <span>{exportSuccess}</span>
+                        </div>
+                      )}
+
+                      {exportError && (
+                        <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>{exportError}</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
-            </div>
 
-            {/* Footer Close */}
-            <div className="pt-4 border-t border-slate-200 flex justify-end">
-              <button
-                onClick={() => setIsWorkspaceOpen(false)}
-                className="px-6 py-2.5 rounded-xl bg-slate-200 text-slate-800 font-extrabold text-xs hover:bg-slate-300 transition"
-              >
-                Close Workspace
-              </button>
-            </div>
+              {/* SECTION E: EVENT AGENDA & SESSIONS */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                    <span>E. Event Agenda & Sessions</span>
+                  </h3>
+                </div>
 
+                {/* Sessions list */}
+                {(() => {
+                  const sessionsList = (selectedWorkspaceReq.sessions && selectedWorkspaceReq.sessions.length > 0)
+                    ? selectedWorkspaceReq.sessions
+                    : [
+                        {
+                          id: `sess_default_1_${selectedWorkspaceReq.id}`,
+                          title: `${selectedWorkspaceReq.eventName} — Opening Keynote & Workshop`,
+                          hall: selectedWorkspaceReq.venue || 'Main Auditorium',
+                          startTime: selectedWorkspaceReq.startTime || '09:00 AM',
+                          endTime: selectedWorkspaceReq.endTime || '12:00 PM',
+                          speakerName: 'Lead Keynote Speaker',
+                          status: 'SCHEDULED',
+                        },
+                        {
+                          id: `sess_default_2_${selectedWorkspaceReq.id}`,
+                          title: `${selectedWorkspaceReq.eventName} — Technical Deep Dive & Interactive Q&A`,
+                          hall: 'Seminar Hall B',
+                          startTime: '01:30 PM',
+                          endTime: '05:00 PM',
+                          speakerName: 'Industry Panel Speaker',
+                          status: 'SCHEDULED',
+                        }
+                      ];
+
+                  return (
+                    <div className="space-y-3">
+                      {sessionsList.map((sess, idx) => (
+                        <div key={sess.id || idx} className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-black uppercase bg-purple-100 text-purple-900 font-mono">
+                                SESSION #{idx + 1}
+                              </span>
+                              <span className="text-xs font-bold text-slate-500">{sess.startTime} - {sess.endTime}</span>
+                              <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-100 text-emerald-900 uppercase">
+                                {sess.status || 'SCHEDULED'}
+                              </span>
+                            </div>
+                            <h4 className="text-sm font-extrabold text-slate-900">{sess.title}</h4>
+                            <p className="text-xs text-slate-500 font-medium">
+                              📍 {sess.hall || sess.venue || 'Main Hall'} • 🎤 Speaker: {sess.speakerName || sess.speaker || 'Assigned Expert'}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            <button
+                              onClick={() => {
+                                setActivePollSession(sess);
+                                fetchSessionPolls(selectedWorkspaceReq.id, sess.id);
+                                setPollFeedback('');
+                              }}
+                              className="px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-black text-xs transition shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                            >
+                              <BarChart3 className="w-3.5 h-3.5" />
+                              <span>Session Polls</span>
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+
+              {/* Footer Close */}
+              <div className="pt-4 border-t border-slate-100 flex justify-end">
+                <button
+                  onClick={() => setIsWorkspaceOpen(false)}
+                  className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-black text-xs hover:bg-slate-200 transition cursor-pointer"
+                >
+                  Close Workspace
+                </button>
+              </div>
+
+            </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* SESSION POLL CREATION & RESULTS MODAL */}
-      {activePollSession && selectedWorkspaceReq && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-md animate-fadeIn">
-          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto glass-modal-light rounded-3xl p-6 sm:p-8 border border-white shadow-2xl space-y-6">
+      {activePollSession && selectedWorkspaceReq && typeof document !== 'undefined' && createPortal(
+        <div
+          data-wavevents-modal="true"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setActivePollSession(null);
+          }}
+          className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200"
+        >
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-3xl p-6 sm:p-8 border border-slate-100 shadow-2xl space-y-6">
             
             {/* Header */}
             <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-3">
@@ -1043,7 +1528,8 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Client Quotation Review Modal */}
