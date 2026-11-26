@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { 
   Users, 
   UserPlus, 
@@ -15,11 +16,12 @@ import {
   ChevronRight,
   Activity
 } from 'lucide-react';
+import { fetchUserData, createUserAction } from '../../store/users-actions';
 
 export default function UserManagementSection({ user, accentColor = 'sky' }) {
-  const [users, setUsers] = useState([]);
-  const [totalCount, setTotalCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { users, totalCount, loading: reduxLoading } = useSelector((state) => state.users);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
   // Search, Filter & Sort State
@@ -63,35 +65,11 @@ export default function UserManagementSection({ user, accentColor = 'sky' }) {
 
   const canCreateUser = allowedCreationRoles.length > 0;
 
-  useEffect(() => {
-    fetchUsers();
-  }, [user]);
-
   const fetchUsers = async () => {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('ffsd_token');
-      if (!token) {
-        setError('Authentication session not found. Please sign in again.');
-        setLoading(false);
-        return;
-      }
-
-      const res = await fetch('/api/users', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || `Unable to load users (HTTP ${res.status}).`);
-      }
-
-      const userList = Array.isArray(data.users) ? data.users : [];
-      setUsers(userList);
-      setTotalCount(typeof data.total === 'number' ? data.total : userList.length);
+      await dispatch(fetchUserData());
     } catch (err) {
       console.error('Error fetching users:', err);
       setError(err.message || 'Failed to retrieve user accounts.');
@@ -100,6 +78,10 @@ export default function UserManagementSection({ user, accentColor = 'sky' }) {
     }
   };
 
+  useEffect(() => {
+    fetchUsers();
+  }, [user]);
+
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setActionLoading(true);
@@ -107,14 +89,8 @@ export default function UserManagementSection({ user, accentColor = 'sky' }) {
     setCreationResult(null);
 
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
+      const res = await dispatch(
+        createUserAction({
           name: newUserName.trim(),
           email: newUserEmail.trim(),
           role: newUserRole,
@@ -122,14 +98,13 @@ export default function UserManagementSection({ user, accentColor = 'sky' }) {
           department: newUserDept.trim() || (newUserRole === 'IT_SUPPORT' ? 'IT_SUPPORT' : undefined),
           password: newUserPassword.trim() || undefined
         })
-      });
+      );
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Failed to create user account.');
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to create user account.');
       }
 
-      setCreationResult(data);
+      setCreationResult(res.data);
       setNewUserName('');
       setNewUserEmail('');
       setNewUserOrg('');
@@ -634,7 +609,7 @@ export default function UserManagementSection({ user, accentColor = 'sky' }) {
                     required
                     value={newUserEmail}
                     onChange={(e) => setNewUserEmail(e.target.value)}
-                    placeholder="e.g. sarah@company.com"
+                    placeholder="e.g. name@wavevents.com"
                     className="w-full p-2.5 glass-input-light rounded-xl text-xs font-medium focus:border-sky-400"
                   />
                 </div>
@@ -656,15 +631,29 @@ export default function UserManagementSection({ user, accentColor = 'sky' }) {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-xs font-extrabold text-slate-700 block">Organization (Optional)</label>
-                    <input
-                      type="text"
-                      value={newUserOrg}
-                      onChange={(e) => setNewUserOrg(e.target.value)}
-                      placeholder="e.g. Acme Corp"
-                      className="w-full p-2.5 glass-input-light rounded-xl text-xs font-medium focus:border-sky-400"
-                    />
+                    <label className="text-xs font-extrabold text-slate-700 block">Department (Optional / Auto)</label>
+                    <select
+                      value={newUserDept}
+                      onChange={(e) => setNewUserDept(e.target.value)}
+                      className="w-full p-2.5 glass-input-light rounded-xl text-xs font-bold focus:border-sky-400 text-slate-900 bg-white"
+                    >
+                      <option value="">Auto from Role</option>
+                      <option value="EVENT_MANAGEMENT">EVENT MANAGEMENT</option>
+                      <option value="REVENUE">REVENUE</option>
+                      <option value="IT_SUPPORT">IT SUPPORT</option>
+                    </select>
                   </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-extrabold text-slate-700 block">Organization (Optional)</label>
+                  <input
+                    type="text"
+                    value={newUserOrg}
+                    onChange={(e) => setNewUserOrg(e.target.value)}
+                    placeholder="e.g. Acme Corp"
+                    className="w-full p-2.5 glass-input-light rounded-xl text-xs font-medium focus:border-sky-400"
+                  />
                 </div>
 
                 <div className="space-y-1">

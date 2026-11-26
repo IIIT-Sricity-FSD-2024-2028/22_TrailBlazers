@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { createPortal } from 'react-dom';
 import { 
   ShieldCheck, 
   Users, 
@@ -26,105 +28,23 @@ import {
   DollarSign,
   TrendingUp,
   BarChart3,
-  Ticket
+  Ticket,
+  Mail,
+  MapPin,
+  Check,
+  AlertCircle,
+  RotateCcw
 } from 'lucide-react';
-
-const defaultSeedRevenueEvents = [
-  {
-    id: 'evt-rev-1',
-    eventName: 'AI Ethics & Autonomous Systems Conference',
-    organizationName: 'Tech Future Labs',
-    category: 'Academic',
-    eventDate: '2026-09-25',
-    startTime: '09:00 AM',
-    endTime: '05:00 PM',
-    venue: 'T-Hub Main Hall',
-    expectedAttendance: 100,
-    ticketPrice: 500,
-    ticketsSold: 45,
-    ticketSalesRevenue: 22500,
-    quotationValue: 100000,
-    totalEventRevenue: 122500,
-    status: 'COMMERCIAL_APPROVED',
-    operationalStatus: 'LIVE'
-  },
-  {
-    id: 'evt-rev-2',
-    eventName: 'Global AI & Quantum Computing Summit',
-    organizationName: 'Global Tech Forum',
-    category: 'Tech Conference',
-    eventDate: '2026-10-12',
-    startTime: '10:00 AM',
-    endTime: '06:00 PM',
-    venue: 'Anna University Convention Centre',
-    expectedAttendance: 150,
-    ticketPrice: 750,
-    ticketsSold: 90,
-    ticketSalesRevenue: 67500,
-    quotationValue: 150000,
-    totalEventRevenue: 217500,
-    status: 'COMMERCIAL_APPROVED',
-    operationalStatus: 'IN_PREPARATION'
-  },
-  {
-    id: 'evt-rev-3',
-    eventName: 'Future of FinTech & Digital Banking 2026',
-    organizationName: 'Financial Leaders Association',
-    category: 'Finance',
-    eventDate: '2026-11-05',
-    startTime: '09:30 AM',
-    endTime: '05:00 PM',
-    venue: 'Bandra Kurla Complex Arena',
-    expectedAttendance: 200,
-    ticketPrice: 1200,
-    ticketsSold: 130,
-    ticketSalesRevenue: 156000,
-    quotationValue: 240000,
-    totalEventRevenue: 396000,
-    status: 'COMMERCIAL_APPROVED',
-    operationalStatus: 'LIVE'
-  },
-  {
-    id: 'evt-rev-4',
-    eventName: 'National Healthcare Innovation Forum',
-    organizationName: 'MedTech India Alliance',
-    category: 'Healthcare',
-    eventDate: '2026-11-18',
-    startTime: '09:00 AM',
-    endTime: '04:30 PM',
-    venue: 'NIMHANS Convention Centre',
-    expectedAttendance: 120,
-    ticketPrice: 600,
-    ticketsSold: 72,
-    ticketSalesRevenue: 43200,
-    quotationValue: 120000,
-    totalEventRevenue: 163200,
-    status: 'COMMERCIAL_APPROVED',
-    operationalStatus: 'IN_PREPARATION'
-  },
-  {
-    id: 'evt-rev-5',
-    eventName: 'Annual Corporate Strategy & Leadership Conclave',
-    organizationName: 'Enterprise India Summit',
-    category: 'Corporate',
-    eventDate: '2026-12-02',
-    startTime: '10:00 AM',
-    endTime: '06:00 PM',
-    venue: 'ITC Grand Chola Ballroom',
-    expectedAttendance: 250,
-    ticketPrice: 1500,
-    ticketsSold: 175,
-    ticketSalesRevenue: 262500,
-    quotationValue: 350000,
-    totalEventRevenue: 612500,
-    status: 'COMMERCIAL_APPROVED',
-    operationalStatus: 'LIVE'
-  }
-];
+import RefundManagementSection from '../../revenue/components/RefundManagementSection';
+import { fetchIssuesData, resolveIssueAction } from '../../../store/issues-actions';
+import { fetchUserData } from '../../../store/users-actions';
 
 export default function SuperAdminSpace({ user, onNavigate }) {
+  const dispatch = useDispatch();
+  const issues = useSelector((state) => state.issues.items || state.issues.issues || []);
+  const reduxUsers = useSelector((state) => state.users.users);
+
   const [overview, setOverview] = useState(null);
-  const [issues, setIssues] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [revenueEvents, setRevenueEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -145,6 +65,103 @@ export default function SuperAdminSpace({ user, onNavigate }) {
   const [revenueSearchQuery, setRevenueSearchQuery] = useState('');
   const [revenueStatusFilter, setRevenueStatusFilter] = useState('ALL');
 
+  // Event-Wise Attendee Management State
+  const [attendeeModalEvent, setAttendeeModalEvent] = useState(null);
+  const [attendeesData, setAttendeesData] = useState(null);
+  const [attendeesLoading, setAttendeesLoading] = useState(false);
+  const [attendeesError, setAttendeesError] = useState(null);
+  const [attendeeSearch, setAttendeeSearch] = useState('');
+  const [attendeeStatusFilter, setAttendeeStatusFilter] = useState('ALL');
+  const [attendeeCheckinFilter, setAttendeeCheckinFilter] = useState('ALL');
+  const [attendeeTicketStatusFilter, setAttendeeTicketStatusFilter] = useState('ALL');
+
+  const fetchAttendeesForEvent = async (eventId, queryParams = {}) => {
+    if (!eventId) return;
+
+    setAttendeesLoading(true);
+    setAttendeesError(null);
+
+    try {
+      const params = new URLSearchParams();
+      if (queryParams.search) params.append('search', queryParams.search);
+      if (queryParams.status && queryParams.status !== 'ALL') params.append('status', queryParams.status);
+      if (queryParams.ticketStatus && queryParams.ticketStatus !== 'ALL') params.append('ticketStatus', queryParams.ticketStatus);
+      if (queryParams.checkedIn && queryParams.checkedIn !== 'ALL') params.append('checkedIn', queryParams.checkedIn);
+
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const res = await fetch(`/api/hierarchy/events/${encodeURIComponent(eventId)}/attendees${qs}`, {
+        headers: getHeaders(),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || `Failed to fetch attendees (${res.status})`);
+      }
+
+      const data = await res.json();
+      setAttendeesData(data);
+    } catch (err) {
+      console.error('Error fetching event attendees:', err);
+      setAttendeesError(err.message || 'Unable to retrieve attendee records.');
+    } finally {
+      setAttendeesLoading(false);
+    }
+  };
+
+  const handleOpenAttendeesModal = (evt) => {
+    setAttendeeModalEvent(evt);
+    setAttendeesData(null); // Clear previous event attendees immediately
+    setAttendeesError(null);
+    setAttendeeSearch('');
+    setAttendeeStatusFilter('ALL');
+    setAttendeeCheckinFilter('ALL');
+    setAttendeeTicketStatusFilter('ALL');
+    fetchAttendeesForEvent(evt.id);
+  };
+
+  const handleCloseAttendeesModal = () => {
+    setAttendeeModalEvent(null);
+    setAttendeesData(null);
+    setAttendeesError(null);
+  };
+
+  // Filter attendees inline during render
+  let filteredAttendees = [];
+  if (attendeesData?.attendees) {
+    let list = attendeesData.attendees;
+
+    if (attendeeSearch && attendeeSearch.trim()) {
+      const term = attendeeSearch.trim().toLowerCase();
+      list = list.filter(a =>
+        (a.attendeeName && a.attendeeName.toLowerCase().includes(term)) ||
+        (a.attendeeEmail && a.attendeeEmail.toLowerCase().includes(term)) ||
+        (a.ticketNumber && a.ticketNumber.toLowerCase().includes(term)) ||
+        (a.ticketId && a.ticketId.toLowerCase().includes(term)) ||
+        (a.registrationId && a.registrationId.toLowerCase().includes(term))
+      );
+    }
+
+    if (attendeeStatusFilter && attendeeStatusFilter !== 'ALL') {
+      const sf = attendeeStatusFilter.toUpperCase();
+      list = list.filter(a => (a.registrationStatus || '').toUpperCase() === sf || (a.paymentStatus || '').toUpperCase() === sf);
+    }
+
+    if (attendeeTicketStatusFilter && attendeeTicketStatusFilter !== 'ALL') {
+      const tf = attendeeTicketStatusFilter.toUpperCase();
+      list = list.filter(a => (a.ticketStatus || '').toUpperCase() === tf);
+    }
+
+    if (attendeeCheckinFilter && attendeeCheckinFilter !== 'ALL') {
+      if (attendeeCheckinFilter === 'CHECKED_IN') {
+        list = list.filter(a => a.checkedIn === true);
+      } else if (attendeeCheckinFilter === 'NOT_CHECKED_IN') {
+        list = list.filter(a => !a.checkedIn);
+      }
+    }
+
+    filteredAttendees = list;
+  }
+
   useEffect(() => {
     fetchData();
     fetchStaffActivity();
@@ -157,11 +174,9 @@ export default function SuperAdminSpace({ user, onNavigate }) {
 
   const fetchData = async () => {
     setLoading(true);
+    dispatch(fetchIssuesData());
     try {
-      const [resOverview, resIssues] = await Promise.all([
-        fetch('/api/hierarchy/overview', { headers: getHeaders() }),
-        fetch('/api/hierarchy/issues', { headers: getHeaders() })
-      ]);
+      const resOverview = await fetch('/api/hierarchy/overview', { headers: getHeaders() });
 
       if (resOverview.ok) {
         const data = await resOverview.json();
@@ -231,11 +246,6 @@ export default function SuperAdminSpace({ user, onNavigate }) {
           setStaffList(extracted);
         }
       }
-
-      if (resIssues.ok) {
-        const data = await resIssues.json();
-        setIssues(data.issues || []);
-      }
     } catch (err) {
       console.error('Error loading Super Admin data:', err);
     } finally {
@@ -266,16 +276,8 @@ export default function SuperAdminSpace({ user, onNavigate }) {
     setActionLoading(true);
     setFeedbackMsg('');
     try {
-      const res = await fetch(`/api/hierarchy/issues/${selectedIssue.id}/resolve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify({ resolutionDetails: resolutionMsg })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to resolve issue.');
+      const res = await dispatch(resolveIssueAction(selectedIssue.id, resolutionMsg));
+      if (!res.success) throw new Error(res.error || 'Failed to resolve issue.');
 
       setFeedbackMsg('Issue resolved successfully.');
       setSelectedIssue(null);
@@ -312,41 +314,19 @@ export default function SuperAdminSpace({ user, onNavigate }) {
   const availableStaffCount = staffList.filter(s => s.status === 'AVAILABLE').length;
 
   // Enriched Revenue Events & Platform Metrics
-  const rawRevEvents = revenueEvents && revenueEvents.length > 0 ? revenueEvents : defaultSeedRevenueEvents;
+  const rawRevEvents = revenueEvents || [];
 
   const enrichedRevenueEvents = rawRevEvents.map(evt => {
-    let ticketPrice = Number(evt.ticketPrice) || 0;
-    if (ticketPrice <= 0) {
-      const hash = (evt.id || evt.eventName || 'evt').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-      const defaultPrices = [350, 500, 750, 1000, 1200, 1500];
-      ticketPrice = defaultPrices[hash % defaultPrices.length];
-    }
+    const ticketPrice = Number(evt.ticketPrice) || 0;
+    let totalCapacity = Number(evt.totalCapacity || evt.totalTickets || evt.expectedAttendance) || 0;
 
-    let totalCapacity = Number(evt.totalCapacity || evt.totalTickets || evt.expectedAttendance) || 100;
-    if (totalCapacity <= 0) totalCapacity = 100;
-
-    let ticketsSold = Number(evt.ticketsSold) || 0;
-    if (ticketsSold === 0) {
-      const hash = (evt.id || evt.eventName || 'evt').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-      const baselinePcts = [0.25, 0.35, 0.45, 0.60, 0.70];
-      const pct = baselinePcts[hash % baselinePcts.length];
-      ticketsSold = Math.max(8, Math.round(totalCapacity * pct));
-    }
-
-    let ticketSalesRevenue = Number(evt.ticketSalesRevenue) || 0;
-    if (ticketSalesRevenue === 0) {
-      ticketSalesRevenue = ticketsSold * ticketPrice;
-    }
-
-    let quotationValue = Number(evt.quotationValue) || 0;
-    if (quotationValue <= 0) {
-      const hash = (evt.id || evt.eventName || 'evt').split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-      const contractMultipliers = [650, 800, 1000, 1200, 1500];
-      const multiplier = contractMultipliers[hash % contractMultipliers.length];
-      quotationValue = Math.max(45000, Math.round((totalCapacity * multiplier) / 1000) * 1000);
-    }
-
-    const totalEventRevenue = Number(evt.totalEventRevenue) || (quotationValue + ticketSalesRevenue);
+    // Authentic metrics directly from backend records
+    const ticketsSold = Number(evt.ticketsSold) || 0;
+    const ticketSalesRevenue = Number(evt.ticketSalesRevenue) || 0;
+    const quotationValue = Number(evt.quotationValue) || 0;
+    const acceptedContractValue = Number(evt.acceptedContractValue) || quotationValue;
+    const clientPaymentsReceived = Number(evt.clientPaymentsReceived) || 0;
+    const totalEventRevenue = Number(evt.totalEventRevenue) || (acceptedContractValue + ticketSalesRevenue);
     const soldPercentage = totalCapacity > 0 ? Math.min(100, Math.round((ticketsSold / totalCapacity) * 100)) : 0;
 
     return {
@@ -356,6 +336,8 @@ export default function SuperAdminSpace({ user, onNavigate }) {
       ticketsSold,
       ticketSalesRevenue,
       quotationValue,
+      acceptedContractValue,
+      clientPaymentsReceived,
       commercialRevenue: quotationValue,
       totalEventRevenue,
       soldPercentage,
@@ -653,11 +635,25 @@ export default function SuperAdminSpace({ user, onNavigate }) {
                   </div>
 
                   {/* Card Footer */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-[10px] font-mono text-slate-400 truncate max-w-[160px]">{evt.contactEmail || evt.clientName || 'Partner'}</span>
-                    <span className="text-[10px] font-bold text-slate-500">
-                      Capacity: {totalCap} Passes
-                    </span>
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3 text-xs">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-[10px] font-mono text-slate-400 truncate max-w-[130px]" title={evt.contactEmail || evt.clientName || 'Partner'}>
+                        {evt.contactEmail || evt.clientName || 'Partner'}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-500">
+                        Cap: {totalCap} Passes
+                      </span>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAttendeesModal(evt)}
+                      className="px-3.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 hover:text-indigo-900 font-extrabold text-xs flex items-center gap-1.5 transition border border-indigo-200 shadow-2xs hover:shadow-xs cursor-pointer shrink-0 active:scale-95"
+                      title={`View registered attendees for ${evt.eventName}`}
+                    >
+                      <Users className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>View Attendees</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -666,6 +662,11 @@ export default function SuperAdminSpace({ user, onNavigate }) {
         )}
 
       </div>
+
+      {/* ========================================================================= */}
+      {/* 2.5 REFUNDS & FINANCIAL SETTLEMENTS EXECUTIVE OVERSIGHT */}
+      {/* ========================================================================= */}
+      <RefundManagementSection user={user} />
 
       {/* ========================================================================= */}
       {/* 1. REAL-TIME STAFF SEARCH & ACTIVITY TRACKER (WHAT ARE THEY CURRENTLY DOING) */}
@@ -1001,8 +1002,8 @@ export default function SuperAdminSpace({ user, onNavigate }) {
       {/* ========================================================================= */}
       {/* 4. STAFF MEMBER DETAILED WORKLOAD MODAL (DEEP DIVE) */}
       {/* ========================================================================= */}
-      {selectedStaff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+      {selectedStaff && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
           <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-8 border border-slate-200 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto">
             
             {/* Modal Header */}
@@ -1133,15 +1134,16 @@ export default function SuperAdminSpace({ user, onNavigate }) {
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
       {/* 5. RESOLUTION MODAL */}
       {/* ========================================================================= */}
-      {selectedIssue && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
-          <div className="w-full max-w-lg glass-modal-light rounded-3xl p-6 border border-white shadow-2xl space-y-4">
+      {selectedIssue && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-lg glass-modal-light rounded-3xl p-6 border border-white shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-extrabold text-[#26334A]">Super Admin Resolution</h3>
             <p className="text-xs text-[#64748B]">Resolving issue logged by <strong>{selectedIssue.reporterName}</strong> ({selectedIssue.department})</p>
             <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-[#26334A] font-medium">
@@ -1175,7 +1177,420 @@ export default function SuperAdminSpace({ user, onNavigate }) {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ========================================================================= */}
+      {/* 5B. EVENT-WISE ATTENDEE MANAGEMENT MODAL (SUPER ADMIN) */}
+      {/* ========================================================================= */}
+      {attendeeModalEvent && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
+          <div className="w-full max-w-5xl bg-white rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[92vh] overflow-hidden">
+            
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-slate-100 bg-gradient-to-r from-slate-50 via-indigo-50/25 to-slate-50 flex items-start justify-between gap-4">
+              <div className="space-y-1.5 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-black uppercase tracking-wider text-indigo-700 bg-indigo-50 px-2.5 py-0.5 rounded-md border border-indigo-200">
+                    {attendeeModalEvent.category || 'Event Management'}
+                  </span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border ${
+                    attendeeModalEvent.operationalStatus === 'LIVE' ? 'bg-emerald-100 text-emerald-950 border-emerald-300 animate-pulse' :
+                    'bg-slate-100 text-slate-800 border-slate-200'
+                  }`}>
+                    {attendeeModalEvent.operationalStatus || attendeeModalEvent.status || 'ACTIVE'}
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-400">
+                    ID: {attendeeModalEvent.id}
+                  </span>
+                </div>
+
+                <h3 className="text-xl sm:text-2xl font-black text-slate-900 leading-tight">
+                  {attendeesData?.event?.eventName || attendeeModalEvent.eventName}
+                </h3>
+
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 pt-0.5">
+                  <span className="flex items-center gap-1 font-bold text-slate-700">
+                    <Building className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{attendeesData?.event?.organizationName || attendeeModalEvent.organizationName || 'Wavevents Partner'}</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-slate-500">
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{attendeesData?.event?.eventDate || attendeeModalEvent.eventDate} ({attendeesData?.event?.startTime || attendeeModalEvent.startTime || '09:00 AM'} - {attendeesData?.event?.endTime || attendeeModalEvent.endTime || '05:00 PM'})</span>
+                  </span>
+                  <span className="flex items-center gap-1 text-slate-500">
+                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{attendeesData?.event?.venue || attendeeModalEvent.venue || 'Main Venue'} ({attendeesData?.event?.location || attendeeModalEvent.location || 'India'})</span>
+                  </span>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleCloseAttendeesModal}
+                className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition cursor-pointer shrink-0"
+                title="Close attendee view"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body: Scrollable */}
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5 bg-slate-50/50">
+              
+              {/* Summary Metrics Cards */}
+              {attendeesData?.summary && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                  <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Registrations</span>
+                    <div className="text-xl font-black text-slate-900 font-mono">
+                      {attendeesData.summary.totalRegistrations}
+                    </div>
+                    <span className="text-[10px] text-slate-500 font-medium block">Total orders</span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-indigo-50/60 border border-indigo-200 shadow-2xs space-y-1">
+                    <span className="text-[10px] font-bold text-indigo-700 uppercase tracking-wider block">Tickets Issued</span>
+                    <div className="text-xl font-black text-indigo-950 font-mono">
+                      {attendeesData.summary.totalTicketsIssued}
+                    </div>
+                    <span className="text-[10px] text-indigo-600 font-medium block">Total passes</span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-emerald-50/60 border border-emerald-200 shadow-2xs space-y-1">
+                    <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider block">Confirmed</span>
+                    <div className="text-xl font-black text-emerald-950 font-mono">
+                      {attendeesData.summary.confirmedRegistrations}
+                    </div>
+                    <span className="text-[10px] text-emerald-600 font-medium block">Active passes</span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-amber-50/60 border border-amber-200 shadow-2xs space-y-1">
+                    <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider block">Pending</span>
+                    <div className="text-xl font-black text-amber-950 font-mono">
+                      {attendeesData.summary.pendingRegistrations}
+                    </div>
+                    <span className="text-[10px] text-amber-600 font-medium block">Awaiting payment</span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-rose-50/60 border border-rose-200 shadow-2xs space-y-1">
+                    <span className="text-[10px] font-bold text-rose-700 uppercase tracking-wider block">Cancelled</span>
+                    <div className="text-xl font-black text-rose-950 font-mono">
+                      {attendeesData.summary.cancelledRegistrations}
+                    </div>
+                    <span className="text-[10px] text-rose-600 font-medium block">Voided / Refunded</span>
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-teal-50/60 border border-teal-200 shadow-2xs space-y-1">
+                    <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider block">Checked In</span>
+                    <div className="text-xl font-black text-teal-950 font-mono flex items-center gap-1">
+                      <span>{attendeesData.summary.checkedInCount}</span>
+                      <span className="text-xs font-normal text-teal-600 font-sans">
+                        ({attendeesData.summary.totalRegistrations > 0 ? Math.round((attendeesData.summary.checkedInCount / attendeesData.summary.totalRegistrations) * 100) : 0}%)
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-teal-700 font-medium block">
+                      {attendeesData.summary.checkedInTickets || attendeesData.summary.checkedInCount} passes checked
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Controls: Search & Filters */}
+              <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                <div className="flex flex-col lg:flex-row gap-3">
+                  {/* Search Bar */}
+                  <div className="flex-1 relative">
+                    <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={attendeeSearch}
+                      onChange={(e) => setAttendeeSearch(e.target.value)}
+                      placeholder="Search attendee by name, email address, or ticket ID (e.g. EVT-2026)..."
+                      className="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 bg-slate-50/50"
+                    />
+                    {attendeeSearch && (
+                      <button
+                        onClick={() => setAttendeeSearch('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Filter Dropdowns */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Payment/Reg Status Filter */}
+                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+                      <span className="text-[10px] font-black uppercase text-slate-400">Payment:</span>
+                      <select
+                        value={attendeeStatusFilter}
+                        onChange={(e) => setAttendeeStatusFilter(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                      >
+                        <option value="ALL">All Statuses</option>
+                        <option value="CONFIRMED">Confirmed / Paid</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="CANCELLED">Cancelled</option>
+                      </select>
+                    </div>
+
+                    {/* Ticket Status Filter */}
+                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+                      <span className="text-[10px] font-black uppercase text-slate-400">Ticket:</span>
+                      <select
+                        value={attendeeTicketStatusFilter}
+                        onChange={(e) => setAttendeeTicketStatusFilter(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                      >
+                        <option value="ALL">All Tickets</option>
+                        <option value="ACTIVE">Active</option>
+                        <option value="CANCELLED">Cancelled</option>
+                      </select>
+                    </div>
+
+                    {/* Check-In Filter */}
+                    <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5">
+                      <span className="text-[10px] font-black uppercase text-slate-400">Check-In:</span>
+                      <select
+                        value={attendeeCheckinFilter}
+                        onChange={(e) => setAttendeeCheckinFilter(e.target.value)}
+                        className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
+                      >
+                        <option value="ALL">All Attendees</option>
+                        <option value="CHECKED_IN">Checked-In</option>
+                        <option value="NOT_CHECKED_IN">Not Checked-In</option>
+                      </select>
+                    </div>
+
+                    {/* Reset Filters Button */}
+                    {(attendeeSearch || attendeeStatusFilter !== 'ALL' || attendeeTicketStatusFilter !== 'ALL' || attendeeCheckinFilter !== 'ALL') && (
+                      <button
+                        onClick={() => {
+                          setAttendeeSearch('');
+                          setAttendeeStatusFilter('ALL');
+                          setAttendeeTicketStatusFilter('ALL');
+                          setAttendeeCheckinFilter('ALL');
+                        }}
+                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs transition cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Attendee Roster Table or State Views */}
+              {attendeesLoading ? (
+                <div className="p-12 text-center rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-3">
+                  <div className="inline-block w-8 h-8 border-3 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-xs font-bold text-slate-600">
+                    Retrieving real-time attendee records for {attendeeModalEvent.eventName}...
+                  </p>
+                </div>
+              ) : attendeesError ? (
+                <div className="p-8 text-center rounded-3xl bg-rose-50 border border-rose-200 space-y-3">
+                  <AlertTriangle className="w-8 h-8 text-rose-600 mx-auto" />
+                  <p className="text-xs font-extrabold text-rose-900">{attendeesError}</p>
+                  <button
+                    onClick={() => fetchAttendeesForEvent(attendeeModalEvent.id)}
+                    className="px-4 py-2 rounded-xl bg-rose-600 text-white font-extrabold text-xs hover:bg-rose-700 transition cursor-pointer"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : filteredAttendees.length === 0 ? (
+                <div className="p-12 text-center rounded-3xl bg-white border border-slate-200 shadow-2xs space-y-2">
+                  <Users className="w-10 h-10 text-slate-300 mx-auto" />
+                  <h4 className="text-sm font-extrabold text-slate-800">
+                    {attendeesData?.attendees?.length === 0
+                      ? 'No attendees have registered for this event yet.'
+                      : 'No attendees match the selected search or filter criteria.'}
+                  </h4>
+                  <p className="text-xs text-slate-400">
+                    {attendeesData?.attendees?.length === 0
+                      ? 'When attendees register or purchase passes for this event, their records will appear here automatically.'
+                      : 'Try broadening your search term or resetting the active filters above.'}
+                  </p>
+                  {attendeesData?.attendees?.length > 0 && (
+                    <button
+                      onClick={() => {
+                        setAttendeeSearch('');
+                        setAttendeeStatusFilter('ALL');
+                        setAttendeeTicketStatusFilter('ALL');
+                        setAttendeeCheckinFilter('ALL');
+                      }}
+                      className="mt-2 px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition cursor-pointer"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="bg-white rounded-3xl border border-slate-200 shadow-2xs overflow-hidden">
+                  <div className="p-4 border-b border-slate-100 flex items-center justify-between">
+                    <span className="text-xs font-extrabold text-slate-700">
+                      Showing {filteredAttendees.length} of {attendeesData?.attendees?.length || 0} registered attendees
+                    </span>
+                    <button
+                      onClick={() => fetchAttendeesForEvent(attendeeModalEvent.id)}
+                      className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Refresh</span>
+                    </button>
+                  </div>
+
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead>
+                        <tr className="border-b border-slate-200 bg-slate-50/60 text-slate-500 font-black uppercase text-[10px] tracking-wider">
+                          <th className="py-3 px-4">Attendee</th>
+                          <th className="py-3 px-4">Registration / Ticket</th>
+                          <th className="py-3 px-4">Type & Qty</th>
+                          <th className="py-3 px-4">Registered Date</th>
+                          <th className="py-3 px-4">Payment</th>
+                          <th className="py-3 px-4">Ticket Status</th>
+                          <th className="py-3 px-4">Check-In</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
+                        {filteredAttendees.map((att, idx) => {
+                          const initials = (att.attendeeName || 'A')
+                            .split(' ')
+                            .map(n => n[0])
+                            .slice(0, 2)
+                            .join('')
+                            .toUpperCase();
+
+                          return (
+                            <tr key={att.id || idx} className="hover:bg-slate-50/80 transition">
+                              {/* Attendee Name & Email */}
+                              <td className="py-3.5 px-4">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-2xs">
+                                    {initials}
+                                  </div>
+                                  <div>
+                                    <div className="font-extrabold text-slate-900 text-xs">
+                                      {att.attendeeName}
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 flex items-center gap-1 font-mono">
+                                      <Mail className="w-3 h-3 text-slate-400" />
+                                      <span>{att.attendeeEmail}</span>
+                                    </div>
+                                    {att.organization && (
+                                      <span className="text-[10px] text-slate-400 block font-normal">
+                                        {att.organization}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Ticket Number & ID */}
+                              <td className="py-3.5 px-4">
+                                <div className="font-mono text-[11px] font-extrabold text-indigo-700 bg-indigo-50/70 border border-indigo-100 px-2 py-0.5 rounded-md inline-block">
+                                  {att.ticketNumber}
+                                </div>
+                                {att.id !== att.ticketNumber && (
+                                  <div className="text-[9px] text-slate-400 font-mono mt-0.5">
+                                    {att.id}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Type & Quantity */}
+                              <td className="py-3.5 px-4">
+                                <div className="font-extrabold text-slate-900 text-xs flex items-center gap-1">
+                                  <Ticket className="w-3.5 h-3.5 text-indigo-500" />
+                                  <span>{att.ticketType || 'Standard'}</span>
+                                </div>
+                                <div className="text-[11px] text-slate-500 font-medium">
+                                  {att.quantity} {att.quantity === 1 ? 'Pass' : 'Passes'}
+                                  {att.totalAmount > 0 && ` • ₹${att.totalAmount}`}
+                                </div>
+                              </td>
+
+                              {/* Registration Date */}
+                              <td className="py-3.5 px-4 text-slate-600 text-[11px] whitespace-nowrap font-mono">
+                                {att.registrationDate}
+                              </td>
+
+                              {/* Payment Status */}
+                              <td className="py-3.5 px-4">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider inline-flex items-center gap-1 ${
+                                  att.paymentStatus === 'CONFIRMED' || att.paymentStatus === 'SUCCESS' ? 'bg-emerald-100 text-emerald-900 border border-emerald-200' :
+                                  att.paymentStatus === 'PENDING' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
+                                  'bg-rose-100 text-rose-900 border border-rose-200'
+                                }`}>
+                                  {att.paymentStatus}
+                                </span>
+                              </td>
+
+                              {/* Ticket Status */}
+                              <td className="py-3.5 px-4">
+                                <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                  att.ticketStatus === 'ACTIVE' || att.ticketStatus === 'CONFIRMED' ? 'bg-indigo-100 text-indigo-900 border border-indigo-200' :
+                                  att.ticketStatus === 'CANCELLED' ? 'bg-rose-100 text-rose-900 border border-rose-200' :
+                                  'bg-slate-100 text-slate-800 border border-slate-200'
+                                }`}>
+                                  {att.ticketStatus}
+                                </span>
+                              </td>
+
+                              {/* Check-In Status */}
+                              <td className="py-3.5 px-4">
+                                {att.checkedIn ? (
+                                  <div className="space-y-0.5">
+                                    <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-100 text-teal-900 border border-teal-300 inline-flex items-center gap-1">
+                                      <Check className="w-3 h-3 text-teal-700" />
+                                      <span>Checked In</span>
+                                    </span>
+                                    {att.checkedInAt && (
+                                      <span className="block text-[9px] text-slate-400 font-mono">
+                                        {att.checkedInAt}
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">
+                                    Pending
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-200 bg-white flex items-center justify-between text-xs">
+              <span className="text-[11px] text-slate-500">
+                Event-Wise Attendee Management • Live Store Synchronization
+              </span>
+              <button
+                type="button"
+                onClick={handleCloseAttendeesModal}
+                className="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs cursor-pointer transition"
+              >
+                Close View
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        document.body
       )}
 
       {/* ========================================================================= */}
@@ -1279,5 +1694,3 @@ function UserAccessRegisterList() {
     </div>
   );
 }
-
-// Refactored: Polish audit log viewer, platform backup triggers, and diagnostic thresholds
