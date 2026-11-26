@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { LayoutDashboard, Calendar, Wrench, Search, Filter, BarChart3 } from 'lucide-react';
 import EventManagerHero from '../components/EventManagerHero';
 import EventManagerKpis from '../components/EventManagerKpis';
@@ -10,13 +11,30 @@ import EventPreparationWorkspace from '../components/EventPreparationWorkspace';
 import CoordinatorAssignmentModal from '../components/CoordinatorAssignmentModal';
 import ManagerChangeRequestsPanel from '../components/ManagerChangeRequestsPanel';
 import FeedbackPollsManager from '../components/FeedbackPollsManager';
+import {
+  fetchManagerDashboard,
+  fetchManagerEvents,
+  fetchCoordinatorsList,
+  fetchEventWorkspaceDetails,
+  markEventReadyAction,
+  assignCoordinatorsAction,
+  updateEventConfigurationAction
+} from '../../../store/operations-actions';
 
 export default function EventManagerSpace({ user, onNavigate }) {
+  const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'events' | 'workspace'
-  const [dashboardData, setDashboardData] = useState(null);
-  const [eventsList, setEventsList] = useState([]);
-  const [coordinatorsList, setCoordinatorsList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Read operations state from Redux Store
+  const {
+    managerDashboard: dashboardData,
+    managerEvents: eventsList,
+    coordinatorsList,
+    activeWorkspace,
+    loading: reduxLoading
+  } = useSelector((state) => state.operations);
+
+  const [loading, setLoading] = useState(false);
 
   // Search & Filter state for My Events tab
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,53 +62,31 @@ export default function EventManagerSpace({ user, onNavigate }) {
   const [selectedCoordinatorId, setSelectedCoordinatorId] = useState('');
   const [selectedCoordinatorIds, setSelectedCoordinatorIds] = useState([]);
 
+  const fetchDashboard = () => dispatch(fetchManagerDashboard());
+  const fetchCoordinators = () => dispatch(fetchCoordinatorsList());
+
+  const fetchEvents = async () => {
+    try {
+      const evts = await dispatch(fetchManagerEvents());
+      if (Array.isArray(evts) && evts.length > 0 && !selectedReqId) {
+        loadWorkspaceQuietly(evts[0].id);
+      }
+    } catch (err) {
+      console.error('Error fetching events:', err);
+    }
+  };
+
   useEffect(() => {
     fetchDashboard();
     fetchEvents();
     fetchCoordinators();
   }, []);
 
-  const getHeaders = () => {
-    const token = localStorage.getItem('ffsd_token');
-    return { 'Authorization': `Bearer ${token}` };
-  };
-
-  const fetchDashboard = async () => {
-    try {
-      const res = await fetch('/api/event-manager/dashboard', { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setDashboardData(data);
-      }
-    } catch (err) {
-      console.error('Error fetching event manager dashboard:', err);
-    }
-  };
-
-  const fetchEvents = async () => {
-    try {
-      const res = await fetch('/api/event-manager/events', { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        const evts = data.events || [];
-        setEventsList(evts);
-        if (evts.length > 0 && !selectedReqId) {
-          loadWorkspaceQuietly(evts[0].id);
-        }
-      }
-    } catch (err) {
-      console.error('Error fetching events:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const loadWorkspaceQuietly = async (reqId) => {
     setSelectedReqId(reqId);
     try {
-      const res = await fetch(`/api/event-manager/events/${reqId}`, { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await dispatch(fetchEventWorkspaceDetails(reqId));
+      if (data && data.request) {
         setEventDetail(data);
         setConfigForm({
           registrationStatus: data.request.registrationStatus || 'OPEN',
@@ -108,18 +104,6 @@ export default function EventManagerSpace({ user, onNavigate }) {
     }
   };
 
-  const fetchCoordinators = async () => {
-    try {
-      const res = await fetch('/api/event-manager/onsite-coordinators', { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setCoordinatorsList(data.coordinators || []);
-      }
-    } catch (err) {
-      console.error('Error fetching coordinators:', err);
-    }
-  };
-
   const handleOpenWorkspace = async (reqId) => {
     setSelectedReqId(reqId);
     setActionMsg('');
@@ -129,9 +113,8 @@ export default function EventManagerSpace({ user, onNavigate }) {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      const res = await fetch(`/api/event-manager/events/${reqId}`, { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await dispatch(fetchEventWorkspaceDetails(reqId));
+      if (data && data.request) {
         setEventDetail(data);
         setConfigForm({
           registrationStatus: data.request.registrationStatus || 'OPEN',
@@ -144,8 +127,7 @@ export default function EventManagerSpace({ user, onNavigate }) {
         setSelectedCoordinatorIds(coordIds);
         setSelectedCoordinatorId(coordIds[0] || '');
       } else {
-        const errorData = await res.json();
-        setActionError(errorData.error || 'Failed to load event workspace details.');
+        setActionError('Failed to load event workspace details.');
       }
     } catch (err) {
       setActionError('Failed to load event workspace details.');
@@ -161,22 +143,13 @@ export default function EventManagerSpace({ user, onNavigate }) {
     setActionError('');
 
     try {
-      const res = await fetch(`/api/event-manager/events/${selectedReqId}/configuration`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify(configForm)
-      });
+      const res = await dispatch(updateEventConfigurationAction(selectedReqId, configForm));
+      if (!res.success) throw new Error(res.error || 'Failed to update configuration.');
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update configuration.');
-
-      setActionMsg(data.message);
-      handleOpenWorkspace(selectedReqId);
-      fetchDashboard();
-      fetchEvents();
+      setActionMsg(res.data?.message || 'Configuration updated successfully.');
+      await handleOpenWorkspace(selectedReqId);
+      await fetchDashboard();
+      await fetchEvents();
     } catch (err) {
       setActionError(err.message);
     }
@@ -189,22 +162,13 @@ export default function EventManagerSpace({ user, onNavigate }) {
     setActionError('');
 
     try {
-      const res = await fetch(`/api/event-manager/events/${selectedReqId}/assign-coordinator`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify({ coordinatorUserIds: selectedCoordinatorIds })
-      });
+      const res = await dispatch(assignCoordinatorsAction(selectedReqId, selectedCoordinatorIds));
+      if (!res.success) throw new Error(res.error || 'Failed to assign coordinator.');
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to assign coordinator.');
-
-      setActionMsg(data.message);
-      handleOpenWorkspace(selectedReqId);
-      fetchDashboard();
-      fetchEvents();
+      setActionMsg(res.data?.message || 'Coordinator assigned successfully.');
+      await handleOpenWorkspace(selectedReqId);
+      await fetchDashboard();
+      await fetchEvents();
     } catch (err) {
       setActionError(err.message);
     }
@@ -214,22 +178,13 @@ export default function EventManagerSpace({ user, onNavigate }) {
     setActionMsg('');
     setActionError('');
     try {
-      const ids = Array.isArray(coordIds) ? coordIds : [coordIds];
-      const res = await fetch(`/api/event-manager/events/${eventId}/assign-coordinator`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify({ coordinatorUserIds: ids })
-      });
+      const res = await dispatch(assignCoordinatorsAction(eventId, coordIds));
+      if (!res.success) throw new Error(res.error || 'Failed to assign coordinator.');
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to assign coordinator.');
-
-      handleOpenWorkspace(eventId);
-      fetchDashboard();
-      fetchEvents();
+      setActionMsg(res.data?.message || 'Onsite coordinator(s) assigned successfully.');
+      await handleOpenWorkspace(eventId);
+      await fetchDashboard();
+      await fetchEvents();
     } catch (err) {
       setActionError(err.message);
     }
@@ -242,18 +197,13 @@ export default function EventManagerSpace({ user, onNavigate }) {
     setLoadingMarkReady(true);
 
     try {
-      const res = await fetch(`/api/event-manager/events/${selectedReqId}/ready`, {
-        method: 'POST',
-        headers: getHeaders()
-      });
+      const res = await dispatch(markEventReadyAction(selectedReqId));
+      if (!res.success) throw new Error(res.error || 'Event is not ready yet.');
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Event is not ready yet.');
-
-      setActionMsg(data.message);
-      handleOpenWorkspace(selectedReqId);
-      fetchDashboard();
-      fetchEvents();
+      setActionMsg(res.data?.message || 'Event marked as READY.');
+      await handleOpenWorkspace(selectedReqId);
+      await fetchDashboard();
+      await fetchEvents();
     } catch (err) {
       setActionError(err.message);
     } finally {
@@ -261,7 +211,22 @@ export default function EventManagerSpace({ user, onNavigate }) {
     }
   };
 
-  const filteredEvents = eventsList.filter(evt => {
+  const todayStr = new Date().toISOString().substring(0, 10);
+  const isPast = (e) => {
+    const d = e.endDate || e.eventDate || e.startDate || e.date;
+    return Boolean(d && d < todayStr);
+  };
+  const isCompletedEvent = (e) =>
+    e.operationalStatus === 'COMPLETED' ||
+    e.status === 'COMPLETED' ||
+    (isPast(e) && e.operationalStatus !== 'CANCELLED' && e.status !== 'CANCELLED');
+
+  const processedEventsList = eventsList.map(e => ({
+    ...e,
+    operationalStatus: isCompletedEvent(e) ? 'COMPLETED' : (e.operationalStatus || 'IN_PREPARATION')
+  }));
+
+  const filteredEvents = processedEventsList.filter(evt => {
     const matchesSearch = !searchTerm || (
       evt.eventName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       evt.organizationName.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -273,9 +238,13 @@ export default function EventManagerSpace({ user, onNavigate }) {
 
   const metrics = dashboardData?.metrics || {
     approvedEvents: eventsList.length,
-    inPreparation: eventsList.filter(e => e.operationalStatus === 'IN_PREPARATION' || e.operationalStatus === 'COMMERCIAL_APPROVED').length,
-    readyEvents: eventsList.filter(e => e.operationalStatus === 'READY').length,
-    upcomingEvents: eventsList.length
+    assignedEvents: eventsList.length,
+    inPreparation: eventsList.filter(e => !isCompletedEvent(e) && (e.operationalStatus === 'IN_PREPARATION' || e.operationalStatus === 'COMMERCIAL_APPROVED')).length,
+    ongoingEvents: eventsList.filter(e => !isCompletedEvent(e) && (e.operationalStatus === 'LIVE' || e.operationalStatus === 'IN_PREPARATION')).length,
+    completedEvents: eventsList.filter(e => isCompletedEvent(e)).length,
+    readyEvents: eventsList.filter(e => !isCompletedEvent(e) && e.operationalStatus === 'READY').length,
+    upcomingEvents: eventsList.filter(e => !isCompletedEvent(e) && e.operationalStatus !== 'CANCELLED').length,
+    pendingEvents: eventsList.filter(e => !isCompletedEvent(e) && e.operationalStatus !== 'CANCELLED').length
   };
 
   return (
@@ -299,7 +268,10 @@ export default function EventManagerSpace({ user, onNavigate }) {
         </button>
 
         <button
-          onClick={() => setActiveTab('events')}
+          onClick={() => {
+            setActiveTab('events');
+            fetchEvents();
+          }}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition-all duration-200 cursor-pointer ${
             activeTab === 'events'
               ? 'bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-xs'
@@ -370,7 +342,9 @@ export default function EventManagerSpace({ user, onNavigate }) {
               <QuickActions
                 onAssignCoordinatorClick={() => setIsCoordModalOpen(true)}
                 onViewReadinessClick={() => {
-                  if (eventsList.length > 0) handleOpenWorkspace(eventsList[0].id);
+                  const activeEvt = eventsList.find(e => e.operationalStatus !== 'COMPLETED' && e.operationalStatus !== 'CANCELLED');
+                  if (activeEvt) handleOpenWorkspace(activeEvt.id);
+                  else if (eventsList.length > 0) handleOpenWorkspace(eventsList[0].id);
                   else setActiveTab('workspace');
                 }}
               />
@@ -408,54 +382,65 @@ export default function EventManagerSpace({ user, onNavigate }) {
                 <option value="IN_PREPARATION">In Preparation</option>
                 <option value="READY">Ready</option>
                 <option value="LIVE">Live</option>
+                <option value="COMPLETED">Completed</option>
               </select>
             </div>
           </div>
 
           {/* Event Cards Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredEvents.map((evt) => (
-              <div
-                key={evt.id}
-                className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition space-y-3 flex flex-col justify-between"
-              >
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[9px] font-black uppercase">
-                      {evt.category || 'Tech'}
-                    </span>
-                    <span className="text-[10px] font-extrabold text-emerald-600">
-                      {evt.readinessPercent || 80}% Readiness
-                    </span>
+            {filteredEvents.length === 0 ? (
+              <div className="p-12 text-center rounded-3xl bg-white border border-slate-200/90 shadow-2xs space-y-3 col-span-full">
+                <Calendar className="w-10 h-10 text-purple-400 mx-auto" />
+                <h3 className="text-sm font-extrabold text-[#0F172A]">No Assigned Events</h3>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  You currently have no events assigned. When the Department Head assigns an event to you, it will appear here.
+                </p>
+              </div>
+            ) : (
+              filteredEvents.map((evt) => (
+                <div
+                  key={evt.id}
+                  className="p-5 rounded-3xl bg-white border border-slate-200/90 shadow-xs hover:shadow-md transition space-y-3 flex flex-col justify-between"
+                >
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-700 text-[9px] font-black uppercase">
+                        {evt.category || 'Tech'}
+                      </span>
+                      <span className="text-[10px] font-extrabold text-emerald-600">
+                        {evt.readinessPercent || 80}% Readiness
+                      </span>
+                    </div>
+
+                    <h4 className="font-extrabold text-sm text-[#0F172A] leading-tight">
+                      {evt.eventName}
+                    </h4>
+                    
+                    <p className="text-xs font-semibold text-slate-500">
+                      {evt.organizationName} • {evt.venue}
+                    </p>
+
+                    <p className="text-[11px] font-medium text-slate-400">
+                      Date: {evt.eventDate} ({evt.startTime})
+                    </p>
                   </div>
 
-                  <h4 className="font-extrabold text-sm text-[#0F172A] leading-tight">
-                    {evt.eventName}
-                  </h4>
-                  
-                  <p className="text-xs font-semibold text-slate-500">
-                    {evt.organizationName} • {evt.venue}
-                  </p>
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase text-purple-800">
+                      {evt.operationalStatus || 'IN_PREPARATION'}
+                    </span>
 
-                  <p className="text-[11px] font-medium text-slate-400">
-                    Date: {evt.eventDate} ({evt.startTime})
-                  </p>
+                    <button
+                      onClick={() => handleOpenWorkspace(evt.id)}
+                      className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs shadow-2xs hover:shadow-xs active:scale-95 transition cursor-pointer"
+                    >
+                      Open Workspace
+                    </button>
+                  </div>
                 </div>
-
-                <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
-                  <span className="text-[10px] font-black uppercase text-purple-800">
-                    {evt.operationalStatus || 'IN_PREPARATION'}
-                  </span>
-
-                  <button
-                    onClick={() => handleOpenWorkspace(evt.id)}
-                    className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-extrabold text-xs shadow-2xs hover:shadow-xs active:scale-95 transition cursor-pointer"
-                  >
-                    Open Workspace
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
         </div>
@@ -478,6 +463,11 @@ export default function EventManagerSpace({ user, onNavigate }) {
           actionMsg={actionMsg}
           actionError={actionError}
           loadingMarkReady={loadingMarkReady}
+          onRefreshWorkspace={() => {
+            fetchDashboard();
+            fetchEvents();
+            if (selectedReqId) loadWorkspaceQuietly(selectedReqId);
+          }}
         />
       )}
 
