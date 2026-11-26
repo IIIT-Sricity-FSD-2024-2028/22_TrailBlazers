@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   ShieldCheck,
@@ -106,12 +107,11 @@ export default function PaymentTermsConfirmModal({
     'Acceptance of the quotation indicates agreement with the displayed payment schedule and commercial terms.',
   ];
 
-  return (
+  const modalContent = (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-md animate-fade-in text-[#26334A]"
-      style={{ zIndex: 100 }}
+      className="fixed inset-0 z-[10000] flex items-center justify-center p-3 sm:p-5 md:p-6 bg-slate-950/70 backdrop-blur-md animate-in fade-in duration-200 text-[#26334A]"
     >
-      <div className="relative w-full max-w-2xl bg-white/95 rounded-3xl shadow-2xl border border-white overflow-hidden max-h-[92vh] flex flex-col">
+      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden max-h-[90vh] flex flex-col">
         
         {/* Top Gradient Ribbon */}
         <div className="h-3 bg-gradient-to-r from-[#DAF0FB] via-[#FBE9F9] to-[#E8F9F5] shrink-0" />
@@ -420,4 +420,6 @@ export default function PaymentTermsConfirmModal({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
 }
