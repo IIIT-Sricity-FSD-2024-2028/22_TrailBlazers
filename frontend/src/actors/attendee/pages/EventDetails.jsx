@@ -1,11 +1,35 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useSelector } from 'react-redux';
 import { Calendar, MapPin, Users, Ticket, ArrowLeft, ShieldCheck, Building2, Clock, Lock, CheckCircle2 } from 'lucide-react';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
 import InvitationModal from '../components/InvitationModal';
 import { EVENT_IMAGES } from '../../../shared/utils/assets';
+import { UIContext } from '../../../context/UIContext';
 
-export default function EventDetails({ event, onBack, onAttend, onAttendClick, user, onOpenAuth, onVerifyEmailPrompt }) {
+export default function EventDetails({ 
+  event: propsEvent, 
+  onBack: propOnBack, 
+  onAttend, 
+  onAttendClick, 
+  user: propsUser, 
+  onOpenAuth: propOnOpenAuth, 
+  onVerifyEmailPrompt,
+  onNavigate: propOnNavigate 
+}) {
+  const ui = useContext(UIContext);
+  const onBack = propOnBack || (() => ui?.navigate && ui.navigate('explore'));
+  const onOpenAuth = propOnOpenAuth || ui?.openAuth;
+  const onNavigate = propOnNavigate || ui?.navigate;
+
+  const reduxSelectedEvent = useSelector((state) => state.events.selectedEvent);
+  const reduxUser = useSelector((state) => state.auth.user);
+  const event = propsEvent || reduxSelectedEvent;
+  const user = propsUser || reduxUser;
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+
+  useEffect(() => {
+    setIsInviteModalOpen(false);
+  }, [event?.id]);
 
   if (!event) return null;
 
@@ -229,7 +253,11 @@ export default function EventDetails({ event, onBack, onAttend, onAttendClick, u
               <div className="flex items-center gap-3 text-[#26334A]">
                 <Calendar className="w-4 h-4 text-indigo-600 shrink-0" />
                 <div>
-                  <span className="font-extrabold block text-[#26334A]">{event.date}</span>
+                  <span className="font-extrabold block text-[#26334A]">
+                    {event.endDate && event.endDate !== (event.startDate || event.date)
+                      ? `${event.startDate || event.date} to ${event.endDate}`
+                      : (event.startDate || event.date || event.eventDate)}
+                  </span>
                   <span className="text-[#64748B]">{event.startTime} - {event.endTime}</span>
                 </div>
               </div>
