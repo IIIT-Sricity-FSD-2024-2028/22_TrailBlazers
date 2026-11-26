@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { createPortal } from 'react-dom';
 import { 
   Building, 
@@ -27,14 +28,24 @@ import {
   RefreshCw,
   UserPlus,
   UserCheck,
-  X
+  X,
+  RotateCcw
 } from 'lucide-react';
 import UserManagementSection from '../../../shared/components/UserManagementSection';
+import RefundManagementSection from '../../revenue/components/RefundManagementSection';
+import { fetchIssuesData, resolveIssueAction, escalateIssueAction, assignIssueAction } from '../../../store/issues-actions';
+import { fetchDepartmentTeam, fetchAwaitingEvents, fetchAssignedEvents, fetchHierarchyOverview, assignStaffToEventAction } from '../../../store/users-actions';
+import { fetchRevenueEvents } from '../../../store/revenue-actions';
 
 export default function DepartmentManagerSpace({ user, onNavigate }) {
-  const [overview, setOverview] = useState(null);
-  const [teamMembers, setTeamMembers] = useState([]);
-  const [issues, setIssues] = useState([]);
+  const dispatch = useDispatch();
+  const issues = useSelector((state) => state.issues.items || state.issues.issues || []);
+  const teamMembers = useSelector((state) => state.users.teamMembers || []);
+  const awaitingEvents = useSelector((state) => state.users.awaitingEvents || []);
+  const assignedEvents = useSelector((state) => state.users.assignedEvents || []);
+  const overview = useSelector((state) => state.users.hierarchyOverview || null);
+  const revenueEvents = useSelector((state) => state.revenue.revenueEvents || []);
+
   const [loading, setLoading] = useState(true);
   const [selectedIssue, setSelectedIssue] = useState(null);
   const [escalatingIssue, setEscalatingIssue] = useState(null);
@@ -49,8 +60,6 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
   const [popoverError, setPopoverError] = useState('');
 
   // Event Management Head Specific State
-  const [awaitingEvents, setAwaitingEvents] = useState([]);
-  const [assignedEvents, setAssignedEvents] = useState([]);
   const [staffAvailability, setStaffAvailability] = useState([]);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignTargetEvent, setAssignTargetEvent] = useState(null);
@@ -60,7 +69,6 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
   const [activeSubTab, setActiveSubTab] = useState('assignments'); // assignments, roster, issues
 
   // Revenue Department Head Specific State
-  const [revenueEvents, setRevenueEvents] = useState([]);
   const [revenueSearchTerm, setRevenueSearchTerm] = useState('');
   const [revenueStatusFilter, setRevenueStatusFilter] = useState('ALL');
 
@@ -80,209 +88,19 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
     setLoading(true);
     setApiError('');
     try {
-      const token = localStorage.getItem('ffsd_token');
-      if (!token) {
-        setApiError('Session token not found. Please sign in again.');
-        setLoading(false);
-        return;
-      }
-
-      const headers = { 'Authorization': `Bearer ${token}` };
-
-      const [resOverview, resTeam, resIssues] = await Promise.all([
-        fetch('/api/hierarchy/overview', { headers }),
-        fetch('/api/hierarchy/team', { headers }),
-        fetch('/api/hierarchy/issues', { headers })
-      ]);
-
-      if (resOverview.ok) {
-        const data = await resOverview.json();
-        setOverview(data);
-      }
-
-      if (resTeam.ok) {
-        const data = await resTeam.json();
-        setTeamMembers(data.members || []);
-      } else {
-        const errData = await resTeam.json().catch(() => ({}));
-        console.warn('GET /api/hierarchy/team status:', resTeam.status, errData);
-        setApiError(errData.error || `Unable to load department team (HTTP ${resTeam.status}).`);
-      }
-
-      if (resIssues.ok) {
-        const data = await resIssues.json();
-        setIssues(data.issues || []);
-      }
-
-      // Fetch Event Head Specific Data
+      const promises = [
+        dispatch(fetchIssuesData()),
+        dispatch(fetchDepartmentTeam()),
+        dispatch(fetchHierarchyOverview()),
+      ];
       if (userDept === 'EVENT_MANAGEMENT') {
-        const [resAwaiting, resAssigned] = await Promise.all([
-          fetch('/api/hierarchy/events/awaiting-assignment', { headers }),
-          fetch('/api/hierarchy/events/assigned', { headers })
-        ]);
-
-        if (resAwaiting.ok) {
-          const awaitingData = await resAwaiting.json();
-          setAwaitingEvents(awaitingData.events || []);
-        }
-        if (resAssigned.ok) {
-          const assignedData = await resAssigned.json();
-          setAssignedEvents(assignedData.events || []);
-        }
+        promises.push(dispatch(fetchAwaitingEvents()));
+        promises.push(dispatch(fetchAssignedEvents()));
       }
-
-      // Fetch Revenue Head Specific Data
       if (userDept === 'REVENUE') {
-        try {
-          let eventsList = [];
-
-          // 1. Try /api/hierarchy/revenue/events
-          const resRev = await fetch('/api/hierarchy/revenue/events', { headers }).catch(() => null);
-          if (resRev && resRev.ok) {
-            const revData = await resRev.json().catch(() => ({}));
-            if (revData.events && revData.events.length > 0) {
-              eventsList = revData.events;
-            }
-          }
-
-          // 2. Try /api/revenue/event-requests
-          if (!eventsList || eventsList.length === 0) {
-            const resFallback = await fetch('/api/revenue/event-requests', { headers: { ...headers, 'x-role': 'REVENUE' } }).catch(() => null);
-            if (resFallback && resFallback.ok) {
-              const fbData = await resFallback.json().catch(() => ({}));
-              if (fbData.requests && fbData.requests.length > 0) {
-                eventsList = fbData.requests;
-              }
-            }
-          }
-
-          // 3. Try /api/events (Public / published events)
-          if (!eventsList || eventsList.length === 0) {
-            const resEvents = await fetch('/api/events', { headers }).catch(() => null);
-            if (resEvents && resEvents.ok) {
-              const evData = await resEvents.json().catch(() => ({}));
-              if (evData.events && evData.events.length > 0) {
-                eventsList = evData.events.map(e => ({
-                  id: e.id,
-                  eventName: e.name || e.eventName,
-                  organizationName: e.organizationName || 'Tech Partner Forum',
-                  category: e.category || 'Tech Conference',
-                  eventDate: e.date || e.eventDate || '2026-09-25',
-                  startDate: e.startDate || e.date || e.eventDate || '2026-09-25',
-                  endDate: e.endDate || null,
-                  startTime: e.startTime || '09:00 AM',
-                  endTime: e.endTime || '05:00 PM',
-                  venue: e.venue || 'Anna University Convention Centre',
-                  ticketPrice: e.ticketPrice || 500,
-                  expectedAttendance: e.totalTickets || 150,
-                  status: e.status || 'COMMERCIAL_APPROVED',
-                  operationalStatus: 'LIVE'
-                }));
-              }
-            }
-          }
-
-          // 4. Default Seed Commercial Events Fallback (Guarantees data is never 0/empty)
-          if (!eventsList || eventsList.length === 0) {
-            eventsList = [
-              {
-                id: 'evt-rev-1',
-                eventName: 'AI Ethics & Autonomous Systems Conference',
-                organizationName: 'Tech Future Labs',
-                category: 'Academic',
-                eventDate: '2026-09-25',
-                startTime: '09:00 AM',
-                endTime: '05:00 PM',
-                venue: 'T-Hub Main Hall',
-                expectedAttendance: 100,
-                ticketPrice: 500,
-                ticketsSold: 45,
-                ticketSalesRevenue: 22500,
-                quotationValue: 100000,
-                totalEventRevenue: 122500,
-                status: 'COMMERCIAL_APPROVED',
-                operationalStatus: 'LIVE'
-              },
-              {
-                id: 'evt-rev-2',
-                eventName: 'Global AI & Quantum Computing Summit',
-                organizationName: 'Global Tech Forum',
-                category: 'Tech Conference',
-                eventDate: '2026-10-12',
-                startTime: '10:00 AM',
-                endTime: '06:00 PM',
-                venue: 'Anna University Convention Centre',
-                expectedAttendance: 150,
-                ticketPrice: 750,
-                ticketsSold: 90,
-                ticketSalesRevenue: 67500,
-                quotationValue: 150000,
-                totalEventRevenue: 217500,
-                status: 'COMMERCIAL_APPROVED',
-                operationalStatus: 'IN_PREPARATION'
-              },
-              {
-                id: 'evt-rev-3',
-                eventName: 'Future of FinTech & Digital Banking 2026',
-                organizationName: 'Financial Leaders Association',
-                category: 'Finance',
-                eventDate: '2026-11-05',
-                startTime: '09:30 AM',
-                endTime: '05:00 PM',
-                venue: 'Bandra Kurla Complex Arena',
-                expectedAttendance: 200,
-                ticketPrice: 1200,
-                ticketsSold: 130,
-                ticketSalesRevenue: 156000,
-                quotationValue: 240000,
-                totalEventRevenue: 396000,
-                status: 'COMMERCIAL_APPROVED',
-                operationalStatus: 'LIVE'
-              },
-              {
-                id: 'evt-rev-4',
-                eventName: 'National Healthcare Innovation Forum',
-                organizationName: 'MedTech India Alliance',
-                category: 'Healthcare',
-                eventDate: '2026-11-18',
-                startTime: '09:00 AM',
-                endTime: '04:30 PM',
-                venue: 'NIMHANS Convention Centre',
-                expectedAttendance: 120,
-                ticketPrice: 600,
-                ticketsSold: 72,
-                ticketSalesRevenue: 43200,
-                quotationValue: 120000,
-                totalEventRevenue: 163200,
-                status: 'COMMERCIAL_APPROVED',
-                operationalStatus: 'IN_PREPARATION'
-              },
-              {
-                id: 'evt-rev-5',
-                eventName: 'Annual Corporate Strategy & Leadership Conclave',
-                organizationName: 'Enterprise India Summit',
-                category: 'Corporate',
-                eventDate: '2026-12-02',
-                startTime: '10:00 AM',
-                endTime: '06:00 PM',
-                venue: 'ITC Grand Chola Ballroom',
-                expectedAttendance: 250,
-                ticketPrice: 1500,
-                ticketsSold: 175,
-                ticketSalesRevenue: 262500,
-                quotationValue: 350000,
-                totalEventRevenue: 612500,
-                status: 'COMMERCIAL_APPROVED',
-                operationalStatus: 'LIVE'
-              }
-            ];
-          }
-
-          setRevenueEvents(eventsList);
-        } catch (e) {
-          console.warn('Error loading revenue events:', e);
-        }
+        promises.push(dispatch(fetchRevenueEvents()));
       }
+      await Promise.all(promises);
     } catch (err) {
       console.error('Error loading Department Manager data:', err);
       setApiError(`Network error loading department data: ${err.message}`);
@@ -320,25 +138,15 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
     setAssignError('');
     setFeedbackMsg('');
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/hierarchy/events/${assignTargetEvent.id}/assign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          eventManagerUserId: selectedManagerId || null,
-          onsiteCoordinatorUserId: selectedCoordinatorId || null
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || 'Failed to submit assignment.');
+      const res = await dispatch(assignStaffToEventAction(assignTargetEvent.id, {
+        eventManagerUserId: selectedManagerId || null,
+        onsiteCoordinatorUserId: selectedCoordinatorId || null
+      }));
+      if (!res.success) throw new Error(res.error || 'Failed to submit assignment.');
 
       setFeedbackMsg(`Staff assigned to event "${assignTargetEvent.eventName}" successfully.`);
       setAssignModalOpen(false);
       setAssignTargetEvent(null);
-      fetchData();
     } catch (err) {
       setAssignError(err.message);
     } finally {
@@ -352,22 +160,12 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
     setActionLoading(true);
     setFeedbackMsg('');
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/hierarchy/issues/${selectedIssue.id}/resolve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ resolutionDetails: resolutionMsg })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to resolve issue.');
+      const res = await dispatch(resolveIssueAction(selectedIssue.id, resolutionMsg));
+      if (!res.success) throw new Error(res.error || 'Failed to resolve issue.');
 
       setFeedbackMsg('Department issue resolved.');
       setSelectedIssue(null);
       setResolutionMsg('');
-      fetchData();
     } catch (err) {
       setFeedbackMsg(`Error: ${err.message}`);
     } finally {
@@ -381,22 +179,12 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
     setActionLoading(true);
     setFeedbackMsg('');
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/hierarchy/issues/${escalatingIssue.id}/escalate-to-admin`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ reason: escalateReason })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to escalate issue to Super Admin.');
+      const res = await dispatch(escalateIssueAction(escalatingIssue.id, escalateReason, 'admin'));
+      if (!res.success) throw new Error(res.error || 'Failed to escalate issue to Super Admin.');
 
       setFeedbackMsg('Issue escalated to Super Admin successfully.');
       setEscalatingIssue(null);
       setEscalateReason('');
-      fetchData();
     } catch (err) {
       setFeedbackMsg(`Error: ${err.message}`);
     } finally {
@@ -408,24 +196,13 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
     setAssignSubmitting(true);
     setPopoverError('');
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/hierarchy/issues/${issueId}/assign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ assignedUserId: staffUserId })
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Failed to assign issue.');
+      const res = await dispatch(assignIssueAction(issueId, staffUserId));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to assign issue.');
       }
 
       setAssignPopoverIssueId(null);
       setFeedbackMsg(`Issue successfully assigned to ${staffName}.`);
-      fetchData();
     } catch (err) {
       setPopoverError(err.message);
     } finally {
@@ -1245,98 +1022,7 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
 
   // REVENUE DEPARTMENT HEAD WORKSPACE
   if (userDept === 'REVENUE') {
-    const rawEvents = revenueEvents && revenueEvents.length > 0 ? revenueEvents : [
-      {
-        id: 'evt-rev-1',
-        eventName: 'AI Ethics & Autonomous Systems Conference',
-        organizationName: 'Tech Future Labs',
-        category: 'Academic',
-        eventDate: '2026-09-25',
-        startTime: '09:00 AM',
-        endTime: '05:00 PM',
-        venue: 'T-Hub Main Hall',
-        expectedAttendance: 100,
-        ticketPrice: 500,
-        ticketsSold: 45,
-        ticketSalesRevenue: 22500,
-        quotationValue: 100000,
-        totalEventRevenue: 122500,
-        status: 'COMMERCIAL_APPROVED',
-        operationalStatus: 'LIVE'
-      },
-      {
-        id: 'evt-rev-2',
-        eventName: 'Global AI & Quantum Computing Summit',
-        organizationName: 'Global Tech Forum',
-        category: 'Tech Conference',
-        eventDate: '2026-10-12',
-        startTime: '10:00 AM',
-        endTime: '06:00 PM',
-        venue: 'Anna University Convention Centre',
-        expectedAttendance: 150,
-        ticketPrice: 750,
-        ticketsSold: 90,
-        ticketSalesRevenue: 67500,
-        quotationValue: 150000,
-        totalEventRevenue: 217500,
-        status: 'COMMERCIAL_APPROVED',
-        operationalStatus: 'IN_PREPARATION'
-      },
-      {
-        id: 'evt-rev-3',
-        eventName: 'Future of FinTech & Digital Banking 2026',
-        organizationName: 'Financial Leaders Association',
-        category: 'Finance',
-        eventDate: '2026-11-05',
-        startTime: '09:30 AM',
-        endTime: '05:00 PM',
-        venue: 'Bandra Kurla Complex Arena',
-        expectedAttendance: 200,
-        ticketPrice: 1200,
-        ticketsSold: 130,
-        ticketSalesRevenue: 156000,
-        quotationValue: 240000,
-        totalEventRevenue: 396000,
-        status: 'COMMERCIAL_APPROVED',
-        operationalStatus: 'LIVE'
-      },
-      {
-        id: 'evt-rev-4',
-        eventName: 'National Healthcare Innovation Forum',
-        organizationName: 'MedTech India Alliance',
-        category: 'Healthcare',
-        eventDate: '2026-11-18',
-        startTime: '09:00 AM',
-        endTime: '04:30 PM',
-        venue: 'NIMHANS Convention Centre',
-        expectedAttendance: 120,
-        ticketPrice: 600,
-        ticketsSold: 72,
-        ticketSalesRevenue: 43200,
-        quotationValue: 120000,
-        totalEventRevenue: 163200,
-        status: 'COMMERCIAL_APPROVED',
-        operationalStatus: 'IN_PREPARATION'
-      },
-      {
-        id: 'evt-rev-5',
-        eventName: 'Annual Corporate Strategy & Leadership Conclave',
-        organizationName: 'Enterprise India Summit',
-        category: 'Corporate',
-        eventDate: '2026-12-02',
-        startTime: '10:00 AM',
-        endTime: '06:00 PM',
-        venue: 'ITC Grand Chola Ballroom',
-        expectedAttendance: 250,
-        ticketPrice: 1500,
-        ticketsSold: 175,
-        ticketSalesRevenue: 262500,
-        quotationValue: 350000,
-        totalEventRevenue: 612500,
-        status: 'COMMERCIAL_APPROVED',
-        operationalStatus: 'LIVE'
-      }
-    ];
+    const rawEvents = revenueEvents || [];
 
     const enrichedRevenueEvents = rawEvents.map(evt => {
       const ticketPrice = Number(evt.ticketPrice) || 0;
@@ -1477,6 +1163,17 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
             }`}
           >
             Commercial Events & Live Ticket Sales ({revenueEvents.length})
+          </button>
+          <button
+            onClick={() => setActiveSubTab('refunds')}
+            className={`pb-3.5 px-4 font-extrabold text-xs tracking-wider uppercase border-b-2 transition cursor-pointer flex items-center gap-1.5 ${
+              activeSubTab === 'refunds'
+                ? 'border-amber-600 text-amber-800 font-black'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <RotateCcw className="w-3.5 h-3.5" />
+            <span>Refunds & Settlements Oversight</span>
           </button>
           <button
             onClick={() => setActiveSubTab('roster')}
@@ -1735,6 +1432,11 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
               )}
             </div>
           </div>
+        )}
+
+        {/* SUB-TAB 2: REFUNDS OVERSIGHT */}
+        {activeSubTab === 'refunds' && (
+          <RefundManagementSection user={user} />
         )}
 
         {/* SUB-TAB 3: DEPARTMENT ISSUES */}
