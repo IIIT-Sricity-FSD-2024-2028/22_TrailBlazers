@@ -1,6 +1,8 @@
-import React from 'react';
-import { Calendar, Building, DollarSign, UserCheck, ShieldCheck, Save, Users, UserPlus, Clock, Check } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Building, DollarSign, UserCheck, ShieldCheck, Save, Users, UserPlus, Clock, Check, AlertTriangle, RotateCcw } from 'lucide-react';
 import ReadinessChecklist from './ReadinessChecklist';
+import CancelEventModal from './CancelEventModal';
+import PostponeEventModal from './PostponeEventModal';
 
 export default function EventPreparationWorkspace({
   eventDetail,
@@ -16,8 +18,11 @@ export default function EventPreparationWorkspace({
   onMarkEventReady,
   actionMsg,
   actionError,
-  loadingMarkReady
+  loadingMarkReady,
+  onRefreshWorkspace
 }) {
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [isPostponeModalOpen, setIsPostponeModalOpen] = useState(false);
   const { request, readiness } = eventDetail || {};
 
   // Normalise selected coordinators list
@@ -111,10 +116,29 @@ export default function EventPreparationWorkspace({
             </div>
           </div>
 
-          <div className="shrink-0 pt-2 md:pt-0">
+          <div className="shrink-0 pt-2 md:pt-0 flex flex-col items-end gap-2">
             <span className="px-4 py-2 rounded-2xl bg-white/10 border border-white/20 text-xs font-black text-white block text-center backdrop-blur-md">
               Venue: {request.venue}
             </span>
+
+            {request.operationalStatus !== 'CANCELLED' && request.status !== 'CANCELLED' && (
+              <div className="flex items-center gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsPostponeModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-500/20 hover:bg-amber-500/40 text-amber-200 border border-amber-400/40 text-[11px] font-extrabold transition cursor-pointer backdrop-blur-md"
+                >
+                  Postpone Event
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsCancelModalOpen(true)}
+                  className="px-3 py-1.5 rounded-xl bg-rose-500/25 hover:bg-rose-500/40 text-rose-200 border border-rose-400/40 text-[11px] font-extrabold transition cursor-pointer backdrop-blur-md"
+                >
+                  Cancel Event
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -297,6 +321,30 @@ export default function EventPreparationWorkspace({
         </div>
 
       </div>
+
+      {/* CANCEL EVENT MODAL */}
+      {isCancelModalOpen && request && (
+        <CancelEventModal
+          event={request}
+          onClose={() => setIsCancelModalOpen(false)}
+          onSuccess={() => {
+            if (onRefreshWorkspace) onRefreshWorkspace();
+            else window.location.reload();
+          }}
+        />
+      )}
+
+      {/* POSTPONE EVENT MODAL */}
+      {isPostponeModalOpen && request && (
+        <PostponeEventModal
+          event={request}
+          onClose={() => setIsPostponeModalOpen(false)}
+          onSuccess={() => {
+            if (onRefreshWorkspace) onRefreshWorkspace();
+            else window.location.reload();
+          }}
+        />
+      )}
 
     </div>
   );
