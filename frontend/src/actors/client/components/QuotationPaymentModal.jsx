@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -14,6 +15,7 @@ import {
   Sparkles,
   FileText
 } from 'lucide-react';
+import { payQuotationAdvanceAction } from '../../../store/requests-actions';
 
 export default function QuotationPaymentModal({
   isOpen,
@@ -23,6 +25,7 @@ export default function QuotationPaymentModal({
   paymentSummary,
   onPaymentSuccess
 }) {
+  const dispatch = useDispatch();
   const [paymentMethod, setPaymentMethod] = useState('UPI');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -52,32 +55,21 @@ export default function QuotationPaymentModal({
     setError('');
 
     try {
-      const token = localStorage.getItem('ffsd_token');
-      if (!token) {
-        throw new Error('Authentication session not found. Please sign in again.');
-      }
-
-      const res = await fetch(`/api/client/quotations/${quotation.id}/pay`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
+      const res = await dispatch(
+        payQuotationAdvanceAction(quotation.id, {
           paymentMethod,
           amount: dueAmount,
           notes: `${stageName} payment for ${eventName}`
         })
-      });
+      );
 
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Payment transaction failed.');
+      if (!res.success) {
+        throw new Error(res.error || 'Payment transaction failed.');
       }
 
-      setPaymentResult(data);
+      setPaymentResult(res.data);
       if (onPaymentSuccess) {
-        onPaymentSuccess(data);
+        onPaymentSuccess(res.data);
       }
     } catch (err) {
       setError(err.message || 'Payment processing failed. Please try again.');

@@ -1,17 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { createPortal } from 'react-dom';
-import { Ticket, Calendar, PlusCircle, ArrowRight, ShieldCheck, Clock, Layers, Sparkles, Building2, Heart, BarChart3, MapPin, Eye, Mail, Trash2, CheckCircle2, FileText, DollarSign, MessageSquare, Users, Radio, X, CheckSquare, Plus, HelpCircle, UserCheck, RefreshCw, Download, AlertCircle } from 'lucide-react';
+import { Ticket, Calendar, PlusCircle, ArrowRight, ShieldCheck, Clock, Layers, Sparkles, Building2, Heart, BarChart3, MapPin, Eye, Mail, Trash2, CheckCircle2, FileText, DollarSign, MessageSquare, Users, Radio, X, CheckSquare, Plus, HelpCircle, UserCheck, RefreshCw, Download, AlertCircle, RotateCcw } from 'lucide-react';
 import EventCard from '../../../shared/components/EventCard';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
 import QuotationViewModal from '../components/QuotationViewModal';
 import ChangeRequestModal from '../components/ChangeRequestModal';
 import TicketModal from '../../attendee/components/TicketModal';
+import CancelEventModal from '../../event-manager/components/CancelEventModal';
+import { fetchClientRequests, fetchClientChangeRequests, fetchEventStats, fetchReportStatus } from '../../../store/requests-actions';
+import { fetchMyTickets, fetchMyRefunds } from '../../../store/tickets-actions';
+import { UIContext } from '../../../context/UIContext';
 
-export default function Dashboard({ user, events = [], onNavigate, onSelectEvent, onVerifyEmailPrompt }) {
-  const [myTickets, setMyTickets] = useState([]);
-  const [myRequests, setMyRequests] = useState([]);
-  const [myChangeRequests, setMyChangeRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
+const isEventStartedOrCompleted = (evt) => {
+  if (!evt) return false;
+  const status = (evt.status || '').toUpperCase();
+  const opStatus = (evt.operationalStatus || '').toUpperCase();
+  if (
+    ['COMPLETED', 'ONGOING', 'IN_PROGRESS', 'LIVE'].includes(status) ||
+    ['COMPLETED', 'ONGOING', 'IN_PROGRESS', 'LIVE'].includes(opStatus)
+  ) {
+    return true;
+  }
+  const dateStr = evt.startDate || evt.date || evt.eventDate;
+  if (!dateStr) return false;
+  const timeStr = evt.startTime || '09:00 AM';
+  try {
+    const dMatch = String(dateStr).trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (dMatch) {
+      const year = parseInt(dMatch[1], 10);
+      const month = parseInt(dMatch[2], 10) - 1;
+      const day = parseInt(dMatch[3], 10);
+      let hours = 0;
+      let minutes = 0;
+      if (timeStr) {
+        const tMatch = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+        if (tMatch) {
+          hours = parseInt(tMatch[1], 10);
+          minutes = parseInt(tMatch[2], 10);
+          const meridiem = tMatch[3] ? tMatch[3].toUpperCase() : null;
+          if (meridiem === 'PM' && hours < 12) hours += 12;
+          if (meridiem === 'AM' && hours === 12) hours = 0;
+        }
+      }
+      const eventTime = new Date(year, month, day, hours, minutes, 0, 0);
+      if (!isNaN(eventTime.getTime()) && eventTime.getTime() <= Date.now()) {
+        return true;
+      }
+    } else {
+      const parsed = new Date(dateStr);
+      if (!isNaN(parsed.getTime()) && parsed.getTime() <= Date.now()) {
+        return true;
+      }
+    }
+  } catch (e) {
+    // Ignore parse errors
+  }
+  return false;
+};
+
+export default function Dashboard({ user: propsUser, events = [], onNavigate: propOnNavigate, onSelectEvent, onVerifyEmailPrompt }) {
+  const dispatch = useDispatch();
+  const ui = useContext(UIContext);
+  const onNavigate = propOnNavigate || ui?.navigate;
+  const reduxUser = useSelector((state) => state.auth.user);
+  const user = propsUser || reduxUser;
+
+  const { requests: myRequests, changeRequests: myChangeRequests, eventStats: selectedStats, reportStatus, loading: requestsLoading } = useSelector((state) => state.requests);
+  const { tickets: myTickets, refunds: myRefunds } = useSelector((state) => state.tickets);
+  const [loading, setLoading] = useState(false);
 
   // Ticket Modal State for Registered Event Cards
   const [selectedTicketForModal, setSelectedTicketForModal] = useState(null);
@@ -29,29 +86,21 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
   const [selectedWorkspaceReq, setSelectedWorkspaceReq] = useState(null);
   const [isWorkspaceOpen, setIsWorkspaceOpen] = useState(false);
 
-  // Live Event Statistics State (Tickets Sold & Check-ins)
-  const [selectedStats, setSelectedStats] = useState(null);
+  // Live Event Statistics State
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsError, setStatsError] = useState('');
 
-  const fetchEventStats = async (eventId) => {
+  // Client Refunds State
+  const [cancelModalEvent, setCancelModalEvent] = useState(null);
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [claimFeedback, setClaimFeedback] = useState({ text: '', type: '' });
+
+  const handleFetchEventStats = async (eventId) => {
     if (!eventId) return;
     setStatsLoading(true);
     setStatsError('');
-    setSelectedStats(null); // Clear previous event stats immediately to prevent stale cross-event display
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/event-requests/${eventId}/stats`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || 'Failed to load event statistics');
-      }
-      const data = await res.json();
-      if (selectedWorkspaceReq?.id === eventId) {
-        setSelectedStats(data);
-      }
+      await dispatch(fetchEventStats(eventId));
     } catch (err) {
       setStatsError(err.message || 'Failed to load statistics');
     } finally {
@@ -59,37 +108,20 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
     }
   };
 
-  // Event Analytics Report Status State
-  const [reportStatus, setReportStatus] = useState(null);
-  const [reportStatusLoading, setReportStatusLoading] = useState(false);
-
-  const fetchReportStatus = async (eventId) => {
+  const fetchReportStatusData = async (eventId) => {
     if (!eventId) return;
-    setReportStatusLoading(true);
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/event-requests/${eventId}/report-status`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setReportStatus(data);
-      } else {
-        setReportStatus(null);
-      }
+      await dispatch(fetchReportStatus(eventId));
     } catch (err) {
       console.error('Failed to fetch report status', err);
-      setReportStatus(null);
-    } finally {
-      setReportStatusLoading(false);
     }
   };
 
   useEffect(() => {
     if (selectedWorkspaceReq && isWorkspaceOpen) {
       document.body.style.overflow = 'hidden';
-      fetchEventStats(selectedWorkspaceReq.id);
-      fetchReportStatus(selectedWorkspaceReq.id);
+      handleFetchEventStats(selectedWorkspaceReq.id);
+      fetchReportStatusData(selectedWorkspaceReq.id);
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') setIsWorkspaceOpen(false);
       };
@@ -102,9 +134,7 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
         }
       };
     } else {
-      setSelectedStats(null);
       setStatsError('');
-      setReportStatus(null);
     }
     setExportLoading(false);
     setExportError('');
@@ -238,40 +268,47 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
 
   useEffect(() => {
     fetchDashboardData();
-  }, [user]);
+  }, [user, dispatch]);
 
   const fetchDashboardData = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('ffsd_token');
-      if (!token) return;
-
-      const headers = { 'Authorization': `Bearer ${token}` };
-
-      // Fetch user's tickets
-      const resTickets = await fetch('/api/tickets/my', { headers });
-      if (resTickets.ok) {
-        const data = await resTickets.json();
-        setMyTickets(data.tickets || []);
-      }
-
-      // Fetch user's event requests
-      const resReqs = await fetch('/api/event-requests/my', { headers });
-      if (resReqs.ok) {
-        const data = await resReqs.json();
-        setMyRequests(data.requests || []);
-      }
-
-      // Fetch user's change requests
-      const resCR = await fetch('/api/change-requests/my', { headers });
-      if (resCR.ok) {
-        const data = await resCR.json();
-        setMyChangeRequests(data.changeRequests || []);
-      }
+      await Promise.all([
+        dispatch(fetchMyTickets()),
+        dispatch(fetchClientRequests()),
+        dispatch(fetchClientChangeRequests()),
+        dispatch(fetchMyRefunds()),
+      ]);
     } catch (err) {
       console.error('Error loading dashboard data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleClaimQuotationRefund = async (quotationId, eventId) => {
+    setClaimLoading(true);
+    setClaimFeedback({ text: '', type: '' });
+    try {
+      const token = localStorage.getItem('ffsd_token');
+      const res = await fetch('/api/refunds/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ quotationId, eventId, reason: 'Client requested contract refund' })
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || 'Failed to submit refund claim.');
+      }
+      setClaimFeedback({ text: 'Contract refund request submitted successfully to the Revenue Team.', type: 'success' });
+      await fetchDashboardData();
+    } catch (err) {
+      setClaimFeedback({ text: err.message, type: 'error' });
+    } finally {
+      setClaimLoading(false);
     }
   };
 
@@ -572,6 +609,25 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
                           <Sparkles className="w-3.5 h-3.5" />
                           <span>Request Change</span>
                         </button>
+                        {req.operationalStatus !== 'CANCELLED' && req.status !== 'CANCELLED' && (
+                          isEventStartedOrCompleted(req) ? (
+                            <span
+                              className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-500 border border-slate-200 font-extrabold text-xs shadow-2xs flex items-center gap-1.5"
+                              title="This event cannot be cancelled because it has already started or has been completed."
+                            >
+                              <Clock className="w-3.5 h-3.5 text-slate-400" />
+                              <span>{req.operationalStatus === 'COMPLETED' || req.status === 'COMPLETED' ? 'Completed – Cancellation Unavailable' : 'Ongoing – Cancellation Unavailable'}</span>
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => setCancelModalEvent(req)}
+                              className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs transition shadow-2xs flex items-center gap-1 cursor-pointer"
+                            >
+                              <AlertCircle className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Cancel Event</span>
+                            </button>
+                          )
+                        )}
                       </div>
                     </div>
 
@@ -710,6 +766,180 @@ export default function Dashboard({ user, events = [], onNavigate, onSelectEvent
             </div>
           </div>
         </section>
+      )}
+
+      {/* 6. CLIENT REFUND SETTLEMENTS & COMMERCIAL POLICY BREAKDOWN */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-base font-extrabold text-[#26334A] flex items-center gap-2">
+            <RotateCcw className="w-5 h-5 text-amber-600" />
+            <span>Event Refunds & Financial Settlements</span>
+          </h3>
+          <span className="text-xs font-bold text-amber-900 bg-amber-50 px-3 py-1 rounded-full border border-amber-200">
+            {myRefunds.length} Refund Records
+          </span>
+        </div>
+
+        {claimFeedback.text && (
+          <div className={`p-4 rounded-2xl font-bold text-xs flex items-center gap-2 ${
+            claimFeedback.type === 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-900' : 'bg-rose-50 border border-rose-200 text-rose-900'
+          }`}>
+            {claimFeedback.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" /> : <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />}
+            <span>{claimFeedback.text}</span>
+          </div>
+        )}
+
+        {myRefunds.length === 0 ? (
+          <div className="p-8 rounded-3xl glass-light border border-white text-center space-y-2">
+            <RotateCcw className="w-8 h-8 text-slate-300 mx-auto" />
+            <h4 className="text-sm font-extrabold text-slate-700">No Active Event Refunds</h4>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              You do not have any cancelled events or pending refund settlements.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {myRefunds.map((ref) => (
+              <div
+                key={ref.id}
+                className="p-6 rounded-3xl bg-white border border-slate-200 shadow-xs space-y-4 hover:shadow-md transition"
+              >
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg">
+                        {ref.refundNumber}
+                      </span>
+                      <StatusBadge status={ref.status} />
+                      <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-purple-100 text-purple-900 border border-purple-200">
+                        {ref.customerType}
+                      </span>
+                    </div>
+                    <h4 className="text-lg font-extrabold text-[#26334A]">{ref.eventName}</h4>
+                    <p className="text-xs text-slate-500 font-medium">
+                      Event Date: <strong>{ref.eventDate || 'N/A'}</strong>
+                    </p>
+                  </div>
+
+                  <div className="text-left sm:text-right space-y-0.5">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                      Final Refundable Balance
+                    </span>
+                    <div className="text-2xl font-black text-emerald-700 font-mono">
+                      ₹{Number(ref.refundableAmount || 0).toLocaleString()}
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium block">
+                      Paid: ₹{Number(ref.totalPaidAmount || ref.originalPaymentAmount || 0).toLocaleString()}
+                      {ref.deductionAmount > 0 && ` • Deductions: -₹${Number(ref.deductionAmount).toLocaleString()}`}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 3-Stage Payment Schedule Breakdown Banner (for B2B Client) */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-center text-xs">
+                  <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Amount Paid</span>
+                    <span className="text-sm font-black text-slate-900 font-mono">
+                      ₹{Number(ref.totalPaidAmount || ref.originalPaymentAmount || 0).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Verified Collections</span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-rose-50/60 border border-rose-100">
+                    <span className="text-[10px] font-bold text-rose-700 uppercase block">Contractual / Verified Deductions</span>
+                    <span className="text-sm font-black text-rose-900 font-mono">
+                      -₹{Number(ref.deductionAmount || 0).toLocaleString()}
+                    </span>
+                    <span className="text-[10px] text-rose-600 block mt-0.5 truncate" title={ref.deductionReason}>
+                      {ref.deductionReason || 'No deductions applied'}
+                    </span>
+                  </div>
+
+                  <div className="p-3 rounded-2xl bg-indigo-50/60 border border-indigo-100">
+                    <span className="text-[10px] font-bold text-indigo-700 uppercase block">Payment Schedule Alignment</span>
+                    <span className="text-xs font-black text-indigo-950 block">
+                      35% Advance • 45% Milestone • 20% Final
+                    </span>
+                    <span className="text-[10px] text-indigo-700 block mt-0.5">Per Contract Terms</span>
+                  </div>
+                </div>
+
+                {/* Cancellation Context & Terms Details */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                      Cancellation Reason
+                    </span>
+                    <p className="text-slate-800 font-medium">
+                      "{ref.cancellationReason || 'Event cancelled per contract agreement.'}"
+                    </p>
+                    {ref.cancellationInitiatorName && (
+                      <div className="text-[10px] text-slate-400 pt-1">
+                        Initiator: {ref.cancellationInitiatorName} ({ref.cancellationInitiatorRole}) at {ref.cancellationTimestamp}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                    <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                      Settlement Details & Terms
+                    </span>
+                    {ref.refundTransactionId ? (
+                      <div className="space-y-0.5">
+                        <div className="text-emerald-800 font-bold">
+                          Settlement Reference: <span className="font-mono">{ref.refundTransactionId}</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500">
+                          Disbursed via {ref.refundMethod || 'Original Method'} on {ref.refundedAt}
+                        </div>
+                      </div>
+                    ) : ref.status === 'REJECTED' ? (
+                      <div className="text-rose-700 font-medium">
+                        Rejected: {ref.rejectionReason}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 font-medium">
+                        Managed by the REVENUE department. Payout reference will appear here upon completion.
+                      </p>
+                    )}
+                    {ref.cancellationTerms && (
+                      <p className="text-[10px] text-slate-400 pt-1">
+                        Terms: {ref.cancellationTerms}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Claim Refund button if status === 'ELIGIBLE' */}
+                {ref.status === 'ELIGIBLE' && (
+                  <div className="flex justify-end pt-2 border-t border-slate-100">
+                    <button
+                      type="button"
+                      onClick={() => handleClaimQuotationRefund(ref.quotationId, ref.eventId)}
+                      disabled={claimLoading}
+                      className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-700 hover:to-indigo-700 text-white font-extrabold text-xs shadow-xs cursor-pointer transition flex items-center gap-1.5"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Request Contract Refund Review</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* CANCEL EVENT MODAL FOR CLIENT */}
+      {cancelModalEvent && (
+        <CancelEventModal
+          event={cancelModalEvent}
+          onClose={() => setCancelModalEvent(null)}
+          onSuccess={() => {
+            fetchDashboardData();
+          }}
+        />
       )}
 
       {/* CLIENT EVENT WORKSPACE MODAL */}

@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { 
   BarChart3, 
   TrendingUp, 
@@ -13,27 +14,35 @@ import {
   Info, 
   Award, 
   Layers, 
-  FileText,
-  AlertCircle,
-  Clock,
-  Sparkles,
-  ChevronRight,
-  MessageSquare,
-  Check,
-  Building,
-  UserCheck,
-  Printer,
-  Ticket,
-  UserX,
-  Zap,
-  Activity
+  FileText, 
+  AlertCircle, 
+  Clock, 
+  Sparkles, 
+  ChevronRight, 
+  MessageSquare, 
+  Check, 
+  Building, 
+  UserCheck, 
+  Printer, 
+  Ticket, 
+  UserX, 
+  Zap, 
+  Activity 
 } from 'lucide-react';
+import {
+  fetchAnalyticsDashboard,
+  fetchEventAnalyticsById,
+  fetchAnalyticsComparison
+} from '../../store/analytics-actions';
 
 export default function AnalyticsSpace({ user, onNavigate }) {
+  const dispatch = useDispatch();
+  const { analyticsDashboard, eventAnalytics, comparisonData, loading: reduxLoading } = useSelector((state) => state.analytics);
+
   const [eventsList, setEventsList] = useState([]);
   const [selectedEventId, setSelectedEventId] = useState('');
   const [analyticsData, setAnalyticsData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -48,13 +57,30 @@ export default function AnalyticsSpace({ user, onNavigate }) {
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSuccessMsg, setFeedbackSuccessMsg] = useState('');
   const [feedbackErrorMsg, setFeedbackErrorMsg] = useState('');
+  const [justSubmittedFeedback, setJustSubmittedFeedback] = useState(false);
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
   useEffect(() => {
+    if (eventAnalytics) {
+      setAnalyticsData(eventAnalytics);
+    }
+  }, [eventAnalytics]);
+
+  useEffect(() => {
+    if (comparisonData) {
+      setComparisonResults(comparisonData.comparisons || comparisonData);
+    }
+  }, [comparisonData]);
+
+  useEffect(() => {
     if (selectedEventId) {
+      setJustSubmittedFeedback(false);
+      setFeedbackSuccessMsg('');
+      setFeedbackErrorMsg('');
+      setFeedbackComment('');
       fetchAnalytics(selectedEventId);
     }
   }, [selectedEventId]);
@@ -62,19 +88,8 @@ export default function AnalyticsSpace({ user, onNavigate }) {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/analytics/dashboard', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (res.status === 403) {
-        setError('Access Denied: Your account role does not have Post-Event Analytics permissions.');
-        setLoading(false);
-        return;
-      }
-
-      const data = await res.json();
-      if (res.ok) {
+      const data = await dispatch(fetchAnalyticsDashboard());
+      if (data) {
         if (!data.hasData || (data.events && data.events.length === 0)) {
           setEventsList([]);
           setAnalyticsData(null);
@@ -87,7 +102,7 @@ export default function AnalyticsSpace({ user, onNavigate }) {
           }
         }
       } else {
-        setError(data.error || 'Failed to load analytics.');
+        setError('Failed to load analytics dashboard.');
       }
     } catch (err) {
       console.error('Error loading analytics events:', err);
@@ -101,15 +116,11 @@ export default function AnalyticsSpace({ user, onNavigate }) {
     try {
       setLoading(true);
       setError(null);
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/analytics/events/${eventId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setAnalyticsData(data.analytics);
+      const data = await dispatch(fetchEventAnalyticsById(eventId));
+      if (data) {
+        setAnalyticsData(data);
       } else {
-        setError(data.error || 'Failed to load event analytics.');
+        setError('Failed to load event analytics.');
       }
     } catch (err) {
       console.error('Error fetching event analytics:', err);
@@ -143,15 +154,9 @@ export default function AnalyticsSpace({ user, onNavigate }) {
     if (selectedCompareIds.length < 2) return;
     try {
       setComparing(true);
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/analytics/compare?eventIds=${selectedCompareIds.join(',')}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setComparisonResults(data.comparisons);
-      } else {
-        alert(data.error || 'Failed to compare events.');
+      const data = await dispatch(fetchAnalyticsComparison(selectedCompareIds));
+      if (data) {
+        setComparisonResults(data.comparisons || data);
       }
     } catch (err) {
       console.error('Error running comparison:', err);
@@ -179,11 +184,16 @@ export default function AnalyticsSpace({ user, onNavigate }) {
       });
       const data = await res.json();
       if (res.ok) {
-        setFeedbackSuccessMsg('Feedback submitted successfully!');
+        setJustSubmittedFeedback(true);
+        setFeedbackSuccessMsg('Thank you! Your feedback has been submitted.');
         setFeedbackComment('');
         fetchAnalytics(selectedEventId);
+      } else if (res.status === 409 || (data.message && data.message.includes('already submitted'))) {
+        setJustSubmittedFeedback(true);
+        setFeedbackSuccessMsg('Thank you! Your feedback has been submitted.');
+        fetchAnalytics(selectedEventId);
       } else {
-        setFeedbackErrorMsg(data.error || 'Failed to submit feedback.');
+        setFeedbackErrorMsg(data.message || data.error || 'Failed to submit feedback.');
       }
     } catch (err) {
       console.error('Error submitting feedback:', err);
@@ -718,57 +728,87 @@ export default function AnalyticsSpace({ user, onNavigate }) {
               <p className="text-xs text-slate-500 italic">No attendee feedback has been submitted for this event yet.</p>
             )}
 
-            {/* Attendee Submission Form */}
+            {/* Attendee Submission Form or Submitted State */}
             <div className="pt-4 border-t border-slate-100 space-y-3">
-              <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Submit Attendee Review</h4>
-              
-              {feedbackSuccessMsg && (
-                <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
-                  {feedbackSuccessMsg}
-                </div>
-              )}
-              {feedbackErrorMsg && (
-                <div className="p-3 rounded-xl bg-rose-50 text-rose-800 text-xs font-bold border border-rose-200">
-                  {feedbackErrorMsg}
-                </div>
-              )}
-
-              <form onSubmit={handleSubmitFeedback} className="space-y-3">
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">RATING (1-5 STARS)</label>
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map(star => (
-                      <button
-                        type="button"
-                        key={star}
-                        onClick={() => setFeedbackRating(star)}
-                        className="p-1 cursor-pointer"
-                      >
-                        <Star className={`w-5 h-5 ${star <= feedbackRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
-                      </button>
-                    ))}
+              {(feedback?.userHasSubmitted || justSubmittedFeedback) ? (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200/80 space-y-2">
+                  <div className="flex items-center gap-2 text-emerald-800">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+                    <span className="text-xs font-black uppercase tracking-wider">Feedback Submitted</span>
                   </div>
+                  <p className="text-xs text-emerald-700 font-medium">
+                    Thank you! Your feedback has been submitted.
+                  </p>
+                  {(feedback?.userFeedback || feedbackSuccessMsg) && (
+                    <div className="mt-2 pt-2 border-t border-emerald-200/60 text-[11px] text-emerald-800 space-y-1">
+                      {feedback?.userFeedback?.rating && (
+                        <div className="flex items-center gap-1 font-bold">
+                          <span>Your Rating:</span>
+                          <span className="text-amber-500">{'★'.repeat(feedback.userFeedback.rating)}</span>
+                          <span className="text-slate-400">({feedback.userFeedback.rating}/5)</span>
+                        </div>
+                      )}
+                      {feedback?.userFeedback?.comment && (
+                        <p className="italic text-slate-600 bg-white/70 p-2 rounded-lg border border-emerald-100">
+                          "{feedback.userFeedback.comment}"
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
+              ) : (
+                <>
+                  <h4 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Submit Attendee Review</h4>
+                  
+                  {feedbackSuccessMsg && (
+                    <div className="p-3 rounded-xl bg-emerald-50 text-emerald-800 text-xs font-bold border border-emerald-200">
+                      {feedbackSuccessMsg}
+                    </div>
+                  )}
+                  {feedbackErrorMsg && (
+                    <div className="p-3 rounded-xl bg-rose-50 text-rose-800 text-xs font-bold border border-rose-200">
+                      {feedbackErrorMsg}
+                    </div>
+                  )}
 
-                <div>
-                  <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">OPTIONAL COMMENT</label>
-                  <textarea
-                    rows="2"
-                    value={feedbackComment}
-                    onChange={(e) => setFeedbackComment(e.target.value)}
-                    placeholder="Share your experience..."
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-200 outline-none focus:border-purple-600 font-medium"
-                  ></textarea>
-                </div>
+                  <form onSubmit={handleSubmitFeedback} className="space-y-3">
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">RATING (1-5 STARS)</label>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map(star => (
+                          <button
+                            type="button"
+                            key={star}
+                            onClick={() => setFeedbackRating(star)}
+                            className="p-1 cursor-pointer"
+                          >
+                            <Star className={`w-5 h-5 ${star <= feedbackRating ? 'text-amber-400 fill-amber-400' : 'text-slate-300'}`} />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
 
-                <button
-                  type="submit"
-                  disabled={feedbackSubmitting}
-                  className="w-full py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
-                >
-                  {feedbackSubmitting ? 'Submitting...' : 'Submit Feedback'}
-                </button>
-              </form>
+                    <div>
+                      <label className="block text-[10px] font-black text-slate-400 uppercase mb-1">OPTIONAL COMMENT</label>
+                      <textarea
+                        rows="2"
+                        value={feedbackComment}
+                        onChange={(e) => setFeedbackComment(e.target.value)}
+                        placeholder="Share your experience..."
+                        className="w-full text-xs p-2.5 rounded-xl border border-slate-200 outline-none focus:border-purple-600 font-medium"
+                      ></textarea>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={feedbackSubmitting}
+                      className="w-full py-2 rounded-xl bg-purple-700 hover:bg-purple-800 text-white font-extrabold text-xs shadow-2xs transition cursor-pointer"
+                    >
+                      {feedbackSubmitting ? 'Submitting...' : 'Submit Feedback'}
+                    </button>
+                  </form>
+                </>
+              )}
             </div>
 
           </div>

@@ -1,9 +1,15 @@
 import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { PlusCircle, Building, Calendar, MapPin, DollarSign, Clock, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Mail, HelpCircle, Layers, FileText } from 'lucide-react';
 import RevenueModal from '../components/RevenueModal';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
+import { submitEventProposal } from '../../../store/requests-actions';
+import { fetchCurrentUser } from '../../../store/auth-actions';
 
-export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmailPrompt }) {
+export default function CreateEvent({ user: propsUser, onNavigate, onOpenAuth, onVerifyEmailPrompt, onUserRefresh }) {
+  const dispatch = useDispatch();
+  const reduxUser = useSelector((state) => state.auth.user);
+  const user = propsUser || reduxUser;
   const [formData, setFormData] = useState({
     organizationName: user?.organization || '',
     contactEmail: user?.email || '',
@@ -11,7 +17,8 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
     description: '',
     agenda: '',
     category: 'Tech Conference',
-    eventDate: '',
+    startDate: '',
+    endDate: '',
     startTime: '09:00 AM',
     endTime: '05:00 PM',
     venue: '',
@@ -20,7 +27,6 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
     expectedAttendance: 100,
     isPaid: false,
     ticketPrice: 0,
-    frequency: 'One-time event',
     recurringPerWeek: 0,
     additionalNotes: '',
     bannerUrl: ''
@@ -34,7 +40,104 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
   const [isRevenueModalOpen, setIsRevenueModalOpen] = useState(false);
 
   const categories = ['Tech Conference', 'Workshop', 'Academic', 'Business', 'Cultural'];
-  const frequencies = ['One-time event', 'Weekly', 'Multiple times per week', 'Monthly', 'Recurring'];
+
+  // Parse time helper (supports '09:00 AM', '14:30', '9:00', etc.)
+  const parseTimeString = (timeStr) => {
+    if (!timeStr || typeof timeStr !== 'string') return null;
+    const raw = timeStr.trim();
+    if (!raw) return null;
+    const match = raw.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)?$/i);
+    if (!match) return null;
+    let hours = parseInt(match[1], 10);
+    const minutes = parseInt(match[2], 10);
+    const meridiem = match[3] ? match[3].toUpperCase() : null;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+    if (meridiem) {
+      if (hours > 12) return null;
+      if (meridiem === 'PM' && hours < 12) hours += 12;
+      if (meridiem === 'AM' && hours === 12) hours = 0;
+    }
+    return { hours, minutes };
+  };
+
+  const getTodayStr = () => {
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  };
+
+  // Comprehensive Date & Time Validation
+  const validateDatesAndTimes = (data) => {
+    const errs = {};
+    const todayStr = getTodayStr();
+    const now = new Date();
+
+    if (data.startDate) {
+      // 1. Start date cannot be in the past
+      if (data.startDate < todayStr) {
+        errs.startDate = 'Event start date cannot be in the past.';
+      }
+    }
+
+    if (data.endDate && data.startDate) {
+      // 2. End date cannot be earlier than start date
+      if (data.endDate < data.startDate) {
+        errs.endDate = 'Event end date cannot be earlier than start date.';
+      }
+    }
+
+    const sTimeParsed = parseTimeString(data.startTime);
+    const eTimeParsed = parseTimeString(data.endTime);
+
+    // 3. If start date is today, start time must be in future
+    if (data.startDate === todayStr && sTimeParsed) {
+      const startDt = new Date();
+      startDt.setHours(sTimeParsed.hours, sTimeParsed.minutes, 0, 0);
+      if (startDt.getTime() <= now.getTime()) {
+        errs.startTime = 'Start time must be in the future for events starting today.';
+      }
+    }
+
+    // 4. If end date is today, end time must be in future
+    if (data.endDate === todayStr && eTimeParsed) {
+      const endDt = new Date();
+      endDt.setHours(eTimeParsed.hours, eTimeParsed.minutes, 0, 0);
+      if (endDt.getTime() <= now.getTime()) {
+        errs.endTime = 'End time must be in the future for events ending today.';
+      }
+    }
+
+    // 5. If start and end dates are same, end time must be later than start time
+    if (data.startDate && data.endDate && data.startDate === data.endDate) {
+      if (sTimeParsed && eTimeParsed) {
+        const sMin = sTimeParsed.hours * 60 + sTimeParsed.minutes;
+        const eMin = eTimeParsed.hours * 60 + eTimeParsed.minutes;
+        if (eMin <= sMin) {
+          errs.endTime = 'End time must be later than start time for same-day events.';
+        }
+      }
+    }
+
+    // 6. If dates are different, ensure complete range is valid
+    if (data.startDate && data.endDate && data.startDate < data.endDate) {
+      if (sTimeParsed && eTimeParsed) {
+        const startParts = data.startDate.split('-').map(Number);
+        const endParts = data.endDate.split('-').map(Number);
+        const startFull = new Date(startParts[0], startParts[1] - 1, startParts[2], sTimeParsed.hours, sTimeParsed.minutes);
+        const endFull = new Date(endParts[0], endParts[1] - 1, endParts[2], eTimeParsed.hours, eTimeParsed.minutes);
+        if (endFull.getTime() <= startFull.getTime()) {
+          errs.endDate = 'Complete event end date and time must be after start date and time.';
+        }
+      }
+    }
+
+    return errs;
+  };
+
+  const dateTimeErrors = validateDatesAndTimes(formData);
+  const hasDateTimeErrors = Object.keys(dateTimeErrors).length > 0;
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -97,34 +200,43 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
       return;
     }
 
+    if (!formData.startDate) {
+      setError('Start Date is required.');
+      return;
+    }
+    if (!formData.endDate) {
+      setError('End Date is required.');
+      return;
+    }
+    if (hasDateTimeErrors) {
+      const firstError = Object.values(dateTimeErrors)[0];
+      setError(firstError || 'Please fix the date and time validation errors before submitting.');
+      return;
+    }
+
     setLoading(true);
     setError('');
 
     try {
       const payload = {
         ...formData,
+        eventDate: formData.startDate,
         expectedAttendance: Number(formData.expectedAttendance) || 100,
         ticketPrice: formData.isPaid ? (Number(formData.ticketPrice) || 0) : 0,
         recurringPerWeek: Number(formData.recurringPerWeek) || 0
       };
 
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/event-requests', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(payload)
-      });
+      const result = await dispatch(submitEventProposal(payload));
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Failed to submit event organizing request.');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to submit event organizing request.');
       }
 
-      setSubmittedRequest(data.request);
+      setSubmittedRequest(result.data.request);
+      dispatch(fetchCurrentUser());
+      if (onUserRefresh) {
+        onUserRefresh();
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -290,40 +402,71 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
                 )}
               </div>
 
+              <div>
+                <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5">
+                  Category *
+                </label>
+                <select
+                  name="category"
+                  value={formData.category}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 bg-white/90 border border-slate-200 rounded-xl text-sm font-bold text-[#26334A] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer shadow-2xs"
+                >
+                  {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                </select>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5">
-                    Category *
-                  </label>
-                  <select
-                    name="category"
-                    value={formData.category}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 bg-white/90 border border-slate-200 rounded-xl text-sm font-bold text-[#26334A] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer shadow-2xs"
-                  >
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5">
-                    Proposed Date *
+                  <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Start Date *</span>
+                    <span className="text-[10px] font-medium text-slate-400">YYYY-MM-DD</span>
                   </label>
                   <input
                     type="date"
-                    name="eventDate"
+                    name="startDate"
                     required
-                    value={formData.eventDate}
+                    min={getTodayStr()}
+                    value={formData.startDate}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 glass-input-light rounded-xl text-sm font-medium focus:border-indigo-400"
+                    className={`w-full px-4 py-3 glass-input-light rounded-xl text-sm font-medium focus:border-indigo-400 ${dateTimeErrors.startDate ? 'border-rose-400 ring-2 ring-rose-200/50 bg-rose-50/20' : ''}`}
                   />
+                  {dateTimeErrors.startDate && (
+                    <p className="mt-1.5 text-xs font-semibold text-rose-600 flex items-center gap-1.5 bg-rose-50/80 px-2.5 py-1 rounded-lg border border-rose-200">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{dateTimeErrors.startDate}</span>
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>End Date *</span>
+                    <span className="text-[10px] font-medium text-slate-400">YYYY-MM-DD</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="endDate"
+                    required
+                    min={formData.startDate || getTodayStr()}
+                    value={formData.endDate}
+                    onChange={handleChange}
+                    className={`w-full px-4 py-3 glass-input-light rounded-xl text-sm font-medium focus:border-indigo-400 ${dateTimeErrors.endDate ? 'border-rose-400 ring-2 ring-rose-200/50 bg-rose-50/20' : ''}`}
+                  />
+                  {dateTimeErrors.endDate && (
+                    <p className="mt-1.5 text-xs font-semibold text-rose-600 flex items-center gap-1.5 bg-rose-50/80 px-2.5 py-1 rounded-lg border border-rose-200">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{dateTimeErrors.endDate}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5">
-                    Start Time
+                  <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>Start Time</span>
+                    <span className="text-[10px] font-medium text-slate-400">e.g. 09:00 AM</span>
                   </label>
                   <input
                     type="text"
@@ -331,13 +474,20 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
                     value={formData.startTime}
                     onChange={handleChange}
                     placeholder="09:00 AM"
-                    className="w-full px-4 py-3 glass-input-light rounded-xl text-sm font-medium focus:border-indigo-400"
+                    className={`w-full px-4 py-3 glass-input-light rounded-xl text-sm font-medium focus:border-indigo-400 ${dateTimeErrors.startTime ? 'border-rose-400 ring-2 ring-rose-200/50 bg-rose-50/20' : ''}`}
                   />
+                  {dateTimeErrors.startTime && (
+                    <p className="mt-1.5 text-xs font-semibold text-rose-600 flex items-center gap-1.5 bg-rose-50/80 px-2.5 py-1 rounded-lg border border-rose-200">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{dateTimeErrors.startTime}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div>
-                  <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5">
-                    End Time
+                  <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                    <span>End Time</span>
+                    <span className="text-[10px] font-medium text-slate-400">e.g. 05:00 PM</span>
                   </label>
                   <input
                     type="text"
@@ -345,8 +495,14 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
                     value={formData.endTime}
                     onChange={handleChange}
                     placeholder="05:00 PM"
-                    className="w-full px-4 py-3 glass-input-light rounded-xl text-sm font-medium focus:border-indigo-400"
+                    className={`w-full px-4 py-3 glass-input-light rounded-xl text-sm font-medium focus:border-indigo-400 ${dateTimeErrors.endTime ? 'border-rose-400 ring-2 ring-rose-200/50 bg-rose-50/20' : ''}`}
                   />
+                  {dateTimeErrors.endTime && (
+                    <p className="mt-1.5 text-xs font-semibold text-rose-600 flex items-center gap-1.5 bg-rose-50/80 px-2.5 py-1 rounded-lg border border-rose-200">
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{dateTimeErrors.endTime}</span>
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -451,11 +607,11 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
             </div>
           </div>
 
-          {/* Section 4: Ticketing & Frequency */}
+          {/* Section 4: Ticketing */}
           <div className="p-8 rounded-3xl glass-light border border-white shadow-xs space-y-4">
             <h3 className="text-lg font-extrabold text-[#26334A] flex items-center gap-2">
               <DollarSign className="w-5 h-5 text-emerald-600" />
-              <span>4. Ticketing & Frequency</span>
+              <span>4. Ticketing</span>
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
@@ -490,46 +646,41 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
               )}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5">
-                  Event Frequency
-                </label>
-                <select
-                  name="frequency"
-                  value={formData.frequency}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 bg-white/90 border border-slate-200 rounded-xl text-sm font-bold text-[#26334A] focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer shadow-2xs"
-                >
-                  {frequencies.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5">
-                  Special Requirements
-                </label>
-                <input
-                  type="text"
-                  name="additionalNotes"
-                  value={formData.additionalNotes}
-                  onChange={handleChange}
-                  placeholder="Stage lighting, live streaming, catering..."
-                  className="w-full px-4 py-3 glass-input-light rounded-xl text-sm font-medium focus:border-indigo-400"
-                />
-              </div>
+            <div>
+              <label className="block text-xs font-extrabold text-[#26334A] uppercase tracking-wider mb-1.5">
+                Special Requirements
+              </label>
+              <input
+                type="text"
+                name="additionalNotes"
+                value={formData.additionalNotes}
+                onChange={handleChange}
+                placeholder="Stage lighting, live streaming, catering..."
+                className="w-full px-4 py-3 glass-input-light rounded-xl text-sm font-medium focus:border-indigo-400"
+              />
             </div>
           </div>
 
           {/* Submit Action */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-4 px-6 rounded-2xl bg-[#26334A] text-white font-extrabold text-xs uppercase tracking-wider hover:bg-slate-800 transition shadow-md flex items-center justify-center gap-2"
-          >
-            {loading ? 'Submitting Request...' : 'Submit Event Request'}
-            {!loading && <ArrowRight className="w-4 h-4 text-white" />}
-          </button>
+          <div className="space-y-2">
+            {hasDateTimeErrors && (
+              <p className="text-center text-xs font-bold text-rose-500 bg-rose-50/80 py-2 px-4 rounded-xl border border-rose-200">
+                Please resolve the date and time validation errors above to enable submission.
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={loading || hasDateTimeErrors}
+              className={`w-full py-4 px-6 rounded-2xl font-extrabold text-xs uppercase tracking-wider transition shadow-md flex items-center justify-center gap-2 ${
+                loading || hasDateTimeErrors
+                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed opacity-75'
+                  : 'bg-[#26334A] text-white hover:bg-slate-800 cursor-pointer'
+              }`}
+            >
+              {loading ? 'Submitting Request...' : 'Submit Event Request'}
+              {!loading && <ArrowRight className="w-4 h-4" />}
+            </button>
+          </div>
 
         </form>
       ) : (
@@ -572,8 +723,12 @@ export default function CreateEvent({ user, onNavigate, onOpenAuth, onVerifyEmai
             </div>
 
             <div className="flex justify-between items-center">
-              <span className="text-[#64748B]">Date</span>
-              <span className="font-medium text-[#26334A]">{submittedRequest.eventDate}</span>
+              <span className="text-[#64748B]">Dates</span>
+              <span className="font-medium text-[#26334A]">
+                {submittedRequest.startDate && submittedRequest.endDate && submittedRequest.startDate !== submittedRequest.endDate
+                  ? `${submittedRequest.startDate} to ${submittedRequest.endDate}`
+                  : (submittedRequest.startDate || submittedRequest.eventDate)}
+              </span>
             </div>
           </div>
 
