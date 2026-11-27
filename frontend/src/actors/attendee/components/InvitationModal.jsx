@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, KeyRound, AlertCircle, ShieldCheck } from 'lucide-react';
 
 export default function InvitationModal({ isOpen, onClose, onContinue, eventName }) {
   const [inviteCode, setInviteCode] = useState('');
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) {
+      setInviteCode('');
+      setError('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

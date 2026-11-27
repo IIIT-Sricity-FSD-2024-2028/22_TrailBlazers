@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { createPortal } from 'react-dom';
 import { 
   BarChart3, 
   FileText, 
@@ -23,18 +25,38 @@ import {
   ShieldAlert, 
   ChevronRight, 
   RefreshCw,
-  Mail
+  Mail,
+  X,
+  RotateCcw
 } from 'lucide-react';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
-import AssignEventManagerModal from '../components/AssignEventManagerModal';
+import RefundManagementSection from '../components/RefundManagementSection';
+import {
+  fetchRevenueDashboard,
+  fetchRevenueRequests,
+  fetchRevenueClients,
+  fetchRevenueAnalytics,
+  fetchRequestDetail,
+  saveQuotationDraftAction,
+  sendQuotationAction,
+  escalateEventAction
+} from '../../../store/revenue-actions';
 
 export default function RevenueSpace({ user, onNavigate }) {
-  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'event-requests' | 'builder' | 'analytics' | 'clients'
-  const [dashboardData, setDashboardData] = useState(null);
-  const [requestsList, setRequestsList] = useState([]);
-  const [clientsList, setClientsList] = useState([]);
-  const [analyticsData, setAnalyticsData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const [activeTab, setActiveTab] = useState('dashboard'); // 'dashboard' | 'event-requests' | 'builder' | 'refunds' | 'analytics' | 'clients'
+  
+  // Read all server-backed revenue data from Redux Store
+  const {
+    dashboardData,
+    requestsList,
+    clientsList,
+    analyticsData,
+    requestDetail: reduxRequestDetail,
+    loading: reduxLoading
+  } = useSelector((state) => state.revenue);
+
+  const [loading, setLoading] = useState(false);
 
   // Selected Request & Quotation Builder State
   const [selectedReqId, setSelectedReqId] = useState(null);
@@ -52,23 +74,25 @@ export default function RevenueSpace({ user, onNavigate }) {
   const [builderMsg, setBuilderMsg] = useState('');
   const [builderError, setBuilderError] = useState('');
 
+  // Escalation Modal State
+  const [escalateModalOpen, setEscalateModalOpen] = useState(false);
+  const [escalateTargetEvent, setEscalateTargetEvent] = useState(null);
+  const [escalateLoading, setEscalateLoading] = useState(false);
+  const [escalateError, setEscalateError] = useState('');
+  const [escalateSuccess, setEscalateSuccess] = useState('');
+
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
-
-  // Event Manager Availability & Assignment Modal State
-  const [assignModalOpen, setAssignModalOpen] = useState(false);
-  const [assignTargetReq, setAssignTargetReq] = useState(null);
 
   // Pagination State (6 items per page)
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
 
-  const handleOpenAssignModal = (reqItem) => {
-    setAssignTargetReq(reqItem);
-    setAssignModalOpen(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const fetchDashboard = () => dispatch(fetchRevenueDashboard());
+  const fetchRequests = () => dispatch(fetchRevenueRequests());
+  const fetchAnalytics = () => dispatch(fetchRevenueAnalytics());
+  const fetchClients = () => dispatch(fetchRevenueClients());
 
   useEffect(() => {
     fetchDashboard();
@@ -76,63 +100,6 @@ export default function RevenueSpace({ user, onNavigate }) {
     fetchAnalytics();
     fetchClients();
   }, []);
-
-  const getHeaders = () => {
-    const token = localStorage.getItem('ffsd_token');
-    const headers = { 'x-role': 'REVENUE' };
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    return headers;
-  };
-
-  const fetchDashboard = async () => {
-    try {
-      const res = await fetch('/api/revenue/dashboard', { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setDashboardData(data);
-      }
-    } catch (err) {
-      console.error('Error fetching revenue dashboard:', err);
-    }
-  };
-
-  const fetchRequests = async () => {
-    try {
-      const res = await fetch('/api/revenue/event-requests', { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setRequestsList(data.requests || []);
-      }
-    } catch (err) {
-      console.error('Error fetching event requests:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchAnalytics = async () => {
-    try {
-      const res = await fetch('/api/revenue/analytics', { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setAnalyticsData(data.analytics);
-      }
-    } catch (err) {
-      console.error('Error fetching analytics:', err);
-    }
-  };
-
-  const fetchClients = async () => {
-    try {
-      const res = await fetch('/api/revenue/clients', { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setClientsList(data.clients || []);
-      }
-    } catch (err) {
-      console.error('Error fetching clients:', err);
-    }
-  };
 
   const handleOpenBuilderForRequest = async (reqId) => {
     setSelectedReqId(reqId);
@@ -142,9 +109,8 @@ export default function RevenueSpace({ user, onNavigate }) {
     setActiveTab('builder');
 
     try {
-      const res = await fetch(`/api/revenue/event-requests/${reqId}`, { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
+      const data = await dispatch(fetchRequestDetail(reqId));
+      if (data) {
         setRequestDetail(data);
 
         // Pre-fill existing line items if available
@@ -157,7 +123,7 @@ export default function RevenueSpace({ user, onNavigate }) {
           })));
         } else {
           setLineItems([
-            { description: `${data.request.eventName} - Core Venue & Operations`, quantity: 1, unitPrice: 45000, subtotal: 45000 },
+            { description: `${data.request?.eventName || 'Event'} - Core Venue & Operations`, quantity: 1, unitPrice: 45000, subtotal: 45000 },
             { description: 'Registration Desk & Badge Printing Stations', quantity: 2, unitPrice: 5000, subtotal: 10000 },
             { description: 'Stage Audio/Visual & Lighting Package', quantity: 1, unitPrice: 20000, subtotal: 20000 }
           ]);
@@ -192,8 +158,8 @@ export default function RevenueSpace({ user, onNavigate }) {
     const updated = [...lineItems];
     updated[index][field] = value;
     if (field === 'quantity' || field === 'unitPrice') {
-      const q = Math.max(1, Number(updated[index].quantity || 1));
-      const p = Math.max(0, Number(updated[index].unitPrice || 0));
+      const q = Math.max(1, Number(updated[index].quantity) || 1);
+      const p = Math.max(0, Number(updated[index].unitPrice) || 0);
       updated[index].subtotal = q * p;
     }
     setLineItems(updated);
@@ -211,66 +177,134 @@ export default function RevenueSpace({ user, onNavigate }) {
     setBuilderError('');
 
     try {
-      const res = await fetch('/api/revenue/quotations', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify({
+      const sanitizedLineItems = lineItems.map((item, idx) => ({
+        description: (item.description || '').trim() || `Service Item #${idx + 1}`,
+        quantity: Math.max(1, Number(item.quantity) || 1),
+        unitPrice: Math.max(0, Number(item.unitPrice) || 0)
+      }));
+
+      const res = await dispatch(
+        saveQuotationDraftAction({
           eventRequestId: selectedReqId,
-          lineItems,
-          discount: Number(discount),
-          taxPercent: Number(taxPercent),
-          notes,
-          terms
+          lineItems: sanitizedLineItems,
+          discount: Math.max(0, Number(discount) || 0),
+          taxPercent: Math.max(0, Number(taxPercent) || 0),
+          notes: notes || '',
+          terms: terms || ''
         })
-      });
+      );
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to save quotation draft.');
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to save quotation draft.');
+      }
 
-      setBuilderMsg(data.message);
-      handleOpenBuilderForRequest(selectedReqId);
-      fetchDashboard();
-      fetchRequests();
+      setBuilderMsg(res.data?.message || 'Quotation draft saved successfully.');
+      await handleOpenBuilderForRequest(selectedReqId);
+      await fetchDashboard();
+      await fetchRequests();
+      return res.data;
     } catch (err) {
-      setBuilderError(err.message);
+      setBuilderError(err.message || 'Error saving quotation draft.');
+      throw err;
     } finally {
       setBuilderLoading(false);
     }
   };
 
   const handleSendQuotationToClient = async () => {
-    if (!requestDetail?.quotation?.id) {
-      // Save first then send
-      await handleSaveQuotationDraft();
-    }
     setBuilderLoading(true);
     setBuilderMsg('');
     setBuilderError('');
 
     try {
-      const qtnId = requestDetail?.quotation?.id;
-      if (!qtnId) throw new Error('Please save quotation draft first before sending.');
+      const sanitizedLineItems = lineItems.map((item, idx) => ({
+        description: (item.description || '').trim() || `Service Item #${idx + 1}`,
+        quantity: Math.max(1, Number(item.quantity) || 1),
+        unitPrice: Math.max(0, Number(item.unitPrice) || 0)
+      }));
 
-      const res = await fetch(`/api/revenue/quotations/${qtnId}/send`, {
-        method: 'POST',
-        headers: getHeaders()
-      });
+      const saveRes = await dispatch(
+        saveQuotationDraftAction({
+          eventRequestId: selectedReqId,
+          lineItems: sanitizedLineItems,
+          discount: Math.max(0, Number(discount) || 0),
+          taxPercent: Math.max(0, Number(taxPercent) || 0),
+          notes: notes || '',
+          terms: terms || ''
+        })
+      );
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send quotation.');
+      if (!saveRes.success) {
+        throw new Error(saveRes.error || 'Failed to save quotation before sending.');
+      }
 
-      setBuilderMsg(data.message);
-      handleOpenBuilderForRequest(selectedReqId);
-      fetchDashboard();
-      fetchRequests();
-      fetchAnalytics();
+      const qtnId = saveRes.data?.quotationId || requestDetail?.quotation?.id;
+      if (!qtnId) throw new Error('Quotation ID not found after saving.');
+
+      const sendRes = await dispatch(sendQuotationAction(qtnId));
+      if (!sendRes.success) {
+        throw new Error(sendRes.error || 'Failed to dispatch quotation to client.');
+      }
+
+      setBuilderMsg(sendRes.data?.message || 'Quotation successfully dispatched to client.');
+      await handleOpenBuilderForRequest(selectedReqId);
+      await fetchDashboard();
+      await fetchRequests();
+      await fetchAnalytics();
     } catch (err) {
-      setBuilderError(err.message);
+      setBuilderError(err.message || 'Error processing quotation.');
     } finally {
       setBuilderLoading(false);
+    }
+  };
+
+  const handleOpenEscalateModal = (req) => {
+    setEscalateTargetEvent(req);
+    setEscalateError('');
+    setEscalateSuccess('');
+    setEscalateLoading(false);
+    setEscalateModalOpen(true);
+  };
+
+  const handleCloseEscalateModal = () => {
+    if (escalateLoading) return;
+    setEscalateModalOpen(false);
+    setEscalateTargetEvent(null);
+    setEscalateError('');
+    setEscalateSuccess('');
+  };
+
+  const handleConfirmEscalation = async () => {
+    if (!escalateTargetEvent) return;
+    setEscalateLoading(true);
+    setEscalateError('');
+    setEscalateSuccess('');
+
+    try {
+      const res = await dispatch(escalateEventAction(escalateTargetEvent.id));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to escalate event to Event Management.');
+      }
+
+      setEscalateSuccess(res.data?.message || 'Event escalated to Event Management Department Head successfully.');
+
+      await fetchRequests();
+      await fetchDashboard();
+      await fetchAnalytics();
+
+      if (selectedReqId === escalateTargetEvent.id) {
+        await handleOpenBuilderForRequest(escalateTargetEvent.id);
+      }
+
+      setTimeout(() => {
+        setEscalateModalOpen(false);
+        setEscalateTargetEvent(null);
+        setEscalateSuccess('');
+      }, 1300);
+    } catch (err) {
+      setEscalateError(err.message);
+    } finally {
+      setEscalateLoading(false);
     }
   };
 
@@ -365,6 +399,18 @@ export default function RevenueSpace({ user, onNavigate }) {
         >
           <DollarSign className="w-4 h-4" />
           <span>Quotation Builder</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('refunds')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-extrabold transition ${
+            activeTab === 'refunds'
+              ? 'bg-[#26334A] text-white shadow-xs'
+              : 'text-[#64748B] hover:bg-white/80 hover:text-[#26334A]'
+          }`}
+        >
+          <RotateCcw className="w-4 h-4" />
+          <span>Refund Management</span>
         </button>
 
         <button
@@ -480,7 +526,11 @@ export default function RevenueSpace({ user, onNavigate }) {
                           <div className="text-[11px] text-slate-500">{req.contactEmail}</div>
                         </td>
                         <td className="py-3.5 px-3">
-                          <div>{req.eventDate}</div>
+                          <div>
+                            {req.startDate && req.endDate && req.startDate !== req.endDate
+                              ? `${req.startDate} to ${req.endDate}`
+                              : (req.startDate || req.eventDate)}
+                          </div>
                           <div className="text-[11px] text-slate-500">{req.venue}</div>
                         </td>
                         <td className="py-3.5 px-3">
@@ -496,19 +546,34 @@ export default function RevenueSpace({ user, onNavigate }) {
                         <td className="py-3.5 px-3 text-right font-mono font-black text-indigo-900 text-sm">
                           ₹{totalEvtRev.toLocaleString()}
                         </td>
-                        <td className="py-3.5 px-3 text-center flex items-center justify-center gap-1.5">
-                          <button
-                            onClick={() => handleOpenAssignModal(req)}
-                            className="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs transition border border-indigo-200 flex items-center gap-1 cursor-pointer"
-                          >
-                            <Users className="w-3.5 h-3.5" />
-                            <span>Assign</span>
-                          </button>
+                        <td className="py-3.5 px-3 text-center flex items-center justify-center gap-1.5 flex-wrap">
+                          {req.status === 'COMMERCIAL_APPROVED' && (
+                            req.eventManagerUserId ? (
+                              <span className="px-2 py-1 rounded-full bg-purple-50 text-purple-900 border border-purple-200 text-[10px] font-extrabold flex items-center gap-1 whitespace-nowrap shadow-2xs">
+                                <Users className="w-3 h-3 text-purple-600" />
+                                <span>Manager: {req.eventManagerName || 'Assigned'}</span>
+                              </span>
+                            ) : req.escalatedToManagement ? (
+                              <span className="px-2 py-1 rounded-full bg-indigo-50 text-indigo-900 border border-indigo-200 text-[10px] font-extrabold flex items-center gap-1 whitespace-nowrap shadow-2xs">
+                                <Clock className="w-3 h-3 text-indigo-600" />
+                                <span>Escalated</span>
+                              </span>
+                            ) : (
+                              <button
+                                onClick={() => handleOpenEscalateModal(req)}
+                                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1 cursor-pointer"
+                                title="Escalate to Event Management"
+                              >
+                                <Send className="w-3 h-3 text-white" />
+                                <span>Escalate</span>
+                              </button>
+                            )
+                          )}
                           <button
                             onClick={() => handleOpenBuilderForRequest(req.id)}
                             className="px-3 py-1.5 rounded-xl bg-[#26334A] hover:bg-slate-800 text-white font-extrabold text-xs transition shadow-2xs cursor-pointer"
                           >
-                            {req.quotationId ? 'Edit Quote' : 'Create Quote'}
+                            {req.status === 'COMMERCIAL_APPROVED' ? 'View Quote' : req.quotationId ? 'Edit Quote' : 'Create Quote'}
                           </button>
                         </td>
                       </tr>
@@ -645,21 +710,43 @@ export default function RevenueSpace({ user, onNavigate }) {
                     )}
                   </div>
 
-                  <div className="pt-2 flex items-center justify-between border-t border-slate-200">
-                    <span className="text-[11px] font-mono text-slate-500">{req.contactEmail}</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleOpenAssignModal(req)}
-                        className="px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-extrabold text-xs transition border border-indigo-200 flex items-center gap-1.5 cursor-pointer"
-                      >
-                        <Users className="w-3.5 h-3.5" />
-                        <span>Assign Manager</span>
-                      </button>
+                  <div className="pt-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-t border-slate-200">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-[11px] font-mono text-slate-500">{req.contactEmail}</span>
+                      {req.status === 'COMMERCIAL_APPROVED' ? (
+                        req.eventManagerUserId ? (
+                          <span className="px-2.5 py-1 rounded-full bg-purple-50 text-purple-900 border border-purple-200 text-[10px] font-extrabold flex items-center gap-1 shadow-2xs">
+                            <Users className="w-3 h-3 text-purple-600" />
+                            <span>Event Manager Assigned: {req.eventManagerName || 'Assigned'}</span>
+                          </span>
+                        ) : req.escalatedToManagement ? (
+                          <span className="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-900 border border-indigo-200 text-[10px] font-extrabold flex items-center gap-1 shadow-2xs">
+                            <Clock className="w-3 h-3 text-indigo-600" />
+                            <span>Escalated — Awaiting Event Management Assignment</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-900 border border-amber-200 text-[10px] font-extrabold flex items-center gap-1 shadow-2xs">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                            <span>Quotation Accepted — Awaiting Escalation</span>
+                          </span>
+                        )
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                      {req.status === 'COMMERCIAL_APPROVED' && !req.escalatedToManagement && !req.eventManagerUserId && (
+                        <button
+                          onClick={() => handleOpenEscalateModal(req)}
+                          className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Send className="w-3.5 h-3.5" />
+                          <span>Escalate to Event Management</span>
+                        </button>
+                      )}
                       <button
                         onClick={() => handleOpenBuilderForRequest(req.id)}
                         className="px-4 py-2 rounded-xl bg-[#26334A] hover:bg-slate-800 text-white font-extrabold text-xs transition shadow-xs flex items-center gap-1.5 cursor-pointer"
                       >
-                        <span>Analyze & Quote</span>
+                        <span>{req.status === 'COMMERCIAL_APPROVED' ? 'View Quote' : 'Analyze & Quote'}</span>
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -744,7 +831,11 @@ export default function RevenueSpace({ user, onNavigate }) {
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                     <div className="p-3 rounded-2xl bg-white/80 border border-slate-100">
                       <span className="text-[#64748B] text-[10px] block">Event Date</span>
-                      <span className="font-extrabold text-[#26334A]">{requestDetail.request.eventDate}</span>
+                      <span className="font-extrabold text-[#26334A]">
+                        {requestDetail.request.startDate && requestDetail.request.endDate && requestDetail.request.startDate !== requestDetail.request.endDate
+                          ? `${requestDetail.request.startDate} to ${requestDetail.request.endDate}`
+                          : (requestDetail.request.startDate || requestDetail.request.eventDate)}
+                      </span>
                     </div>
 
                     <div className="p-3 rounded-2xl bg-white/80 border border-slate-100">
@@ -968,20 +1059,102 @@ export default function RevenueSpace({ user, onNavigate }) {
 
                   {/* Action Buttons */}
                   <div className="space-y-2 pt-2">
-                    {requestDetail?.quotation?.status === 'FINALIZED' ? (
-                      <div className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-semibold text-center space-y-1">
-                        <span className="font-extrabold uppercase tracking-wider block">✓ Commercial Quotation Finalized</span>
-                        <span className="text-[11px] text-indigo-700 block">This quotation is finalized and visible to the client in read-only mode.</span>
-                      </div>
+                    {requestDetail.request.status === 'COMMERCIAL_APPROVED' || requestDetail.quotation?.status === 'ACCEPTED' ? (
+                      requestDetail.request.eventManagerUserId ? (
+                        <div className="p-3.5 rounded-2xl bg-purple-50 border border-purple-200 text-purple-900 text-xs font-semibold text-center space-y-1">
+                          <span className="font-extrabold uppercase tracking-wider block flex items-center justify-center gap-1.5">
+                            <Users className="w-4 h-4 text-purple-600" />
+                            <span>Event Manager Assigned</span>
+                          </span>
+                          <span className="text-[11px] text-purple-700 block">
+                            Assigned Manager: {requestDetail.request.eventManagerName || 'Assigned'}. Operational preparation active.
+                          </span>
+                        </div>
+                      ) : requestDetail.request.escalatedToManagement ? (
+                        <div className="p-3.5 rounded-2xl bg-indigo-50 border border-indigo-200 text-indigo-900 text-xs font-semibold text-center space-y-1">
+                          <span className="font-extrabold uppercase tracking-wider block flex items-center justify-center gap-1.5">
+                            <Clock className="w-4 h-4 text-indigo-600" />
+                            <span>Escalated to Event Management</span>
+                          </span>
+                          <span className="text-[11px] text-indigo-700 block">
+                            Escalated on {requestDetail.request.escalatedAt || 'N/A'}. Awaiting Event Manager assignment.
+                          </span>
+                        </div>
+                      ) : (
+                        <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-50 via-indigo-50 to-emerald-50 border border-indigo-200 space-y-3">
+                          <div className="flex items-center gap-2 text-indigo-950 font-extrabold text-xs">
+                            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                            <span>Quotation Accepted by Client</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 leading-relaxed">
+                            Client accepted this commercial quotation. Escalate this event to the Event Management Department Head for operational staff assignment.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEscalateModal(requestDetail.request)}
+                            className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <Send className="w-4 h-4 text-white" />
+                            <span>Escalate to Event Management</span>
+                          </button>
+                        </div>
+                      )
                     ) : (
-                      <button
-                        onClick={handleSaveQuotationDraft}
-                        disabled={builderLoading}
-                        className="w-full py-3.5 px-4 rounded-2xl bg-[#26334A] hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <Send className="w-4 h-4 text-emerald-400" />
-                        <span>Generate Finalized Quotation</span>
-                      </button>
+                      <div className="space-y-2.5">
+                        {requestDetail?.request?.status === 'QUOTATION_SENT' && (
+                          <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold text-center space-y-0.5">
+                            <span className="font-extrabold uppercase tracking-wider flex items-center justify-center gap-1.5">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>Quotation Dispatched to Client</span>
+                            </span>
+                            <span className="text-[11px] text-emerald-700 block">
+                              Awaiting client review & approval from their dashboard.
+                            </span>
+                          </div>
+                        )}
+
+                        {requestDetail?.quotation?.id ? (
+                          <>
+                            <button
+                              type="button"
+                              onClick={handleSendQuotationToClient}
+                              disabled={builderLoading}
+                              className="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-700 hover:to-indigo-700 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <Send className="w-4 h-4 text-white" />
+                              <span>
+                                {builderLoading
+                                  ? 'Dispatching...'
+                                  : requestDetail?.request?.status === 'QUOTATION_SENT'
+                                  ? 'Re-send Quotation to Client'
+                                  : 'Send Quotation to Client'}
+                              </span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={handleSaveQuotationDraft}
+                              disabled={builderLoading}
+                              className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 font-extrabold text-xs uppercase tracking-wider transition shadow-2xs flex items-center justify-center gap-2 cursor-pointer"
+                            >
+                              <Save className="w-3.5 h-3.5 text-indigo-600" />
+                              <span>
+                                {builderLoading ? 'Saving...' : 'Update Quotation (Save Changes)'}
+                              </span>
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={handleSaveQuotationDraft}
+                            disabled={builderLoading}
+                            className="w-full py-3.5 px-4 rounded-2xl bg-[#26334A] hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider transition shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                          >
+                            <Send className="w-4 h-4 text-emerald-400" />
+                            <span>Generate Finalized Quotation</span>
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
 
@@ -1136,19 +1309,145 @@ export default function RevenueSpace({ user, onNavigate }) {
         </div>
       )}
 
-      {/* Event Manager Availability & Assignment Modal */}
-      <AssignEventManagerModal
-        isOpen={assignModalOpen}
-        onClose={() => setAssignModalOpen(false)}
-        eventRequest={assignTargetReq}
-        onAssignSuccess={() => {
-          fetchRequests();
-          fetchDashboard();
-          if (assignTargetReq && selectedReqId === assignTargetReq.id) {
-            handleOpenBuilderForRequest(assignTargetReq.id);
-          }
-        }}
-      />
+      {/* ==================== TAB 6: REFUND MANAGEMENT ==================== */}
+      {activeTab === 'refunds' && (
+        <RefundManagementSection user={user} />
+      )}
+
+      {/* ==================== 4. ESCALATION CONFIRMATION MODAL ==================== */}
+      {escalateModalOpen && escalateTargetEvent && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto animate-fadeIn">
+          <div className="relative w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-6 sm:p-8 space-y-6 my-auto animate-scaleUp">
+            
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-slate-100 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-600 to-indigo-600 text-white flex items-center justify-center shadow-xs">
+                  <Send className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-[#26334A]">Escalate to Event Management</h3>
+                  <p className="text-xs text-[#64748B] font-medium">Handoff accepted event to Department Head</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleCloseEscalateModal}
+                disabled={escalateLoading}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition disabled:opacity-30 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Event & Quotation Details Grid */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-3 text-xs">
+              <div>
+                <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Event Name</span>
+                <span className="text-sm font-extrabold text-[#26334A]">{escalateTargetEvent.eventName}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-200/60">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Client / Organization</span>
+                  <span className="font-bold text-[#26334A] block">{escalateTargetEvent.organizationName || 'Client'}</span>
+                  <span className="text-[11px] text-slate-500 block truncate">{escalateTargetEvent.contactEmail}</span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Date & Venue</span>
+                  <span className="font-bold text-[#26334A] block">
+                    {escalateTargetEvent.startDate && escalateTargetEvent.endDate && escalateTargetEvent.startDate !== escalateTargetEvent.endDate
+                      ? `${escalateTargetEvent.startDate} to ${escalateTargetEvent.endDate}`
+                      : (escalateTargetEvent.startDate || escalateTargetEvent.eventDate)}
+                  </span>
+                  <span className="text-[11px] text-slate-500 block truncate">{escalateTargetEvent.venue}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-slate-200/60">
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Quotation Status</span>
+                  <span className="inline-flex items-center gap-1 font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 text-[11px]">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span>Quotation Accepted</span>
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block">Contract Value</span>
+                  <span className="font-mono font-extrabold text-indigo-900 text-sm">
+                    ₹{Number(escalateTargetEvent.quotationValue || escalateTargetEvent.contractPrice || 0).toLocaleString()}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Clear Explanation Box */}
+            <div className="p-4 rounded-2xl bg-purple-50/80 border border-purple-200 text-xs text-purple-900 space-y-1.5 leading-relaxed">
+              <div className="flex items-center gap-2 font-extrabold text-purple-950">
+                <Building className="w-4 h-4 text-purple-700 shrink-0" />
+                <span>Operational Assignment Handoff</span>
+              </div>
+              <p className="text-[11px] text-purple-800">
+                This event will be sent to <strong>Devika Sharma (Event Management Department Head)</strong> for operational processing. It will appear in the Department Head's <em>"Events Awaiting Event Manager Assignment"</em> workbench.
+              </p>
+              <p className="text-[10px] text-purple-700 font-medium">
+                Note: The Revenue Team retains complete commercial oversight but does not assign Event Managers.
+              </p>
+            </div>
+
+            {/* Error Message */}
+            {escalateError && (
+              <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{escalateError}</span>
+              </div>
+            )}
+
+            {/* Success Message */}
+            {escalateSuccess && (
+              <div className="p-3.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{escalateSuccess}</span>
+              </div>
+            )}
+
+            {/* Modal Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                onClick={handleCloseEscalateModal}
+                disabled={escalateLoading}
+                className="px-5 py-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-xs transition disabled:opacity-40 cursor-pointer shadow-2xs"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirmEscalation}
+                disabled={escalateLoading || !!escalateSuccess}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-extrabold text-xs transition disabled:opacity-50 cursor-pointer shadow-md flex items-center gap-2"
+              >
+                {escalateLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Escalating...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>Confirm Escalation</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+          </div>
+        </div>,
+        document.body
+      )}
 
     </div>
   );

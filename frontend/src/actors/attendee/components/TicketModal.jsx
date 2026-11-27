@@ -1,23 +1,27 @@
-import React, { useEffect } from 'react';
-import { X, Calendar, MapPin, Printer, Ticket, User, FileText } from 'lucide-react';
+import React from 'react';
+import { createPortal } from 'react-dom';
+import { X, Calendar, MapPin, Printer, Ticket, User, FileText, XCircle, CheckCircle2 } from 'lucide-react';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
 import QrCodeGenerator from '../../../shared/components/QrCodeGenerator';
 
-export default function TicketModal({ ticket, isOpen, onClose }) {
-  useEffect(() => {
-    if (isOpen) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [isOpen]);
-
+export default function TicketModal({ ticket, isOpen, onClose, onCancelTicket }) {
   if (!isOpen || !ticket) return null;
+
+  const isCheckedIn = Boolean(
+    ticket.checkedIn === 1 ||
+    ticket.checkedIn === true ||
+    ticket.checkedInAt ||
+    ticket.entryStatus === 'FULLY_CHECKED_IN' ||
+    ticket.entryStatus === 'PARTIALLY_CHECKED_IN' ||
+    ticket.entryStatus === 'ENTERED'
+  );
 
   const handlePrint = () => {
     window.print();
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/50 backdrop-blur-sm animate-fade-in print:bg-white print:p-0 print:static text-[#26334A] overflow-hidden">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 bg-slate-900/50 backdrop-blur-sm animate-fade-in print:bg-white print:p-0 print:static text-[#26334A] overflow-hidden">
       <div className="relative w-full max-w-xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[85vh] z-10 print:shadow-none print:border-none print:w-full print:bg-white print:text-black">
         
         {/* Header Ribbon & Close Control */}
@@ -146,23 +150,43 @@ export default function TicketModal({ ticket, isOpen, onClose }) {
         </div>
 
         {/* Action Buttons Footer */}
-        <div className="p-4 px-6 border-t border-slate-200 flex items-center gap-3 bg-slate-50 shrink-0 print:hidden">
-          <button
-            onClick={handlePrint}
-            className="flex-1 py-2.5 px-4 rounded-xl bg-[#26334A] text-white font-bold text-xs hover:bg-slate-800 transition shadow-sm flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Printer className="w-4 h-4 text-white" />
-            Print Ticket / Save as PDF
-          </button>
-          <button
-            onClick={onClose}
-            className="px-5 py-2.5 rounded-xl bg-white text-[#26334A] border border-slate-200 font-bold text-xs hover:bg-slate-100 transition cursor-pointer"
-          >
-            Close
-          </button>
+        <div className="p-4 px-6 border-t border-slate-200 flex flex-wrap items-center justify-between gap-3 bg-slate-50 shrink-0 print:hidden">
+          {isCheckedIn ? (
+            <span className="py-2 px-3 rounded-xl bg-amber-50 text-amber-800 border border-amber-300 font-extrabold text-xs flex items-center gap-1.5 shadow-2xs">
+              <CheckCircle2 className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Checked In – Cancellation Unavailable</span>
+            </span>
+          ) : onCancelTicket ? (
+            <button
+              type="button"
+              onClick={onCancelTicket}
+              className="py-2.5 px-4 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 font-bold text-xs transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <XCircle className="w-4 h-4 text-rose-600" />
+              <span>Cancel Ticket</span>
+            </button>
+          ) : null}
+
+          <div className="flex items-center gap-2 flex-1 justify-end">
+            <button
+              onClick={handlePrint}
+              className="py-2.5 px-4 rounded-xl bg-[#26334A] text-white font-bold text-xs hover:bg-slate-800 transition shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <Printer className="w-4 h-4 text-white" />
+              <span>Print Ticket / PDF</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="px-5 py-2.5 rounded-xl bg-white text-[#26334A] border border-slate-200 font-bold text-xs hover:bg-slate-100 transition cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
         </div>
 
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : null;
 }
