@@ -52,7 +52,7 @@ export default function RevenueSpace({ user, onNavigate }) {
     requestsList,
     clientsList,
     analyticsData,
-    requestDetail: reduxRequestDetail,
+    requestDetail,
     loading: reduxLoading
   } = useSelector((state) => state.revenue);
 
@@ -60,7 +60,6 @@ export default function RevenueSpace({ user, onNavigate }) {
 
   // Selected Request & Quotation Builder State
   const [selectedReqId, setSelectedReqId] = useState(null);
-  const [requestDetail, setRequestDetail] = useState(null);
   const [lineItems, setLineItems] = useState([
     { description: 'Venue Rental & Stage Setup Support', quantity: 1, unitPrice: 40000, subtotal: 40000 },
     { description: 'Audio/Visual & Projection Infrastructure', quantity: 1, unitPrice: 25000, subtotal: 25000 },
@@ -111,8 +110,6 @@ export default function RevenueSpace({ user, onNavigate }) {
     try {
       const data = await dispatch(fetchRequestDetail(reqId));
       if (data) {
-        setRequestDetail(data);
-
         // Pre-fill existing line items if available
         if (data.lineItems && data.lineItems.length > 0) {
           setLineItems(data.lineItems.map(i => ({

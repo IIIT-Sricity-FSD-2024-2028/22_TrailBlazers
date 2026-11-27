@@ -18,7 +18,9 @@ import {
   fetchEventWorkspaceDetails,
   markEventReadyAction,
   assignCoordinatorsAction,
-  updateEventConfigurationAction
+  updateEventConfigurationAction,
+  issueInvitationAction,
+  revokeInvitationAction
 } from '../../../store/operations-actions';
 
 export default function EventManagerSpace({ user, onNavigate }) {
@@ -42,7 +44,6 @@ export default function EventManagerSpace({ user, onNavigate }) {
 
   // Workspace active event state
   const [selectedReqId, setSelectedReqId] = useState(null);
-  const [eventDetail, setEventDetail] = useState(null);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
   const [actionMsg, setActionMsg] = useState('');
   const [actionError, setActionError] = useState('');
@@ -87,7 +88,6 @@ export default function EventManagerSpace({ user, onNavigate }) {
     try {
       const data = await dispatch(fetchEventWorkspaceDetails(reqId));
       if (data && data.request) {
-        setEventDetail(data);
         setConfigForm({
           registrationStatus: data.request.registrationStatus || 'OPEN',
           registrationDeadline: data.request.registrationDeadline || data.request.eventDate,
@@ -115,7 +115,6 @@ export default function EventManagerSpace({ user, onNavigate }) {
     try {
       const data = await dispatch(fetchEventWorkspaceDetails(reqId));
       if (data && data.request) {
-        setEventDetail(data);
         setConfigForm({
           registrationStatus: data.request.registrationStatus || 'OPEN',
           registrationDeadline: data.request.registrationDeadline || data.request.eventDate,
@@ -208,6 +207,32 @@ export default function EventManagerSpace({ user, onNavigate }) {
       setActionError(err.message);
     } finally {
       setLoadingMarkReady(false);
+    }
+  };
+
+  const handleIssueInvitation = async ({ recipientEmail, recipientName }) => {
+    if (!selectedReqId) return;
+    setActionMsg('');
+    setActionError('');
+    try {
+      const res = await dispatch(issueInvitationAction(selectedReqId, { recipientEmail, recipientName }));
+      if (!res.success) throw new Error(res.error || 'Failed to issue invitation.');
+      setActionMsg(res.data?.message || 'Private invitation issued successfully.');
+    } catch (err) {
+      setActionError(err.message);
+    }
+  };
+
+  const handleRevokeInvitation = async (invitationId) => {
+    if (!selectedReqId || !invitationId) return;
+    setActionMsg('');
+    setActionError('');
+    try {
+      const res = await dispatch(revokeInvitationAction(invitationId, selectedReqId));
+      if (!res.success) throw new Error(res.error || 'Failed to revoke invitation.');
+      setActionMsg(res.data?.message || 'Invitation revoked successfully.');
+    } catch (err) {
+      setActionError(err.message);
     }
   };
 
@@ -449,7 +474,7 @@ export default function EventManagerSpace({ user, onNavigate }) {
       {/* 5. TAB 3: EVENT PREPARATION WORKSPACE */}
       {activeTab === 'workspace' && (
         <EventPreparationWorkspace
-          eventDetail={eventDetail}
+          eventDetail={activeWorkspace}
           coordinatorsList={coordinatorsList}
           configForm={configForm}
           setConfigForm={setConfigForm}
@@ -460,6 +485,8 @@ export default function EventManagerSpace({ user, onNavigate }) {
           onSaveConfig={handleSaveConfiguration}
           onAssignCoordinator={handleAssignCoordinator}
           onMarkEventReady={handleMarkEventReady}
+          onIssueInvitation={handleIssueInvitation}
+          onRevokeInvitation={handleRevokeInvitation}
           actionMsg={actionMsg}
           actionError={actionError}
           loadingMarkReady={loadingMarkReady}

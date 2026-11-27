@@ -33,23 +33,25 @@ import {
   fetchAnalyticsDashboard,
   fetchEventAnalyticsById,
   fetchAnalyticsComparison,
-  submitEventFeedbackAction
+  submitEventFeedbackAction,
+  exportEventCsvReportAction
 } from '../../store/analytics-actions';
 
 export default function AnalyticsSpace({ user, onNavigate }) {
   const dispatch = useDispatch();
   const { analyticsDashboard, eventAnalytics, comparisonData, loading: reduxLoading } = useSelector((state) => state.analytics);
 
-  const [eventsList, setEventsList] = useState([]);
+  const eventsList = analyticsDashboard?.events || [];
+  const analyticsData = eventsList.length > 0 ? (eventAnalytics || analyticsDashboard?.primaryAnalytics || null) : null;
+  const comparisonResults = comparisonData?.comparisons || comparisonData || null;
+
   const [selectedEventId, setSelectedEventId] = useState('');
-  const [analyticsData, setAnalyticsData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
   // Multi-event comparison state
   const [selectedCompareIds, setSelectedCompareIds] = useState([]);
-  const [comparisonResults, setComparisonResults] = useState(null);
   const [comparing, setComparing] = useState(false);
 
   // Attendee feedback form state
@@ -63,18 +65,6 @@ export default function AnalyticsSpace({ user, onNavigate }) {
   useEffect(() => {
     fetchEvents();
   }, []);
-
-  useEffect(() => {
-    if (eventAnalytics) {
-      setAnalyticsData(eventAnalytics);
-    }
-  }, [eventAnalytics]);
-
-  useEffect(() => {
-    if (comparisonData) {
-      setComparisonResults(comparisonData.comparisons || comparisonData);
-    }
-  }, [comparisonData]);
 
   useEffect(() => {
     if (selectedEventId) {
@@ -91,16 +81,9 @@ export default function AnalyticsSpace({ user, onNavigate }) {
       setLoading(true);
       const data = await dispatch(fetchAnalyticsDashboard());
       if (data) {
-        if (!data.hasData || (data.events && data.events.length === 0)) {
-          setEventsList([]);
-          setAnalyticsData(null);
-        } else {
-          setEventsList(data.events || []);
+        if (data.hasData && Array.isArray(data.events) && data.events.length > 0) {
           const defaultId = data.events[0]?.id;
           setSelectedEventId(defaultId);
-          if (data.primaryAnalytics) {
-            setAnalyticsData(data.primaryAnalytics);
-          }
         }
       } else {
         setError('Failed to load analytics dashboard.');
@@ -118,9 +101,7 @@ export default function AnalyticsSpace({ user, onNavigate }) {
       setLoading(true);
       setError(null);
       const data = await dispatch(fetchEventAnalyticsById(eventId));
-      if (data) {
-        setAnalyticsData(data);
-      } else {
+      if (!data) {
         setError('Failed to load event analytics.');
       }
     } catch (err) {
@@ -131,10 +112,21 @@ export default function AnalyticsSpace({ user, onNavigate }) {
     }
   };
 
-  const handleExportCSV = () => {
+  const handleExportCSV = async () => {
     if (!selectedEventId) return;
-    const token = localStorage.getItem('ffsd_token');
-    window.open(`/api/analytics/events/${selectedEventId}/report?format=csv&token=${token}`, '_blank');
+    const res = await dispatch(exportEventCsvReportAction(selectedEventId));
+    if (!res.success || !res.blob) {
+      alert(res.error || 'Failed to export CSV report.');
+      return;
+    }
+    const url = window.URL.createObjectURL(res.blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = res.filename || `wavevents_analytics_${selectedEventId}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
   };
 
   const handleExportPDF = () => {
@@ -155,10 +147,7 @@ export default function AnalyticsSpace({ user, onNavigate }) {
     if (selectedCompareIds.length < 2) return;
     try {
       setComparing(true);
-      const data = await dispatch(fetchAnalyticsComparison(selectedCompareIds));
-      if (data) {
-        setComparisonResults(data.comparisons || data);
-      }
+      await dispatch(fetchAnalyticsComparison(selectedCompareIds));
     } catch (err) {
       console.error('Error running comparison:', err);
       alert('Network error while running comparison.');

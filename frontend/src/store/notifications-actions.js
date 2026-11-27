@@ -87,12 +87,19 @@ export const clearAllNotificationsAction = () => {
     dispatch(notificationsActions.clearAllNotifications());
     try {
       const token = getState().auth.token || localStorage.getItem('ffsd_token');
-      await fetch('/api/notifications/clear', {
-        method: 'POST',
+      const res = await fetch('/api/notifications/clear', {
+        method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) {
+        throw new Error('Failed to clear notifications on server.');
+      }
+      return { success: true };
     } catch (err) {
       console.error('Error clearing notifications:', err);
+      dispatch(notificationsActions.notificationsActionFailed(err.message));
+      await dispatch(fetchNotificationsData());
+      return { success: false, error: err.message };
     }
   };
 };

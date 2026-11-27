@@ -14,18 +14,18 @@ import {
   BarChart3,
   Sparkles
 } from 'lucide-react';
-import { fetchPendingToasts, autoExpireNotificationsAction, interactNotificationAction } from '../../store/notifications-actions';
+import { fetchPendingToasts, autoExpireNotificationsAction, interactNotificationAction, notificationsActions } from '../../store/notifications-actions';
 
 export default function NotificationToastContainer({ user, onNavigate, onRefreshBadge }) {
   const dispatch = useDispatch();
   const reduxPending = useSelector((state) => state.notifications.pendingToasts);
-  const [activeToasts, setActiveToasts] = useState([]);
-  const [seenNotifIds, setSeenNotifIds] = useState(new Set());
+  const [dismissedIds, setDismissedIds] = useState(new Set());
+  const activeToasts = (Array.isArray(reduxPending) ? reduxPending : []).filter((t) => !dismissedIds.has(t.id));
 
   useEffect(() => {
     if (!user) {
-      setActiveToasts([]);
-      setSeenNotifIds(new Set());
+      dispatch(notificationsActions.displayPendingToasts([]));
+      setDismissedIds(new Set());
       return;
     }
 
@@ -39,7 +39,7 @@ export default function NotificationToastContainer({ user, onNavigate, onRefresh
     return () => {
       clearInterval(interval);
     };
-  }, [user]);
+  }, [user, dispatch]);
 
   // Automatically dismiss the oldest active toast after 5 seconds
   useEffect(() => {
@@ -54,30 +54,15 @@ export default function NotificationToastContainer({ user, onNavigate, onRefresh
 
   const pollPendingPopups = async () => {
     try {
-      const pending = await dispatch(fetchPendingToasts());
-      if (Array.isArray(pending) && pending.length > 0) {
-        setSeenNotifIds((prevSeen) => {
-          const nextSeen = new Set(prevSeen);
-          const newToasts = [];
-          for (const notif of pending) {
-            if (!nextSeen.has(notif.id)) {
-              nextSeen.add(notif.id);
-              newToasts.push(notif);
-            }
-          }
-          if (newToasts.length > 0) {
-            setActiveToasts((prev) => [...prev, ...newToasts]);
-          }
-          return nextSeen;
-        });
-      }
+      await dispatch(fetchPendingToasts());
     } catch (err) {
       console.error('Error polling pending popups:', err);
     }
   };
 
   const removeToastState = (id) => {
-    setActiveToasts((prev) => prev.filter((t) => t.id !== id));
+    setDismissedIds((prev) => new Set(prev).add(id));
+    dispatch(notificationsActions.removePendingToast(id));
   };
 
   // 1. User Clicks "View / Action" (HANDLED)

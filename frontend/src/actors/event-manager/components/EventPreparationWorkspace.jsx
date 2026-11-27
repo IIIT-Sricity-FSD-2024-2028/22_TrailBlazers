@@ -3,6 +3,7 @@ import { Calendar, Building, DollarSign, UserCheck, ShieldCheck, Save, Users, Us
 import ReadinessChecklist from './ReadinessChecklist';
 import CancelEventModal from './CancelEventModal';
 import PostponeEventModal from './PostponeEventModal';
+import InvitationManager from './InvitationManager';
 
 export default function EventPreparationWorkspace({
   eventDetail,
@@ -16,6 +17,8 @@ export default function EventPreparationWorkspace({
   onSaveConfig,
   onAssignCoordinator,
   onMarkEventReady,
+  onIssueInvitation,
+  onRevokeInvitation,
   actionMsg,
   actionError,
   loadingMarkReady,
@@ -23,7 +26,7 @@ export default function EventPreparationWorkspace({
 }) {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isPostponeModalOpen, setIsPostponeModalOpen] = useState(false);
-  const { request, readiness } = eventDetail || {};
+  const { request, readiness, invitations = [] } = eventDetail || {};
 
   // Normalise selected coordinators list
   const activeIds = selectedCoordinatorIds !== undefined
@@ -308,6 +311,15 @@ export default function EventPreparationWorkspace({
               Assign {activeIds.length > 0 ? `${activeIds.length} Coordinator(s)` : 'Coordinators'}
             </button>
           </form>
+
+          {/* PRIVATE INVITATIONS MANAGEMENT (Required for CLOSED / Private Events) */}
+          {((request.eventType || request.type || '').toUpperCase() === 'CLOSED' || invitations.length > 0) && (
+            <InvitationManager
+              invitations={invitations}
+              onIssueInvitation={onIssueInvitation}
+              onRevokeInvitation={onRevokeInvitation}
+            />
+          )}
 
         </div>
 

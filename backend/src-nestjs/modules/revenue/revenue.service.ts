@@ -9,6 +9,7 @@ import { RevenueRepository } from '../../repositories/revenue.repository';
 import { QuotationsRepository } from '../../repositories/quotations.repository';
 import { NotificationHelperService } from '../notifications/notification-helper.service';
 import { InMemoryStore } from '../../repositories/in-memory.store';
+import { CreateRevenueInquiryDto } from './dto/create-revenue-inquiry.dto';
 
 @Injectable()
 export class RevenueService {
@@ -266,6 +267,55 @@ export class RevenueService {
       success: true,
       message: `Event "${eventReq.eventName}" successfully escalated to Event Management Department Head.`,
       request: updated,
+    };
+  }
+
+  submitInquiry(dto: CreateRevenueInquiryDto, user?: any) {
+    const nowStr = new Date().toISOString().replace('T', ' ').substring(0, 19);
+    const id = 'inq_' + crypto.randomBytes(6).toString('hex');
+    const requestId =
+      'REQ-INQ-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+
+    const inquiry = this.store.create('revenue_inquiries', {
+      id,
+      requestId,
+      eventRequestId: dto.eventRequestId || null,
+      userId: user?.id || null,
+      organizationName: dto.organizationName.trim(),
+      contactEmail: dto.contactEmail.trim().toLowerCase(),
+      message: dto.message.trim(),
+      status: 'SUBMITTED',
+      createdAt: nowStr,
+      updatedAt: nowStr,
+    });
+
+    try {
+      const revenueUsers = this.store.find<any>(
+        'users',
+        (u) => u.role === 'REVENUE' && u.status !== 'INACTIVE',
+      );
+      for (const revUser of revenueUsers) {
+        this.notificationHelper.createNotification({
+          recipientUserId: revUser.id,
+          type: 'REVENUE_INQUIRY',
+          title: 'New Revenue Pricing Inquiry',
+          message: `${inquiry.organizationName} (${inquiry.contactEmail}) submitted pricing inquiry ${inquiry.requestId}.`,
+          entityType: 'REVENUE_INQUIRY',
+          entityId: inquiry.id,
+          senderUserId: user?.id || null,
+          senderName: user?.name || inquiry.organizationName,
+          senderRole: user?.role || 'CLIENT',
+          status: 'POPUP_PENDING',
+        });
+      }
+    } catch {
+      // Non-blocking notification
+    }
+
+    return {
+      success: true,
+      message: 'Revenue inquiry submitted successfully.',
+      inquiry,
     };
   }
 }

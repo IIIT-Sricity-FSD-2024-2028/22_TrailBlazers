@@ -83,17 +83,18 @@ export const fetchActiveFeedbackPolls = () => {
   };
 };
 
-export const submitPollResponse = (pollId, optionIndex, isEventLevel = true) => {
+export const submitPollResponse = (pollId, optionId, isEventLevel = true) => {
   return async (dispatch, getState) => {
     try {
       const endpoint = isEventLevel ? `/api/events/polls/${pollId}/respond` : `/api/feedback/polls/${pollId}/respond`;
+      const payload = isEventLevel ? { optionId } : { answers: optionId };
       const res = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           ...getHeaders(getState),
         },
-        body: JSON.stringify({ optionIndex }),
+        body: JSON.stringify(payload),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to submit response.');
@@ -101,6 +102,29 @@ export const submitPollResponse = (pollId, optionIndex, isEventLevel = true) => 
       return { success: true, data };
     } catch (err) {
       return { success: false, error: err.message };
+    }
+  };
+};
+
+export const exportEventCsvReportAction = (eventId) => {
+  return async (dispatch, getState) => {
+    if (!eventId) return { success: false, error: 'No event selected.' };
+    try {
+      const res = await fetch(`/api/analytics/events/${eventId}/report?format=csv`, {
+        headers: getHeaders(getState),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.message || 'Failed to export analytics CSV.');
+      }
+      const disposition = res.headers.get('Content-Disposition') || '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      const filename = match?.[1] || `wavevents_analytics_${eventId}.csv`;
+      const blob = await res.blob();
+      return { success: true, blob, filename };
+    } catch (err) {
+      dispatch(analyticsActions.analyticsActionFailed(err.message));
+      return { success: false, error: err.message || 'Error exporting analytics CSV.' };
     }
   };
 };

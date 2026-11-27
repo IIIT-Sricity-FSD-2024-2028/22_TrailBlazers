@@ -23,6 +23,7 @@ import {
 import { RevenueService } from './revenue.service';
 import { QuotationsService } from './quotations.service';
 import { CreateQuotationDto } from './dto/create-quotation.dto';
+import { CreateRevenueInquiryDto } from './dto/create-revenue-inquiry.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -136,5 +137,29 @@ export class RevenueController {
   @ApiResponse({ status: 200, description: 'Event escalated successfully' })
   async escalateEventAlias(@Param('id') id: string, @Req() req: any) {
     return this.revenueService.escalateToManagement(id, req.user);
+  }
+
+  @Post('inquiry')
+  @Roles(
+    'CLIENT',
+    'ATTENDEE',
+    'EVENT_MANAGER',
+    'ONSITE_COORDINATOR',
+    'REVENUE',
+    'DEPARTMENT_MANAGER',
+    'IT_SUPPORT',
+    'SPEAKER',
+    'ADMIN',
+    'SUPER_ADMIN',
+  )
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({
+    summary: 'Submit Revenue Inquiry',
+    description: 'Allow clients or users to send custom pricing or sponsorship inquiries to the Revenue team',
+  })
+  @ApiResponse({ status: 201, description: 'Revenue inquiry submitted successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid inquiry payload' })
+  async submitInquiry(@Body() dto: CreateRevenueInquiryDto, @Req() req: any) {
+    return this.revenueService.submitInquiry(dto, req.user);
   }
 }

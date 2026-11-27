@@ -5,13 +5,13 @@ import { createTechnicalIssue } from '../../store/issues-actions';
 
 export default function ReportTechnicalIssueModal({ isOpen, onClose, onSubmitted }) {
   const dispatch = useDispatch();
-  if (!isOpen) return null;
-
   const [category, setCategory] = useState('Login / Password Access Problem');
   const [priority, setPriority] = useState('Medium');
   const [description, setDescription] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  if (!isOpen) return null;
 
   const handleSubmit = async (e) => {
     e.preventDefault();

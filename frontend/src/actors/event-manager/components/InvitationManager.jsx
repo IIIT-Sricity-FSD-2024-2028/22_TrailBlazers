@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, Key, UserCheck, ShieldAlert, Send } from 'lucide-react';
 
-export default function InvitationManager({ invitations, onIssueInvitation, onRevokeInvitation }) {
+export default function InvitationManager({ invitations = [], onIssueInvitation, onRevokeInvitation }) {
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
 
@@ -106,7 +106,7 @@ export default function InvitationManager({ invitations, onIssueInvitation, onRe
                     </td>
                     <td className="py-2.5 px-3">
                       <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase ${
-                        inv.status === 'used' ? 'bg-emerald-100 text-emerald-800' :
+                        inv.status === 'used' || inv.status === 'accepted' ? 'bg-emerald-100 text-emerald-800' :
                         inv.status === 'revoked' ? 'bg-rose-100 text-rose-800' :
                         'bg-amber-100 text-amber-800'
                       }`}>

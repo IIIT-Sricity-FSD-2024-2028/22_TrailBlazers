@@ -465,4 +465,48 @@ export const updateCoordinatorIssueStatusAction = (reqId, issueId, status) => {
   };
 };
 
+export const issueInvitationAction = (eventId, payload) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/event-manager/events/${eventId}/invitations`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getHeaders(getState),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || 'Failed to issue invitation.');
+      await dispatch(fetchEventWorkspaceDetails(eventId));
+      await dispatch(fetchManagerEvents());
+      await dispatch(fetchManagerDashboard());
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const revokeInvitationAction = (invitationId, eventId) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/event-manager/invitations/${invitationId}/revoke`, {
+        method: 'POST',
+        headers: getHeaders(getState),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || 'Failed to revoke invitation.');
+      if (eventId) {
+        await dispatch(fetchEventWorkspaceDetails(eventId));
+        await dispatch(fetchManagerEvents());
+        await dispatch(fetchManagerDashboard());
+      }
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
 export { operationsActions };
