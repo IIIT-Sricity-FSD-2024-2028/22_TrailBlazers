@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { PlusCircle, Building, Calendar, MapPin, DollarSign, Clock, CheckCircle2, AlertCircle, ArrowRight, ShieldCheck, Mail, HelpCircle, Layers, FileText } from 'lucide-react';
 import RevenueModal from '../components/RevenueModal';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
-import { submitEventProposal } from '../../../store/requests-actions';
+import { submitEventProposal, uploadBannerImageAction } from '../../../store/requests-actions';
 import { fetchCurrentUser } from '../../../store/auth-actions';
 
 export default function CreateEvent({ user: propsUser, onNavigate, onOpenAuth, onVerifyEmailPrompt, onUserRefresh }) {
@@ -163,24 +163,11 @@ export default function CreateEvent({ user: propsUser, onNavigate, onOpenAuth, o
     setBannerUploadError('');
 
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const bodyData = new FormData();
-      bodyData.append('file', file);
-
-      const res = await fetch('/api/uploads', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        },
-        body: bodyData
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'File upload failed');
+      const result = await dispatch(uploadBannerImageAction(file));
+      if (!result.success) {
+        throw new Error(result.error || 'File upload failed');
       }
-
-      setFormData((prev) => ({ ...prev, bannerUrl: data.file.url }));
+      setFormData((prev) => ({ ...prev, bannerUrl: result.url }));
     } catch (err) {
       setBannerUploadError(err.message || 'Failed to upload event banner image.');
     } finally {

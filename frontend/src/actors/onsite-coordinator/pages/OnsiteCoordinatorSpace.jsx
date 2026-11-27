@@ -33,7 +33,14 @@ import {
   fetchCoordinatorDashboard,
   fetchCoordinatorEvents,
   verifyTicketOnsite,
-  checkInAttendee
+  checkInAttendee,
+  fetchCoordinatorWorkspace,
+  fetchCoordinatorAttendees,
+  fetchCoordinatorIssues,
+  performCoordinatorMemberAction,
+  updateCoordinatorEventStatusAction,
+  reportCoordinatorIssueAction,
+  updateCoordinatorIssueStatusAction
 } from '../../../store/operations-actions';
 
 export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
@@ -44,6 +51,9 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
   const {
     coordinatorDashboard: dashboardData,
     coordinatorEvents: eventsList,
+    coordinatorWorkspace: eventWorkspace,
+    coordinatorAttendees: attendeesList,
+    coordinatorIssues: issuesList,
     loading: reduxLoading
   } = useSelector((state) => state.operations);
 
@@ -51,7 +61,6 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
 
   // Selected Event & Workspace Details
   const [selectedReqId, setSelectedReqId] = useState(null);
-  const [eventWorkspace, setEventWorkspace] = useState(null);
   const [workspaceLoading, setWorkspaceLoading] = useState(false);
 
   // Check-In Scanner State
@@ -61,10 +70,8 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
 
   // Attendee Search State
   const [attendeeSearch, setAttendeeSearch] = useState('');
-  const [attendeesList, setAttendeesList] = useState([]);
 
   // Issues State
-  const [issuesList, setIssuesList] = useState([]);
   const [issueCategory, setIssueCategory] = useState('Technical');
   const [issuePriority, setIssuePriority] = useState('Medium');
   const [issueDescription, setIssueDescription] = useState('');
@@ -90,11 +97,6 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
     fetchEvents();
   }, []);
 
-  const getHeaders = () => {
-    const token = localStorage.getItem('ffsd_token');
-    return { 'Authorization': `Bearer ${token}` };
-  };
-
   const handleOpenWorkspace = async (reqId, targetSubTab = 'checkin') => {
     setSelectedReqId(reqId);
     setActionMsg('');
@@ -105,13 +107,9 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
     setActiveTab(targetSubTab);
 
     try {
-      const res = await fetch(`/api/onsite-coordinator/events/${reqId}`, { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setEventWorkspace(data);
-      } else {
-        const errData = await res.json();
-        setActionError(errData.error || 'Failed to load assigned event workspace.');
+      const res = await dispatch(fetchCoordinatorWorkspace(reqId));
+      if (!res.success) {
+        setActionError(res.error || 'Failed to load assigned event workspace.');
       }
     } catch (err) {
       setActionError('Failed to load event workspace.');
@@ -125,28 +123,12 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
 
   const fetchAttendees = async (reqId, search = '') => {
     if (!reqId) return;
-    try {
-      const res = await fetch(`/api/onsite-coordinator/events/${reqId}/attendees?search=${encodeURIComponent(search)}`, { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setAttendeesList(data.attendees || []);
-      }
-    } catch (err) {
-      console.error('Error fetching attendees:', err);
-    }
+    await dispatch(fetchCoordinatorAttendees(reqId, search));
   };
 
   const fetchIssues = async (reqId) => {
     if (!reqId) return;
-    try {
-      const res = await fetch(`/api/onsite-coordinator/events/${reqId}/issues`, { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setIssuesList(data.issues || []);
-      }
-    } catch (err) {
-      console.error('Error fetching issues:', err);
-    }
+    await dispatch(fetchCoordinatorIssues(reqId));
   };
 
   const handleCheckInSubmit = async (e, customCode = null) => {
@@ -216,27 +198,19 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
     setActionMsg('');
 
     try {
-      const res = await fetch(`/api/onsite-coordinator/events/${selectedReqId}/member-action`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders(),
-        },
-        body: JSON.stringify({
-          ticketId: verifiedTicket.ticket.id,
-          memberId,
-          action,
-          notes,
-        }),
-      });
+      const res = await dispatch(performCoordinatorMemberAction(selectedReqId, {
+        ticketId: verifiedTicket.ticket.id,
+        memberId,
+        action,
+        notes,
+      }));
 
-      const data = await res.json();
-      if (!res.ok) {
-        setActionError(data.message || data.error || `Failed to record ${action}.`);
+      if (!res.success) {
+        setActionError(res.error || `Failed to record ${action}.`);
         return;
       }
 
-      setActionMsg(data.message);
+      setActionMsg(res.data?.message || `${action} recorded.`);
       // Re-verify to refresh members list and ticket status
       await handleVerifyTicket(verifiedTicket.ticket.ticketNumber || verifiedTicket.ticket.id);
       fetchAttendees(selectedReqId, attendeeSearch);
@@ -255,22 +229,10 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
     setActionError('');
 
     try {
-      const res = await fetch(`/api/onsite-coordinator/events/${selectedReqId}/status`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify({ operationalStatus: newStatus })
-      });
+      const res = await dispatch(updateCoordinatorEventStatusAction(selectedReqId, newStatus));
+      if (!res.success) throw new Error(res.error || 'Failed to update status.');
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update status.');
-
-      setActionMsg(data.message);
-      handleOpenWorkspace(selectedReqId, activeTab);
-      fetchDashboard();
-      fetchEvents();
+      setActionMsg(res.data?.message || 'Status updated.');
     } catch (err) {
       setActionError(err.message);
     }
@@ -285,25 +247,15 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
     setActionError('');
 
     try {
-      const res = await fetch(`/api/onsite-coordinator/events/${selectedReqId}/issues`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify({
-          category: issueCategory,
-          priority: issuePriority,
-          description: issueDescription
-        })
-      });
+      const res = await dispatch(reportCoordinatorIssueAction(selectedReqId, {
+        category: issueCategory,
+        priority: issuePriority,
+        description: issueDescription
+      }));
+      if (!res.success) throw new Error(res.error || 'Failed to report issue.');
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to report issue.');
-
-      setActionMsg(data.message);
+      setActionMsg(res.data?.message || 'Issue reported.');
       setIssueDescription('');
-      fetchIssues(selectedReqId);
     } catch (err) {
       setActionError(err.message);
     }
@@ -314,20 +266,10 @@ export default function OnsiteCoordinatorSpace({ user, onNavigate }) {
     setActionError('');
 
     try {
-      const res = await fetch(`/api/onsite-coordinator/issues/${issueId}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify({ status })
-      });
+      const res = await dispatch(updateCoordinatorIssueStatusAction(selectedReqId, issueId, status));
+      if (!res.success) throw new Error(res.error || 'Failed to update issue status.');
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update issue status.');
-
-      setActionMsg(data.message);
-      fetchIssues(selectedReqId);
+      setActionMsg(res.data?.message || 'Issue status updated.');
     } catch (err) {
       setActionError(err.message);
     }

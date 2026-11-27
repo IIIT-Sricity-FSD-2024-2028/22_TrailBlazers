@@ -112,6 +112,31 @@ export const autoExpireNotificationsAction = () => {
   };
 };
 
+export const interactNotificationAction = (id, action) => {
+  return async (dispatch, getState) => {
+    dispatch(notificationsActions.removePendingToast(id));
+    try {
+      const token = getState().auth.token || localStorage.getItem('ffsd_token');
+      const res = await fetch(`/api/notifications/${id}/interact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (data.unreadCount !== undefined) {
+        dispatch(notificationsActions.setUnreadCount(data.unreadCount));
+      }
+      return data;
+    } catch (err) {
+      console.error(`Error performing notification ${action}:`, err);
+      return null;
+    }
+  };
+};
+
 export { notificationsActions };
 
 

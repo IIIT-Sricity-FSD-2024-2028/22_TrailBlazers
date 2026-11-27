@@ -8,8 +8,9 @@ import QuotationViewModal from '../components/QuotationViewModal';
 import ChangeRequestModal from '../components/ChangeRequestModal';
 import TicketModal from '../../attendee/components/TicketModal';
 import CancelEventModal from '../../event-manager/components/CancelEventModal';
-import { fetchClientRequests, fetchClientChangeRequests, fetchEventStats, fetchReportStatus } from '../../../store/requests-actions';
+import { fetchClientRequests, fetchClientChangeRequests, fetchEventStats, fetchReportStatus, exportEventAnalyticsReportAction, requestContractRefundAction } from '../../../store/requests-actions';
 import { fetchMyTickets, fetchMyRefunds } from '../../../store/tickets-actions';
+import { fetchSessionPolls as fetchSessionPollsAction, createSessionPollAction } from '../../../store/analytics-actions';
 import { UIContext } from '../../../context/UIContext';
 
 const isEventStartedOrCompleted = (evt) => {
@@ -153,38 +154,12 @@ export default function Dashboard({ user: propsUser, events = [], onNavigate: pr
     setExportSuccess('');
 
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/event-requests/${eventId}/export-analytics`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-
-      if (!res.ok) {
-        let errMsg = 'Failed to export event analytics report';
-        try {
-          const errData = await res.json();
-          errMsg = errData.message || errMsg;
-        } catch {
-          // not json
-        }
-        throw new Error(errMsg);
+      const result = await dispatch(exportEventAnalyticsReportAction(eventId, eventName));
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to export event analytics report');
       }
 
-      const disposition = res.headers.get('Content-Disposition') || '';
-      let filename = '';
-      const match = disposition.match(/filename="?([^"]+)"?/);
-      if (match && match[1]) {
-        filename = match[1];
-      } else {
-        const cleanName = (eventName || 'Event')
-          .replace(/[^a-zA-Z0-9_-]/g, '_')
-          .replace(/_+/g, '_')
-          .replace(/^_|_$/g, '');
-        filename = `Wavevents_Event_Analytics_${cleanName}_${eventId}.pdf`;
-      }
-
-      const blob = await res.blob();
+      const { blob, filename } = result;
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -205,7 +180,7 @@ export default function Dashboard({ user: propsUser, events = [], onNavigate: pr
 
   // Session Poll Modal State
   const [activePollSession, setActivePollSession] = useState(null);
-  const [sessionPolls, setSessionPolls] = useState([]);
+  const sessionPolls = useSelector((state) => state.analytics.sessionPolls || []);
   const [pollQuestion, setPollQuestion] = useState('');
   const [pollOptions, setPollOptions] = useState(['Very useful', 'Useful', 'Neutral', 'Not useful']);
   const [pollLoading, setPollLoading] = useState(false);
@@ -214,18 +189,7 @@ export default function Dashboard({ user: propsUser, events = [], onNavigate: pr
   const firstName = user?.name ? user.name.split(' ')[0] : 'User';
 
   const fetchSessionPolls = async (eventId, sessionId) => {
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/events/${eventId}/sessions/${sessionId}/polls`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setSessionPolls(data.polls || []);
-      }
-    } catch (err) {
-      console.error('Error fetching session polls:', err);
-    }
+    await dispatch(fetchSessionPollsAction(eventId, sessionId));
   };
 
   const handleCreateSessionPoll = async (e) => {
@@ -234,30 +198,20 @@ export default function Dashboard({ user: propsUser, events = [], onNavigate: pr
     setPollLoading(true);
     setPollFeedback('');
     try {
-      const token = localStorage.getItem('ffsd_token');
       const validOpts = pollOptions.map(o => o.trim()).filter(o => o.length > 0);
       if (validOpts.length < 2) {
         throw new Error('A poll requires at least 2 non-empty options.');
       }
-      const res = await fetch('/api/events/polls/session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          eventId: selectedWorkspaceReq.id,
-          sessionId: activePollSession.id,
-          questionText: pollQuestion,
-          options: validOpts,
-        })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || data.error || 'Failed to create session poll.');
+      const res = await dispatch(createSessionPollAction({
+        eventId: selectedWorkspaceReq.id,
+        sessionId: activePollSession.id,
+        questionText: pollQuestion,
+        options: validOpts,
+      }));
+      if (!res.success) throw new Error(res.error || 'Failed to create session poll.');
 
       setPollFeedback('✓ Session poll created and published successfully!');
       setPollQuestion('');
-      fetchSessionPolls(selectedWorkspaceReq.id, activePollSession.id);
     } catch (err) {
       setPollFeedback(`✕ ${err.message}`);
     } finally {
@@ -290,18 +244,9 @@ export default function Dashboard({ user: propsUser, events = [], onNavigate: pr
     setClaimLoading(true);
     setClaimFeedback({ text: '', type: '' });
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/refunds/request', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ quotationId, eventId, reason: 'Client requested contract refund' })
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.message || 'Failed to submit refund claim.');
+      const res = await dispatch(requestContractRefundAction({ quotationId, eventId, reason: 'Client requested contract refund' }));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to submit refund claim.');
       }
       setClaimFeedback({ text: 'Contract refund request submitted successfully to the Revenue Team.', type: 'success' });
       await fetchDashboardData();

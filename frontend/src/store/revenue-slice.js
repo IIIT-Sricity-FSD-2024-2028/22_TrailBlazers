@@ -9,6 +9,7 @@ const revenueSlice = createSlice({
     revenueEvents: [],
     refundMetrics: null,
     refundsList: [],
+    activeRefundDetail: null,
     requestDetail: null,
     analyticsData: null,
     loading: false,
@@ -54,6 +55,11 @@ const revenueSlice = createSlice({
     },
     displayRefundsList(state, action) {
       state.refundsList = action.payload || [];
+      state.loading = false;
+      state.error = null;
+    },
+    displayRefundDetail(state, action) {
+      state.activeRefundDetail = action.payload || null;
       state.loading = false;
       state.error = null;
     },

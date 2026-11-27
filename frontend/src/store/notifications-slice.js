@@ -41,6 +41,14 @@ const notificationsSlice = createSlice({
       state.items = [];
       state.unreadCount = 0;
     },
+    setUnreadCount(state, action) {
+      if (action.payload !== undefined && action.payload !== null) {
+        state.unreadCount = action.payload;
+      }
+    },
+    removePendingToast(state, action) {
+      state.pendingToasts = state.pendingToasts.filter((t) => t.id !== action.payload);
+    },
     notificationsActionFailed(state, action) {
       state.loading = false;
       state.error = action.payload;

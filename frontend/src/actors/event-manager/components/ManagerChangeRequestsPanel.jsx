@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { MessageSquare, Check, X, Sparkles, User, Calendar, AlertCircle } from 'lucide-react';
+import { fetchManagerChangeRequests as fetchManagerChangeRequestsAction, reviewChangeRequestAction } from '../../../store/operations-actions';
 
 export default function ManagerChangeRequestsPanel({ onReviewComplete }) {
-  const [changeRequests, setChangeRequests] = useState([]);
+  const dispatch = useDispatch();
+  const changeRequests = useSelector((state) => state.operations.managerChangeRequests || []);
   const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState({});
   const [submittingId, setSubmittingId] = useState(null);
@@ -13,21 +16,10 @@ export default function ManagerChangeRequestsPanel({ onReviewComplete }) {
     fetchManagerChangeRequests();
   }, []);
 
-  const getHeaders = () => {
-    const token = localStorage.getItem('ffsd_token');
-    return { 'Authorization': `Bearer ${token}` };
-  };
-
   const fetchManagerChangeRequests = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/change-requests/manager', { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        setChangeRequests(data.changeRequests || []);
-      }
-    } catch (err) {
-      console.error('Error fetching manager change requests:', err);
+      await dispatch(fetchManagerChangeRequestsAction());
     } finally {
       setLoading(false);
     }
@@ -40,20 +32,10 @@ export default function ManagerChangeRequestsPanel({ onReviewComplete }) {
 
     try {
       const reviewComment = comments[id] || '';
-      const res = await fetch(`/api/change-requests/${id}/review`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getHeaders()
-        },
-        body: JSON.stringify({ action, reviewComment })
-      });
+      const result = await dispatch(reviewChangeRequestAction(id, { action, reviewComment }));
+      if (!result.success) throw new Error(result.error || 'Failed to submit review decision.');
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to submit review decision.');
-
-      setActionMsg(data.message);
-      fetchManagerChangeRequests();
+      setActionMsg(result.data?.message || 'Review decision recorded.');
       if (onReviewComplete) onReviewComplete();
     } catch (err) {
       setActionErr(err.message);

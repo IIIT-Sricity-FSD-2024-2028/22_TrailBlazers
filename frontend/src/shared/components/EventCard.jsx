@@ -26,12 +26,7 @@ export default function EventCard({ event, onSelect }) {
   return (
     <div
       onClick={() => onSelect(event)}
-      className="group relative rounded-3xl overflow-hidden border border-white/75 shadow-[0_15px_35px_rgba(6,182,212,0.10),_inset_0_1px_1px_rgba(255,255,255,0.85)] hover:shadow-[0_22px_45px_rgba(6,182,212,0.22)] hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between cursor-pointer h-full text-[#0F172A]"
-      style={{
-        background: 'linear-gradient(135deg, rgba(232, 248, 250, 0.95) 0%, rgba(221, 243, 246, 0.90) 100%)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-      }}
+      className="group relative rounded-3xl overflow-hidden border border-white/75 shadow-[0_15px_35px_rgba(6,182,212,0.10),_inset_0_1px_1px_rgba(255,255,255,0.85)] hover:shadow-[0_22px_45px_rgba(6,182,212,0.22)] hover:-translate-y-2 transition-all duration-300 flex flex-col justify-between cursor-pointer h-full text-[#0F172A] event-card-surface"
     >
       {/* Crisp Banner Image Container */}
       <div className="relative h-56 w-full overflow-hidden bg-slate-900 shrink-0">

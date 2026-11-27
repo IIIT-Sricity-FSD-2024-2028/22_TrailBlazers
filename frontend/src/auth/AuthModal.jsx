@@ -15,7 +15,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import WaveventsLogo from '../shared/components/WaveventsLogo';
-import { loginUser, registerUser, verifyEmail } from '../store/auth-actions';
+import { loginUser, registerUser, verifyEmail, requestPasswordResetAction, resetPasswordAction } from '../store/auth-actions';
 
 export default function AuthModal({
   isOpen,
@@ -158,15 +158,11 @@ export default function AuthModal({
     setSuccessMsg('');
 
     try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: targetEmail }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Failed to request reset code.');
+      const result = await dispatch(requestPasswordResetAction(targetEmail));
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to request reset code.');
       }
+      const data = result.data || {};
       setReceivedResetCode(data.resetCode || '');
       setResetCode(data.resetCode || '');
       setForgotStep('reset');
@@ -202,18 +198,9 @@ export default function AuthModal({
     setSuccessMsg('');
 
     try {
-      const res = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: targetEmail,
-          code,
-          newPassword: pass,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'Failed to reset password.');
+      const result = await dispatch(resetPasswordAction({ email: targetEmail, code, newPassword: pass }));
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to reset password.');
       }
 
       setFormData((prev) => ({ ...prev, email: targetEmail, password: '' }));

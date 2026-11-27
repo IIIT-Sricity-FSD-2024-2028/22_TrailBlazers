@@ -38,6 +38,8 @@ export default function App() {
   // UI state from UIContext
   const activeTab = ui?.activeTab || 'landing';
   const setActiveTab = ui?.setActiveTab;
+  const headerSearch = ui?.headerSearch || '';
+  const setHeaderSearch = ui?.setHeaderSearch || (() => {});
   const navigate = ui?.navigate || ((tab) => {
     if (setActiveTab) setActiveTab(tab);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -150,7 +152,7 @@ export default function App() {
         onVerifyEmailPrompt={() => handleOpenAuth('verify')}
         searchQuery={headerSearch}
         onSearchChange={setHeaderSearch}
-        onOpenTechModal={() => setIsTechModalOpen(true)}
+        onOpenTechModal={() => ui?.openTechModal && ui.openTechModal()}
       />
 
       {/* Main Content Router View */}

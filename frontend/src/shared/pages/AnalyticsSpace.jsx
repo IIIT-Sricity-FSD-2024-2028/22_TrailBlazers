@@ -32,7 +32,8 @@ import {
 import {
   fetchAnalyticsDashboard,
   fetchEventAnalyticsById,
-  fetchAnalyticsComparison
+  fetchAnalyticsComparison,
+  submitEventFeedbackAction
 } from '../../store/analytics-actions';
 
 export default function AnalyticsSpace({ user, onNavigate }) {
@@ -173,27 +174,18 @@ export default function AnalyticsSpace({ user, onNavigate }) {
       setFeedbackSubmitting(true);
       setFeedbackSuccessMsg('');
       setFeedbackErrorMsg('');
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/events/${selectedEventId}/feedback`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ rating: feedbackRating, comment: feedbackComment })
-      });
-      const data = await res.json();
-      if (res.ok) {
+      const result = await dispatch(
+        submitEventFeedbackAction(selectedEventId, {
+          rating: feedbackRating,
+          comment: feedbackComment,
+        })
+      );
+      if (result.success) {
         setJustSubmittedFeedback(true);
         setFeedbackSuccessMsg('Thank you! Your feedback has been submitted.');
         setFeedbackComment('');
-        fetchAnalytics(selectedEventId);
-      } else if (res.status === 409 || (data.message && data.message.includes('already submitted'))) {
-        setJustSubmittedFeedback(true);
-        setFeedbackSuccessMsg('Thank you! Your feedback has been submitted.');
-        fetchAnalytics(selectedEventId);
       } else {
-        setFeedbackErrorMsg(data.message || data.error || 'Failed to submit feedback.');
+        setFeedbackErrorMsg(result.error || 'Failed to submit feedback.');
       }
     } catch (err) {
       console.error('Error submitting feedback:', err);
@@ -236,26 +228,6 @@ export default function AnalyticsSpace({ user, onNavigate }) {
 
   return (
     <div className="space-y-6 pb-16 text-slate-800">
-      
-      {/* Print Styles Injection */}
-      <style>{`
-        @media print {
-          header, nav, button:not(.print-btn), select, .no-print {
-            display: none !important;
-          }
-          body {
-            background: white !important;
-            color: black !important;
-          }
-          .printable-report {
-            padding: 20px !important;
-            background: white !important;
-            box-shadow: none !important;
-            border: none !important;
-          }
-        }
-      `}</style>
-
       {/* Hero Header Banner */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2A1B54] via-[#4C2882] to-[#1E1238] p-6 sm:p-8 text-white shadow-xl no-print">
         <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-purple-500/10 rounded-full blur-3xl pointer-events-none"></div>

@@ -10,6 +10,7 @@ const authSlice = createSlice({
     user: null,
     token: initialToken,
     isLoggedIn: Boolean(initialToken),
+    accessLogs: [],
     loading: false,
     error: null,
   },
@@ -31,6 +32,10 @@ const authSlice = createSlice({
     },
     setUser(state, action) {
       state.user = action.payload;
+      state.loading = false;
+    },
+    displayAccessLogs(state, action) {
+      state.accessLogs = action.payload || [];
       state.loading = false;
     },
     logout(state) {

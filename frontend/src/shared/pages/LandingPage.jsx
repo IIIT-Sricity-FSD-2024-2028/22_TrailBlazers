@@ -56,22 +56,11 @@ export default function LandingPage({
         />
 
         {/* Subtle Dark Navy Hero Overlay for Crisp Visibility */}
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background:
-              "linear-gradient(to bottom, rgba(11, 19, 43, 0.40) 0%, rgba(11, 19, 43, 0.15) 50%, rgba(11, 19, 43, 0.65) 100%)",
-          }}
-        />
+        <div className="absolute inset-0 pointer-events-none landing-hero-overlay" />
 
         {/* Localized Radial Light Spotlight Behind Heading & Subheading Only */}
         <div
-          className="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[500px] pointer-events-none rounded-full"
-          style={{
-            background:
-              "radial-gradient(ellipse at center, rgba(147, 51, 234, 0.35) 0%, rgba(59, 130, 246, 0.25) 35%, transparent 75%)",
-            filter: "blur(30px)",
-          }}
+          className="absolute top-[42%] left-1/2 -translate-x-1/2 -translate-y-1/2 w-[850px] h-[500px] pointer-events-none rounded-full landing-hero-spotlight"
         />
 
 
@@ -186,13 +175,7 @@ export default function LandingPage({
 
         {/* Hero Bottom Luminous Lavender Atmospheric Bleed */}
         <div className="absolute inset-x-0 bottom-0 z-10 flex flex-col justify-end h-16 pointer-events-none sm:h-24">
-          <div
-            className="w-full h-full"
-            style={{
-              background:
-                "linear-gradient(to bottom, transparent 0%, rgba(147, 51, 234, 0.20) 50%, #3B1A6E 100%)",
-            }}
-          />
+          <div className="w-full h-full landing-hero-bleed" />
         </div>
       </section>
 
@@ -207,12 +190,10 @@ export default function LandingPage({
         {/* Floating Glass Orbs */}
         <div className="absolute hidden w-8 h-8 border rounded-full pointer-events-none lg:block top-16 left-12 bg-gradient-to-tr from-purple-400/40 to-indigo-500/40 blur-xs border-white/60 animate-pastel-float" />
         <div
-          className="absolute hidden w-10 h-10 border rounded-full pointer-events-none lg:block top-28 right-16 bg-gradient-to-tr from-cyan-400/40 to-teal-400/40 blur-xs border-white/60 animate-pastel-float"
-          style={{ animationDelay: "1.5s" }}
+          className="absolute hidden w-10 h-10 border rounded-full pointer-events-none lg:block top-28 right-16 bg-gradient-to-tr from-cyan-400/40 to-teal-400/40 blur-xs border-white/60 animate-pastel-float animate-delay-1500"
         />
         <div
-          className="absolute hidden w-12 h-12 border rounded-full pointer-events-none lg:block bottom-36 left-20 bg-gradient-to-tr from-pink-400/40 to-purple-500/40 blur-xs border-white/60 animate-pastel-float"
-          style={{ animationDelay: "3s" }}
+          className="absolute hidden w-12 h-12 border rounded-full pointer-events-none lg:block bottom-36 left-20 bg-gradient-to-tr from-pink-400/40 to-purple-500/40 blur-xs border-white/60 animate-pastel-float animate-delay-3000"
         />
 
         {/* Decorative Dotted Grid Patterns Left & Right */}
@@ -276,11 +257,7 @@ export default function LandingPage({
                 {[1, 2, 3].map((i) => (
                   <div
                     key={i}
-                    className="rounded-3xl border border-white/25 p-5 space-y-4 animate-pulse h-96 flex flex-col justify-between"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(232, 248, 250, 0.4) 0%, rgba(221, 243, 246, 0.3) 100%)',
-                      backdropFilter: 'blur(20px)',
-                    }}
+                    className="rounded-3xl border border-white/25 p-5 space-y-4 animate-pulse h-96 flex flex-col justify-between landing-skeleton-card"
                   >
                     <div className="h-44 w-full bg-white/20 rounded-2xl" />
                     <div className="space-y-2.5">

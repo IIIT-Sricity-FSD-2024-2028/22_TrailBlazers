@@ -123,3 +123,67 @@ export const logoutUser = () => {
     }
   };
 };
+
+export const requestPasswordResetAction = (email) => {
+  return async (dispatch) => {
+    dispatch(authActions.setAuthLoading(true));
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Failed to request reset code.');
+      }
+      dispatch(authActions.setAuthLoading(false));
+      return { success: true, data };
+    } catch (err) {
+      dispatch(authActions.setAuthError(err.message));
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const resetPasswordAction = ({ email, code, newPassword }) => {
+  return async (dispatch) => {
+    dispatch(authActions.setAuthLoading(true));
+    try {
+      const res = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || data.error || 'Failed to reset password.');
+      }
+      dispatch(authActions.setAuthLoading(false));
+      return { success: true, data };
+    } catch (err) {
+      dispatch(authActions.setAuthError(err.message));
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const fetchAccessLogs = () => {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token || localStorage.getItem('ffsd_token');
+    if (!token) return [];
+    try {
+      const res = await fetch('/api/auth/access-logs', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        dispatch(authActions.displayAccessLogs(data.logs || []));
+        return data.logs || [];
+      }
+    } catch (err) {
+      console.error('Error fetching access logs:', err);
+    }
+    return [];
+  };
+};

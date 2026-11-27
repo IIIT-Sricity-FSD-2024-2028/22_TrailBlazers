@@ -179,6 +179,69 @@ export const assignEventManagerAction = (eventId, managerId) => {
 
 export const fetchUsersData = fetchUserData;
 
+export const fetchStaffActivity = () => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch('/api/hierarchy/staff-activity', {
+        headers: getHeaders(getState),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.staff && Array.isArray(data.staff)) {
+          dispatch(userActions.displayStaffList(data.staff));
+          return data.staff;
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching staff activity:', err);
+    }
+    return [];
+  };
+};
+
+export const fetchStaffAvailability = ({ eventDate = '', startTime = '', endTime = '' } = {}) => {
+  return async (dispatch, getState) => {
+    try {
+      const url = `/api/hierarchy/staff/availability?eventDate=${eventDate}&startTime=${startTime}&endTime=${endTime}`;
+      const res = await fetch(url, { headers: getHeaders(getState) });
+      if (res.ok) {
+        const data = await res.json();
+        dispatch(userActions.displayStaffAvailability(data.staff || []));
+        return data.staff || [];
+      }
+    } catch (err) {
+      console.error('Error fetching staff availability:', err);
+    }
+    return [];
+  };
+};
+
+export const fetchEventAttendeesAction = (eventId, queryParams = {}) => {
+  return async (dispatch, getState) => {
+    if (!eventId) return { success: false, error: 'Missing event ID.' };
+    try {
+      const params = new URLSearchParams();
+      if (queryParams.search) params.append('search', queryParams.search);
+      if (queryParams.status && queryParams.status !== 'ALL') params.append('status', queryParams.status);
+      if (queryParams.ticketStatus && queryParams.ticketStatus !== 'ALL') params.append('ticketStatus', queryParams.ticketStatus);
+      if (queryParams.checkedIn && queryParams.checkedIn !== 'ALL') params.append('checkedIn', queryParams.checkedIn);
+      const qs = params.toString() ? `?${params.toString()}` : '';
+      const res = await fetch(`/api/hierarchy/events/${encodeURIComponent(eventId)}/attendees${qs}`, {
+        headers: getHeaders(getState),
+      });
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({}));
+        throw new Error(errJson.message || `Failed to fetch attendees (${res.status})`);
+      }
+      const data = await res.json();
+      dispatch(userActions.displayEventAttendees(data));
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message || 'Unable to retrieve attendee records.' };
+    }
+  };
+};
+
 export { userActions, usersActions };
 
 

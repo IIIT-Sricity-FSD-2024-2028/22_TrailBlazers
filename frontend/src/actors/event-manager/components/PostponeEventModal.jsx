@@ -1,12 +1,15 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { createPortal } from 'react-dom';
 import { X, Calendar, AlertCircle, Clock, Info } from 'lucide-react';
+import { postponeEventAction } from '../../../store/operations-actions';
 
 export default function PostponeEventModal({
   event,
   onClose,
   onSuccess,
 }) {
+  const dispatch = useDispatch();
   const [newDate, setNewDate] = useState('');
   const [reason, setReason] = useState('');
   const [newStartTime, setNewStartTime] = useState(event?.startTime || '09:00 AM');
@@ -29,29 +32,19 @@ export default function PostponeEventModal({
     setError('');
 
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/refunds/postpone-event/${event.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token ? `Bearer ${token}` : '',
-        },
-        body: JSON.stringify({
-          newDate,
-          reason: reason.trim(),
-          newStartTime,
-          newEndTime,
-        }),
-      });
+      const result = await dispatch(postponeEventAction(event.id, {
+        newDate,
+        reason: reason.trim(),
+        newStartTime,
+        newEndTime,
+      }));
 
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || 'Failed to postpone event.');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to postpone event.');
       }
 
-      const data = await res.json();
       if (onSuccess) {
-        onSuccess(data);
+        onSuccess(result.data);
       }
       onClose();
     } catch (err) {

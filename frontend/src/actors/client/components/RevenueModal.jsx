@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { X, Mail, Building, MessageSquare, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react';
+import { submitRevenueInquiryAction } from '../../../store/requests-actions';
 
 export default function RevenueModal({ isOpen, onClose, user, eventRequestId }) {
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     organizationName: user?.organization || '',
     contactEmail: user?.email || '',
@@ -19,28 +22,18 @@ export default function RevenueModal({ isOpen, onClose, user, eventRequestId }) 
     setError('');
 
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/revenue/inquiry', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          eventRequestId,
-          organizationName: formData.organizationName,
-          contactEmail: formData.contactEmail,
-          message: formData.message
-        })
-      });
+      const result = await dispatch(submitRevenueInquiryAction({
+        eventRequestId,
+        organizationName: formData.organizationName,
+        contactEmail: formData.contactEmail,
+        message: formData.message
+      }));
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to submit revenue inquiry.');
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to submit revenue inquiry.');
       }
 
-      setSubmittedInquiry(data.inquiry);
+      setSubmittedInquiry(result.data.inquiry);
     } catch (err) {
       setError(err.message);
     } finally {

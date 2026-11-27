@@ -34,7 +34,7 @@ import {
 import UserManagementSection from '../../../shared/components/UserManagementSection';
 import RefundManagementSection from '../../revenue/components/RefundManagementSection';
 import { fetchIssuesData, resolveIssueAction, escalateIssueAction, assignIssueAction } from '../../../store/issues-actions';
-import { fetchDepartmentTeam, fetchAwaitingEvents, fetchAssignedEvents, fetchHierarchyOverview, assignStaffToEventAction } from '../../../store/users-actions';
+import { fetchDepartmentTeam, fetchAwaitingEvents, fetchAssignedEvents, fetchHierarchyOverview, assignStaffToEventAction, fetchStaffAvailability } from '../../../store/users-actions';
 import { fetchRevenueEvents } from '../../../store/revenue-actions';
 
 export default function DepartmentManagerSpace({ user, onNavigate }) {
@@ -60,7 +60,7 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
   const [popoverError, setPopoverError] = useState('');
 
   // Event Management Head Specific State
-  const [staffAvailability, setStaffAvailability] = useState([]);
+  const staffAvailability = useSelector((state) => state.users.staffAvailability || []);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
   const [assignTargetEvent, setAssignTargetEvent] = useState(null);
   const [selectedManagerId, setSelectedManagerId] = useState('');
@@ -118,14 +118,11 @@ export default function DepartmentManagerSpace({ user, onNavigate }) {
     setAssignModalOpen(true);
 
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const headers = { 'Authorization': `Bearer ${token}` };
-      const url = `/api/hierarchy/staff/availability?eventDate=${event.eventDate || ''}&startTime=${event.startTime || ''}&endTime=${event.endTime || ''}`;
-      const res = await fetch(url, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        setStaffAvailability(data.staff || []);
-      }
+      await dispatch(fetchStaffAvailability({
+        eventDate: event.eventDate || '',
+        startTime: event.startTime || '',
+        endTime: event.endTime || ''
+      }));
     } catch (err) {
       console.error('Error fetching staff availability:', err);
     }

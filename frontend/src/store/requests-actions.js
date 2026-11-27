@@ -252,3 +252,109 @@ export const fetchReportStatus = (eventId) => {
     return null;
   };
 };
+
+export const submitRevenueInquiryAction = (payload) => {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token || localStorage.getItem('ffsd_token');
+    try {
+      const res = await fetch('/api/revenue/inquiry', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to submit revenue inquiry.');
+      dispatch(requestsActions.setRevenueInquiry(data.inquiry));
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const uploadBannerImageAction = (file) => {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token || localStorage.getItem('ffsd_token');
+    try {
+      const bodyData = new FormData();
+      bodyData.append('file', file);
+      const res = await fetch('/api/uploads', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: bodyData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'File upload failed');
+      dispatch(requestsActions.setUploadedBannerUrl(data.file?.url || null));
+      return { success: true, url: data.file?.url, data };
+    } catch (err) {
+      return { success: false, error: err.message || 'Failed to upload event banner image.' };
+    }
+  };
+};
+
+export const exportEventAnalyticsReportAction = (eventId, eventName) => {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token || localStorage.getItem('ffsd_token');
+    try {
+      const res = await fetch(`/api/event-requests/${eventId}/export-analytics`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        let errMsg = 'Failed to export event analytics report';
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch {
+          // not json
+        }
+        throw new Error(errMsg);
+      }
+      const disposition = res.headers.get('Content-Disposition') || '';
+      let filename = '';
+      const match = disposition.match(/filename="?([^"]+)"?/);
+      if (match && match[1]) {
+        filename = match[1];
+      } else {
+        const cleanName = (eventName || 'Event')
+          .replace(/[^a-zA-Z0-9_-]/g, '_')
+          .replace(/_+/g, '_')
+          .replace(/^_|_$/g, '');
+        filename = `Wavevents_Event_Analytics_${cleanName}_${eventId}.pdf`;
+      }
+      const blob = await res.blob();
+      return { success: true, blob, filename };
+    } catch (err) {
+      return { success: false, error: err.message || 'Error downloading analytics report' };
+    }
+  };
+};
+
+export const requestContractRefundAction = ({ quotationId, eventId, reason = 'Client requested contract refund' }) => {
+  return async (dispatch, getState) => {
+    const token = getState().auth.token || localStorage.getItem('ffsd_token');
+    try {
+      const res = await fetch('/api/refunds/request', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ quotationId, eventId, reason }),
+      });
+      if (!res.ok) {
+        const d = await res.json().catch(() => ({}));
+        throw new Error(d.message || 'Failed to submit refund claim.');
+      }
+      await dispatch(fetchClientRequests());
+      return { success: true };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export { requestsActions };

@@ -283,5 +283,101 @@ export const fetchRevenueEvents = () => {
   };
 };
 
+export const fetchRefundDetailsAction = (refundId) => {
+  return async (dispatch, getState) => {
+    if (!refundId) return { success: false, error: 'Missing refund ID.' };
+    try {
+      const res = await fetch(`/api/refunds/${refundId}`, {
+        headers: getHeaders(getState),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Failed to fetch refund details.');
+      dispatch(revenueActions.displayRefundDetail(data));
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message || 'Error loading refund details.' };
+    }
+  };
+};
+
+export const startRefundReviewAction = (refundId) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/refunds/${refundId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(getState) },
+        body: JSON.stringify({ notes: 'Review started by Revenue Specialist' }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.message || 'Failed to update review status.');
+      await dispatch(fetchRefundDetailsAction(refundId));
+      await dispatch(fetchRefundMetrics());
+      await dispatch(fetchRefundsList());
+      return { success: true, data: d };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const saveRefundDeductionsAction = (refundId, { deductionAmount, deductionReason }) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/refunds/${refundId}/deductions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(getState) },
+        body: JSON.stringify({ deductionAmount: Number(deductionAmount), deductionReason }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.message || 'Failed to save deductions.');
+      await dispatch(fetchRefundDetailsAction(refundId));
+      await dispatch(fetchRefundsList());
+      return { success: true, data: d };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const processRefundAction = (refundId) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/refunds/${refundId}/process`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(getState) },
+        body: JSON.stringify({ notes: 'Settlement initiated through payment gateway/bank' }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.message || 'Failed to mark as processing.');
+      await dispatch(fetchRefundDetailsAction(refundId));
+      await dispatch(fetchRefundMetrics());
+      await dispatch(fetchRefundsList());
+      return { success: true, data: d };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const completeRefundAction = (refundId, payload) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/refunds/${refundId}/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getHeaders(getState) },
+        body: JSON.stringify(payload),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(d.message || 'Failed to complete refund.');
+      await dispatch(fetchRefundDetailsAction(refundId));
+      await dispatch(fetchRefundMetrics());
+      await dispatch(fetchRefundsList());
+      return { success: true, data: d };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
 export { revenueActions };
 

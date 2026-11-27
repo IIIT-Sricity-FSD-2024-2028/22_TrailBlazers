@@ -1,37 +1,27 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { createPortal } from 'react-dom';
 import { X, AlertTriangle, ShieldAlert, CheckCircle2, AlertCircle, Clock, Info, ArrowRight } from 'lucide-react';
+import { fetchCancellationPreviewAction, cancelEventAction } from '../../../store/operations-actions';
 
 export default function CancelEventModal({
   event,
   onClose,
   onSuccess,
 }) {
+  const dispatch = useDispatch();
+  const previewData = useSelector((state) => state.operations.cancellationPreview);
   const [cancellationReason, setCancellationReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [previewLoading, setPreviewLoading] = useState(true);
-  const [previewData, setPreviewData] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
     const fetchPreview = async () => {
       if (!event?.id) return;
       try {
-        const token = localStorage.getItem('ffsd_token');
-        const res = await fetch(`/api/refunds/cancellation-preview/${event.id}`, {
-          headers: {
-            Authorization: token ? `Bearer ${token}` : '',
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (isMounted) {
-            setPreviewData(data);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load cancellation preview:', err);
+        await dispatch(fetchCancellationPreviewAction(event.id));
       } finally {
         if (isMounted) {
           setPreviewLoading(false);
@@ -43,7 +33,7 @@ export default function CancelEventModal({
     return () => {
       isMounted = false;
     };
-  }, [event?.id]);
+  }, [event?.id, dispatch]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,26 +51,13 @@ export default function CancelEventModal({
     setError('');
 
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/refunds/cancel-event/${event.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: token ? `Bearer ${token}` : '',
-        },
-        body: JSON.stringify({
-          cancellationReason: cancellationReason.trim(),
-        }),
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || 'Failed to cancel event.');
+      const result = await dispatch(cancelEventAction(event.id, cancellationReason.trim()));
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to cancel event.');
       }
 
-      const data = await res.json();
       if (onSuccess) {
-        onSuccess(data);
+        onSuccess(result.data);
       }
       onClose();
     } catch (err) {

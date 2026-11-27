@@ -20,20 +20,14 @@ export default function PageTransition({ children, pageKey }) {
       {/* Lavender-Blue Gradient Transition Overlay */}
       {isTransitioning && (
         <div
-          className="fixed inset-0 z-40 bg-gradient-to-br from-[#EEF2FF] via-[#F3E8FF] to-[#DAF0FB] pointer-events-none transition-opacity duration-500 ease-out"
-          style={{
-            animation: 'pageOverlayFade 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-          }}
+          className="fixed inset-0 z-40 bg-gradient-to-br from-[#EEF2FF] via-[#F3E8FF] to-[#DAF0FB] pointer-events-none transition-opacity duration-500 ease-out page-transition-overlay"
         />
       )}
 
       {/* Main Page Container with Smooth Scale & Fade Entrance */}
       <div
         key={pageKey}
-        className="w-full transition-all duration-500 ease-out"
-        style={{
-          animation: 'pageContentEntrance 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards'
-        }}
+        className="w-full transition-all duration-500 ease-out page-transition-content"
       >
         {children}
       </div>

@@ -176,3 +176,82 @@ body {
   }
 }
 
+/* Extracted Component & Page Styles */
+.page-transition-overlay {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: pageOverlayFade 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+.page-transition-content {
+  @media (prefers-reduced-motion: no-preference) {
+    animation: pageContentEntrance 0.55s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+.event-card-surface {
+  background: linear-gradient(135deg, rgba(232, 248, 250, 0.95) 0%, rgba(221, 243, 246, 0.90) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.landing-hero-overlay {
+  background: linear-gradient(to bottom, rgba(11, 19, 43, 0.40) 0%, rgba(11, 19, 43, 0.15) 50%, rgba(11, 19, 43, 0.65) 100%);
+}
+
+.landing-hero-spotlight {
+  background: radial-gradient(ellipse at center, rgba(147, 51, 234, 0.35) 0%, rgba(59, 130, 246, 0.25) 35%, transparent 75%);
+  filter: blur(30px);
+}
+
+.landing-hero-bleed {
+  background: linear-gradient(to bottom, transparent 0%, rgba(147, 51, 234, 0.20) 50%, #3B1A6E 100%);
+}
+
+.landing-skeleton-card {
+  background: linear-gradient(135deg, rgba(232, 248, 250, 0.4) 0%, rgba(221, 243, 246, 0.3) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+
+.animate-delay-1500 {
+  animation-delay: 1.5s;
+}
+
+.animate-delay-3000 {
+  animation-delay: 3s;
+}
+
+.animate-spin-slow {
+  animation-duration: 4s;
+}
+
+@keyframes shrinkWidth {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+.toast-progress-bar {
+  width: 100%;
+  @media (prefers-reduced-motion: no-preference) {
+    animation: shrinkWidth 5s linear forwards;
+  }
+}
+
+/* Analytics Printable Report Styles */
+@media print {
+  header, nav, button:not(.print-btn), select, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .printable-report {
+    padding: 20px !important;
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
+

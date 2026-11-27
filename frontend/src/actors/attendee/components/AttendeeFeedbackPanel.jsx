@@ -14,15 +14,20 @@ import {
   Check, 
   Vote 
 } from 'lucide-react';
-import { fetchActiveFeedbackPolls, submitPollResponse } from '../../../store/analytics-actions';
+import {
+  fetchActiveFeedbackPolls,
+  submitPollResponse,
+  fetchAttendeeSurveys,
+  submitAttendeeSurveyAction
+} from '../../../store/analytics-actions';
 
 export default function AttendeeFeedbackPanel({ user }) {
   const dispatch = useDispatch();
   const sessionPolls = useSelector((state) => state.analytics.activePolls || []);
+  const polls = useSelector((state) => state.analytics.attendeeSurveys || []);
   const [activeMode, setActiveMode] = useState('surveys'); // 'surveys' | 'session-polls'
   
   // Surveys State
-  const [polls, setPolls] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activePoll, setActivePoll] = useState(null);
   const [answers, setAnswers] = useState({});
@@ -44,16 +49,9 @@ export default function AttendeeFeedbackPanel({ user }) {
   const fetchMyPolls = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/feedback/polls/attendee/my-polls', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok && Array.isArray(data.polls)) {
-        setPolls(data.polls);
-        if (data.polls.length > 0) {
-          selectPoll(data.polls[0]);
-        }
+      const list = await dispatch(fetchAttendeeSurveys());
+      if (Array.isArray(list) && list.length > 0) {
+        selectPoll(list[0]);
       }
     } catch (err) {
       console.error('Error fetching attendee polls:', err);
@@ -96,28 +94,12 @@ export default function AttendeeFeedbackPanel({ user }) {
     setSuccessMsg('');
 
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/feedback/polls/${activePoll.id}/respond`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ answers })
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
+      const result = await dispatch(submitAttendeeSurveyAction(activePoll.id, answers));
+      if (result.success) {
         setSuccessMsg('Thank you! Your feedback has been submitted.');
-        setPolls(prev => prev.map(p => p.id === activePoll.id ? { ...p, hasSubmitted: true } : p));
         setActivePoll(prev => prev ? { ...prev, hasSubmitted: true } : null);
-      } else if (res.status === 409 || (data.message && data.message.includes('already submitted'))) {
-        setPolls(prev => prev.map(p => p.id === activePoll.id ? { ...p, hasSubmitted: true } : p));
-        setActivePoll(prev => prev ? { ...prev, hasSubmitted: true } : null);
-        setSuccessMsg('Thank you! Your feedback has been submitted.');
       } else {
-        setErrorMsg(data.message || data.error || 'Failed to submit feedback response.');
+        setErrorMsg(result.error || 'Failed to submit feedback response.');
       }
     } catch (err) {
       console.error('Error submitting response:', err);

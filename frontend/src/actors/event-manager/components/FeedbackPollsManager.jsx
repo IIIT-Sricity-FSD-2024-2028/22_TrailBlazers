@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { 
   BarChart3, 
   Plus, 
@@ -19,12 +20,22 @@ import {
   Lock,
   Edit3
 } from 'lucide-react';
+import {
+  fetchEventFeedbackPolls,
+  fetchPollAnalytics as fetchPollAnalyticsAction,
+  createFeedbackPollAction,
+  publishFeedbackPollAction,
+  closeFeedbackPollAction,
+  deleteFeedbackPollAction,
+  analyticsActions
+} from '../../../store/analytics-actions';
 
 export default function FeedbackPollsManager({ user, events }) {
+  const dispatch = useDispatch();
+  const polls = useSelector((state) => state.analytics.feedbackPolls || []);
+  const activePollAnalytics = useSelector((state) => state.analytics.activePollAnalytics);
   const [selectedEventId, setSelectedEventId] = useState(events && events.length > 0 ? events[0].id : '');
-  const [polls, setPolls] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activePollAnalytics, setActivePollAnalytics] = useState(null);
   const [alertNotice, setAlertNotice] = useState('');
 
   // Unified Poll Creation & Editing Modal State
@@ -52,44 +63,22 @@ export default function FeedbackPollsManager({ user, events }) {
       fetchPolls(selectedEventId);
       setAlertNotice('');
     } else {
-      setPolls([]);
-      setActivePollAnalytics(null);
+      dispatch(analyticsActions.displayFeedbackPolls([]));
     }
-  }, [selectedEventId]);
+  }, [selectedEventId, dispatch]);
 
   const fetchPolls = async (eventId) => {
     if (!eventId) return;
     setLoading(true);
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/feedback/polls/event/${eventId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setPolls(data.polls || []);
-        setActivePollAnalytics(null);
-      }
-    } catch (err) {
-      console.error('Error fetching polls:', err);
+      await dispatch(fetchEventFeedbackPolls(eventId));
     } finally {
       setLoading(false);
     }
   };
 
   const fetchPollAnalytics = async (pollId) => {
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/feedback/polls/${pollId}/results`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setActivePollAnalytics(data.analytics);
-      }
-    } catch (err) {
-      console.error('Error fetching poll analytics:', err);
-    }
+    await dispatch(fetchPollAnalyticsAction(pollId));
   };
 
   const handleOpenCreateModal = () => {
@@ -111,52 +100,19 @@ export default function FeedbackPollsManager({ user, events }) {
   };
 
   const handlePublishPoll = async (pollId) => {
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/feedback/polls/${pollId}/publish`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        fetchPolls(selectedEventId);
-      } else {
-        alert(data.error || 'Unable to publish poll.');
-      }
-    } catch (err) {
-      console.error('Error publishing poll:', err);
+    const res = await dispatch(publishFeedbackPollAction(pollId, selectedEventId));
+    if (!res.success) {
+      alert(res.error || 'Unable to publish poll.');
     }
   };
 
   const handleClosePoll = async (pollId) => {
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/feedback/polls/${pollId}/close`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        fetchPolls(selectedEventId);
-      }
-    } catch (err) {
-      console.error('Error closing poll:', err);
-    }
+    await dispatch(closeFeedbackPollAction(pollId, selectedEventId));
   };
 
   const handleDeletePoll = async (pollId) => {
     if (!window.confirm('Are you sure you want to delete this draft poll?')) return;
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/feedback/polls/${pollId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        fetchPolls(selectedEventId);
-      }
-    } catch (err) {
-      console.error('Error deleting poll:', err);
-    }
+    await dispatch(deleteFeedbackPollAction(pollId, selectedEventId));
   };
 
   const handleAddQuestion = () => {
@@ -240,28 +196,18 @@ export default function FeedbackPollsManager({ user, events }) {
 
     setSubmitting(true);
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/feedback/polls', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          eventId: selectedEventId,
-          title: pollTitle.trim(),
-          description: pollDescription.trim(),
-          status: publishImmediately ? 'PUBLISHED' : 'DRAFT',
-          questions
-        })
-      });
+      const result = await dispatch(createFeedbackPollAction({
+        eventId: selectedEventId,
+        title: pollTitle.trim(),
+        description: pollDescription.trim(),
+        status: publishImmediately ? 'PUBLISHED' : 'DRAFT',
+        questions
+      }));
 
-      const data = await res.json();
-      if (res.ok) {
+      if (result.success) {
         setIsCreateModalOpen(false);
-        fetchPolls(selectedEventId);
       } else {
-        setModalError(data.error || 'Failed to save poll.');
+        setModalError(result.error || 'Failed to save poll.');
       }
     } catch (err) {
       console.error('Error saving poll:', err);

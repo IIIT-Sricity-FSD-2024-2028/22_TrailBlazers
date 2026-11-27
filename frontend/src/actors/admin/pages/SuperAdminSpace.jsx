@@ -37,16 +37,25 @@ import {
 } from 'lucide-react';
 import RefundManagementSection from '../../revenue/components/RefundManagementSection';
 import { fetchIssuesData, resolveIssueAction } from '../../../store/issues-actions';
-import { fetchUserData } from '../../../store/users-actions';
+import {
+  fetchUserData,
+  fetchHierarchyOverview,
+  fetchStaffActivity as fetchStaffActivityAction,
+  fetchEventAttendeesAction,
+  userActions
+} from '../../../store/users-actions';
+import { fetchRevenueEvents, revenueActions } from '../../../store/revenue-actions';
+import { fetchAccessLogs as fetchAccessLogsAction } from '../../../store/auth-actions';
 
 export default function SuperAdminSpace({ user, onNavigate }) {
   const dispatch = useDispatch();
   const issues = useSelector((state) => state.issues.items || state.issues.issues || []);
   const reduxUsers = useSelector((state) => state.users.users);
+  const overview = useSelector((state) => state.users.hierarchyOverview);
+  const staffList = useSelector((state) => state.users.staffList || []);
+  const attendeesData = useSelector((state) => state.users.eventAttendeesData);
+  const revenueEvents = useSelector((state) => state.revenue.revenueEvents || []);
 
-  const [overview, setOverview] = useState(null);
-  const [staffList, setStaffList] = useState([]);
-  const [revenueEvents, setRevenueEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadingStaff, setLoadingStaff] = useState(false);
   const [selectedIssue, setSelectedIssue] = useState(null);
@@ -67,7 +76,6 @@ export default function SuperAdminSpace({ user, onNavigate }) {
 
   // Event-Wise Attendee Management State
   const [attendeeModalEvent, setAttendeeModalEvent] = useState(null);
-  const [attendeesData, setAttendeesData] = useState(null);
   const [attendeesLoading, setAttendeesLoading] = useState(false);
   const [attendeesError, setAttendeesError] = useState(null);
   const [attendeeSearch, setAttendeeSearch] = useState('');
@@ -82,24 +90,10 @@ export default function SuperAdminSpace({ user, onNavigate }) {
     setAttendeesError(null);
 
     try {
-      const params = new URLSearchParams();
-      if (queryParams.search) params.append('search', queryParams.search);
-      if (queryParams.status && queryParams.status !== 'ALL') params.append('status', queryParams.status);
-      if (queryParams.ticketStatus && queryParams.ticketStatus !== 'ALL') params.append('ticketStatus', queryParams.ticketStatus);
-      if (queryParams.checkedIn && queryParams.checkedIn !== 'ALL') params.append('checkedIn', queryParams.checkedIn);
-
-      const qs = params.toString() ? `?${params.toString()}` : '';
-      const res = await fetch(`/api/hierarchy/events/${encodeURIComponent(eventId)}/attendees${qs}`, {
-        headers: getHeaders(),
-      });
-
-      if (!res.ok) {
-        const errJson = await res.json().catch(() => ({}));
-        throw new Error(errJson.message || `Failed to fetch attendees (${res.status})`);
+      const result = await dispatch(fetchEventAttendeesAction(eventId, queryParams));
+      if (!result.success) {
+        throw new Error(result.error || 'Unable to retrieve attendee records.');
       }
-
-      const data = await res.json();
-      setAttendeesData(data);
     } catch (err) {
       console.error('Error fetching event attendees:', err);
       setAttendeesError(err.message || 'Unable to retrieve attendee records.');
@@ -110,7 +104,7 @@ export default function SuperAdminSpace({ user, onNavigate }) {
 
   const handleOpenAttendeesModal = (evt) => {
     setAttendeeModalEvent(evt);
-    setAttendeesData(null); // Clear previous event attendees immediately
+    dispatch(userActions.displayEventAttendees(null)); // Clear previous event attendees immediately
     setAttendeesError(null);
     setAttendeeSearch('');
     setAttendeeStatusFilter('ALL');
@@ -121,7 +115,7 @@ export default function SuperAdminSpace({ user, onNavigate }) {
 
   const handleCloseAttendeesModal = () => {
     setAttendeeModalEvent(null);
-    setAttendeesData(null);
+    dispatch(userActions.displayEventAttendees(null));
     setAttendeesError(null);
   };
 
@@ -167,36 +161,21 @@ export default function SuperAdminSpace({ user, onNavigate }) {
     fetchStaffActivity();
   }, []);
 
-  const getHeaders = () => {
-    const token = localStorage.getItem('ffsd_token');
-    return { 'Authorization': `Bearer ${token}` };
-  };
-
   const fetchData = async () => {
     setLoading(true);
     dispatch(fetchIssuesData());
     try {
-      const resOverview = await fetch('/api/hierarchy/overview', { headers: getHeaders() });
+      const data = await dispatch(fetchHierarchyOverview());
 
-      if (resOverview.ok) {
-        const data = await resOverview.json();
-        setOverview(data);
-
+      if (data) {
         if (data.revenue && data.revenue.events && data.revenue.events.length > 0) {
-          setRevenueEvents(data.revenue.events);
+          dispatch(revenueActions.displayRevenueEvents(data.revenue.events));
         } else {
-          fetch('/api/hierarchy/revenue/events', { headers: getHeaders() })
-            .then(r => r.ok ? r.json() : null)
-            .then(revData => {
-              if (revData?.events && revData.events.length > 0) {
-                setRevenueEvents(revData.events);
-              }
-            })
-            .catch(() => {});
+          dispatch(fetchRevenueEvents());
         }
 
         if (data.staff && Array.isArray(data.staff) && data.staff.length > 0) {
-          setStaffList(data.staff);
+          dispatch(userActions.displayStaffList(data.staff));
         } else if (data.departments) {
           const extracted = [];
           Object.entries(data.departments).forEach(([deptKey, dept]) => {
@@ -243,7 +222,7 @@ export default function SuperAdminSpace({ user, onNavigate }) {
               });
             }
           });
-          setStaffList(extracted);
+          dispatch(userActions.displayStaffList(extracted));
         }
       }
     } catch (err) {
@@ -256,13 +235,7 @@ export default function SuperAdminSpace({ user, onNavigate }) {
   const fetchStaffActivity = async () => {
     setLoadingStaff(true);
     try {
-      const res = await fetch('/api/hierarchy/staff-activity', { headers: getHeaders() });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.staff && Array.isArray(data.staff) && data.staff.length > 0) {
-          setStaffList(data.staff);
-        }
-      }
+      await dispatch(fetchStaffActivityAction());
     } catch (err) {
       console.error('Error fetching staff activity:', err);
     } finally {
@@ -828,7 +801,7 @@ export default function SuperAdminSpace({ user, onNavigate }) {
                     {/* CURRENTLY DOING BANNER (Highlighted) */}
                     <div className="p-3.5 rounded-2xl bg-white border border-slate-200 shadow-2xs space-y-1">
                       <div className="flex items-center gap-1.5 text-[10px] font-black text-indigo-700 uppercase tracking-wider">
-                        <Activity className="w-3.5 h-3.5 text-indigo-600 animate-spin" style={{ animationDuration: '4s' }} />
+                        <Activity className="w-3.5 h-3.5 text-indigo-600 animate-spin animate-spin-slow" />
                         <span>Currently Doing</span>
                       </div>
                       <p className="text-xs font-bold text-slate-800 leading-snug">
@@ -1615,7 +1588,8 @@ export default function SuperAdminSpace({ user, onNavigate }) {
 }
 
 function UserAccessRegisterList() {
-  const [logs, setLogs] = useState([]);
+  const dispatch = useDispatch();
+  const logs = useSelector((state) => state.auth.accessLogs || []);
   const [loadingLogs, setLoadingLogs] = useState(true);
 
   useEffect(() => {
@@ -1625,16 +1599,7 @@ function UserAccessRegisterList() {
   const fetchAccessLogs = async () => {
     setLoadingLogs(true);
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/auth/access-logs', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setLogs(data.logs || []);
-      }
-    } catch (err) {
-      console.error('Error fetching access logs:', err);
+      await dispatch(fetchAccessLogsAction());
     } finally {
       setLoadingLogs(false);
     }

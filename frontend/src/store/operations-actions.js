@@ -222,3 +222,247 @@ export const checkInAttendee = (eventId, ticketCode) => {
     }
   };
 };
+
+export const fetchManagerChangeRequests = () => {
+  return async (dispatch, getState) => {
+    dispatch(operationsActions.fetchOperationsStarted());
+    try {
+      const res = await fetch('/api/change-requests/manager', {
+        headers: getHeaders(getState),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        dispatch(operationsActions.displayManagerChangeRequests(data.changeRequests || []));
+        return data.changeRequests || [];
+      }
+    } catch (err) {
+      console.error('Error fetching manager change requests:', err);
+      dispatch(operationsActions.operationsActionFailed(err.message));
+    }
+    return [];
+  };
+};
+
+export const reviewChangeRequestAction = (id, { action, reviewComment }) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/change-requests/${id}/review`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getHeaders(getState),
+        },
+        body: JSON.stringify({ action, reviewComment }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to submit review decision.');
+      await dispatch(fetchManagerChangeRequests());
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const fetchCancellationPreviewAction = (eventId) => {
+  return async (dispatch, getState) => {
+    if (!eventId) return null;
+    try {
+      const res = await fetch(`/api/refunds/cancellation-preview/${eventId}`, {
+        headers: getHeaders(getState),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        dispatch(operationsActions.setCancellationPreview(data));
+        return data;
+      }
+    } catch (err) {
+      console.error('Failed to load cancellation preview:', err);
+    }
+    return null;
+  };
+};
+
+export const cancelEventAction = (eventId, cancellationReason) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/refunds/cancel-event/${eventId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getHeaders(getState),
+        },
+        body: JSON.stringify({ cancellationReason }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Failed to cancel event.');
+      await dispatch(fetchManagerEvents());
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message || 'Error occurred while cancelling event.' };
+    }
+  };
+};
+
+export const postponeEventAction = (eventId, payload) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/refunds/postpone-event/${eventId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getHeaders(getState),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Failed to postpone event.');
+      await dispatch(fetchManagerEvents());
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message || 'Error occurred while postponing event.' };
+    }
+  };
+};
+
+export const fetchCoordinatorWorkspace = (reqId) => {
+  return async (dispatch, getState) => {
+    if (!reqId) return { success: false, error: 'Missing event ID.' };
+    try {
+      const res = await fetch(`/api/onsite-coordinator/events/${reqId}`, {
+        headers: getHeaders(getState),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load assigned event workspace.');
+      dispatch(operationsActions.displayCoordinatorWorkspace(data));
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message || 'Failed to load event workspace.' };
+    }
+  };
+};
+
+export const fetchCoordinatorAttendees = (reqId, search = '') => {
+  return async (dispatch, getState) => {
+    if (!reqId) return [];
+    try {
+      const res = await fetch(`/api/onsite-coordinator/events/${reqId}/attendees?search=${encodeURIComponent(search)}`, {
+        headers: getHeaders(getState),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        dispatch(operationsActions.displayCoordinatorAttendees(data.attendees || []));
+        return data.attendees || [];
+      }
+    } catch (err) {
+      console.error('Error fetching attendees:', err);
+    }
+    return [];
+  };
+};
+
+export const fetchCoordinatorIssues = (reqId) => {
+  return async (dispatch, getState) => {
+    if (!reqId) return [];
+    try {
+      const res = await fetch(`/api/onsite-coordinator/events/${reqId}/issues`, {
+        headers: getHeaders(getState),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        dispatch(operationsActions.displayCoordinatorIssues(data.issues || []));
+        return data.issues || [];
+      }
+    } catch (err) {
+      console.error('Error fetching coordinator issues:', err);
+    }
+    return [];
+  };
+};
+
+export const performCoordinatorMemberAction = (reqId, payload) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/onsite-coordinator/events/${reqId}/member-action`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getHeaders(getState),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || data.error || `Failed to record ${payload.action}.`);
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const updateCoordinatorEventStatusAction = (reqId, operationalStatus) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/onsite-coordinator/events/${reqId}/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getHeaders(getState),
+        },
+        body: JSON.stringify({ operationalStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update status.');
+      await dispatch(fetchCoordinatorWorkspace(reqId));
+      await dispatch(fetchCoordinatorDashboard());
+      await dispatch(fetchCoordinatorEvents());
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const reportCoordinatorIssueAction = (reqId, payload) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/onsite-coordinator/events/${reqId}/issues`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getHeaders(getState),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to report issue.');
+      await dispatch(fetchCoordinatorIssues(reqId));
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export const updateCoordinatorIssueStatusAction = (reqId, issueId, status) => {
+  return async (dispatch, getState) => {
+    try {
+      const res = await fetch(`/api/onsite-coordinator/issues/${issueId}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getHeaders(getState),
+        },
+        body: JSON.stringify({ status }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update issue status.');
+      if (reqId) await dispatch(fetchCoordinatorIssues(reqId));
+      return { success: true, data };
+    } catch (err) {
+      return { success: false, error: err.message };
+    }
+  };
+};
+
+export { operationsActions };

@@ -9,6 +9,9 @@ const usersSlice = createSlice({
     awaitingEvents: [],
     assignedEvents: [],
     hierarchyOverview: null,
+    staffList: [],
+    staffAvailability: [],
+    eventAttendeesData: null,
     totalCount: 0,
     loading: false,
     error: null,
@@ -44,6 +47,18 @@ const usersSlice = createSlice({
       state.hierarchyOverview = action.payload || null;
       state.loading = false;
       state.error = null;
+    },
+    displayStaffList(state, action) {
+      state.staffList = action.payload || [];
+      state.loading = false;
+      state.error = null;
+    },
+    displayStaffAvailability(state, action) {
+      state.staffAvailability = action.payload || [];
+    },
+    displayEventAttendees(state, action) {
+      state.eventAttendeesData = action.payload || null;
+      state.loading = false;
     },
     updateUserInList(state, action) {
       const updated = action.payload;

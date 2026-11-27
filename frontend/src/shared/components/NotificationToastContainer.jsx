@@ -14,7 +14,7 @@ import {
   BarChart3,
   Sparkles
 } from 'lucide-react';
-import { fetchPendingToasts, autoExpireNotificationsAction } from '../../store/notifications-actions';
+import { fetchPendingToasts, autoExpireNotificationsAction, interactNotificationAction } from '../../store/notifications-actions';
 
 export default function NotificationToastContainer({ user, onNavigate, onRefreshBadge }) {
   const dispatch = useDispatch();
@@ -84,22 +84,9 @@ export default function NotificationToastContainer({ user, onNavigate, onRefresh
   const handleViewAction = async (notif) => {
     removeToastState(notif.id);
 
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/notifications/${notif.id}/interact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ action: 'VIEW' })
-      });
-      const data = await res.json();
-      if (data.unreadCount !== undefined && onRefreshBadge) {
-        onRefreshBadge(data.unreadCount);
-      }
-    } catch (err) {
-      console.error('Error handling notification view:', err);
+    const data = await dispatch(interactNotificationAction(notif.id, 'VIEW'));
+    if (data?.unreadCount !== undefined && onRefreshBadge) {
+      onRefreshBadge(data.unreadCount);
     }
 
     // Navigate to authorized space
@@ -133,22 +120,9 @@ export default function NotificationToastContainer({ user, onNavigate, onRefresh
     if (e) e.stopPropagation();
     removeToastState(id);
 
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/notifications/${id}/interact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ action: 'DISMISS' })
-      });
-      const data = await res.json();
-      if (data.unreadCount !== undefined && onRefreshBadge) {
-        onRefreshBadge(data.unreadCount);
-      }
-    } catch (err) {
-      console.error('Error dismissing notification:', err);
+    const data = await dispatch(interactNotificationAction(id, 'DISMISS'));
+    if (data?.unreadCount !== undefined && onRefreshBadge) {
+      onRefreshBadge(data.unreadCount);
     }
   };
 
@@ -156,22 +130,9 @@ export default function NotificationToastContainer({ user, onNavigate, onRefresh
   const handleExpire = async (id) => {
     removeToastState(id);
 
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch(`/api/notifications/${id}/interact`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ action: 'EXPIRE' })
-      });
-      const data = await res.json();
-      if (data.unreadCount !== undefined && onRefreshBadge) {
-        onRefreshBadge(data.unreadCount);
-      }
-    } catch (err) {
-      console.error('Error expiring notification:', err);
+    const data = await dispatch(interactNotificationAction(id, 'EXPIRE'));
+    if (data?.unreadCount !== undefined && onRefreshBadge) {
+      onRefreshBadge(data.unreadCount);
     }
   };
 
@@ -262,23 +223,11 @@ export default function NotificationToastContainer({ user, onNavigate, onRefresh
           {/* 5-Second Shrinking Visual Progress Line */}
           <div className="absolute bottom-0 left-0 right-0 h-1 bg-purple-950/40 overflow-hidden">
             <div 
-              className="h-full bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 transition-all duration-[5000ms] ease-linear w-0"
-              style={{
-                width: '100%',
-                animation: 'shrinkWidth 5s linear forwards'
-              }}
+              className="h-full bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 transition-all duration-[5000ms] ease-linear toast-progress-bar"
             />
           </div>
         </div>
       ))}
-
-      {/* Inline CSS Animation keyframe for progress bar */}
-      <style>{`
-        @keyframes shrinkWidth {
-          from { width: 100%; }
-          to { width: 0%; }
-        }
-      `}</style>
     </div>
   );
 }

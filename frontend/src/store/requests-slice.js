@@ -8,6 +8,8 @@ const requestsSlice = createSlice({
     activeQuotation: null,
     eventStats: null,
     reportStatus: null,
+    revenueInquiry: null,
+    uploadedBannerUrl: null,
     loading: false,
     error: null,
   },
@@ -37,6 +39,13 @@ const requestsSlice = createSlice({
     setReportStatus(state, action) {
       state.reportStatus = action.payload;
       state.loading = false;
+    },
+    setRevenueInquiry(state, action) {
+      state.revenueInquiry = action.payload;
+      state.loading = false;
+    },
+    setUploadedBannerUrl(state, action) {
+      state.uploadedBannerUrl = action.payload;
     },
     addEventRequest(state, action) {
       if (action.payload) {

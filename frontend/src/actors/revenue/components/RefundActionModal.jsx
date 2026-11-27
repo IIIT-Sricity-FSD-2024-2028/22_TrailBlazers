@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -21,7 +21,15 @@ import {
   Check
 } from 'lucide-react';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
-import { approveRefundAction, rejectRefundAction } from '../../../store/revenue-actions';
+import {
+  approveRefundAction,
+  rejectRefundAction,
+  fetchRefundDetailsAction,
+  startRefundReviewAction,
+  saveRefundDeductionsAction,
+  processRefundAction,
+  completeRefundAction
+} from '../../../store/revenue-actions';
 
 export default function RefundActionModal({
   refundId,
@@ -29,7 +37,7 @@ export default function RefundActionModal({
   onRefresh,
 }) {
   const dispatch = useDispatch();
-  const [detail, setDetail] = useState(null);
+  const detail = useSelector((state) => state.revenue.activeRefundDetail);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -44,30 +52,16 @@ export default function RefundActionModal({
   const [settlementReference, setSettlementReference] = useState('');
   const [settlementMethod, setSettlementMethod] = useState('UPI');
 
-  const getHeaders = () => {
-    const token = localStorage.getItem('ffsd_token');
-    return {
-      'Content-Type': 'application/json',
-      'x-role': 'REVENUE',
-      Authorization: token ? `Bearer ${token}` : '',
-    };
-  };
-
   const fetchDetails = async () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`/api/refunds/${refundId}`, {
-        headers: getHeaders(),
-      });
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.message || 'Failed to fetch refund details.');
+      const res = await dispatch(fetchRefundDetailsAction(refundId));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to fetch refund details.');
       }
-      const data = await res.json();
-      setDetail(data);
-      setDeductionAmount(data.refund.deductionAmount || 0);
-      setDeductionReason(data.refund.deductionReason || '');
+      setDeductionAmount(res.data?.refund?.deductionAmount || 0);
+      setDeductionReason(res.data?.refund?.deductionReason || '');
     } catch (err) {
       setError(err.message || 'Error loading refund details.');
     } finally {
@@ -85,17 +79,11 @@ export default function RefundActionModal({
     setActionLoading(true);
     setFeedback({ text: '', type: '' });
     try {
-      const res = await fetch(`/api/refunds/${refundId}/review`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ notes: 'Review started by Revenue Specialist' }),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.message || 'Failed to update review status.');
+      const res = await dispatch(startRefundReviewAction(refundId));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to update review status.');
       }
       setFeedback({ text: 'Refund status updated to UNDER_REVIEW.', type: 'success' });
-      await fetchDetails();
       if (onRefresh) onRefresh();
     } catch (err) {
       setFeedback({ text: err.message, type: 'error' });
@@ -123,20 +111,14 @@ export default function RefundActionModal({
     setActionLoading(true);
     setFeedback({ text: '', type: '' });
     try {
-      const res = await fetch(`/api/refunds/${refundId}/deductions`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({
-          deductionAmount: Number(deductionAmount),
-          deductionReason: deductionReason.trim(),
-        }),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.message || 'Failed to save deductions.');
+      const res = await dispatch(saveRefundDeductionsAction(refundId, {
+        deductionAmount: Number(deductionAmount),
+        deductionReason: deductionReason.trim(),
+      }));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to save deductions.');
       }
       setFeedback({ text: 'Deductions recorded and refundable balance calculated.', type: 'success' });
-      await fetchDetails();
       if (onRefresh) onRefresh();
     } catch (err) {
       setFeedback({ text: err.message, type: 'error' });
@@ -199,17 +181,11 @@ export default function RefundActionModal({
     setActionLoading(true);
     setFeedback({ text: '', type: '' });
     try {
-      const res = await fetch(`/api/refunds/${refundId}/process`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({ notes: 'Settlement initiated through payment gateway/bank' }),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.message || 'Failed to mark as processing.');
+      const res = await dispatch(processRefundAction(refundId));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to mark as processing.');
       }
       setFeedback({ text: 'Refund status set to PROCESSING.', type: 'success' });
-      await fetchDetails();
       if (onRefresh) onRefresh();
     } catch (err) {
       setFeedback({ text: err.message, type: 'error' });
@@ -227,23 +203,17 @@ export default function RefundActionModal({
     setActionLoading(true);
     setFeedback({ text: '', type: '' });
     try {
-      const res = await fetch(`/api/refunds/${refundId}/complete`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify({
-          refundTransactionId: settlementReference.trim(),
-          refundMethod: settlementMethod,
-          actualRefundedAmount: Number(calculatedRefundable),
-          notes: 'Settlement confirmed',
-        }),
-      });
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}));
-        throw new Error(d.message || 'Failed to complete refund.');
+      const res = await dispatch(completeRefundAction(refundId, {
+        refundTransactionId: settlementReference.trim(),
+        refundMethod: settlementMethod,
+        actualRefundedAmount: Number(calculatedRefundable),
+        notes: 'Settlement confirmed',
+      }));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to complete refund.');
       }
       setFeedback({ text: 'Refund successfully completed and recorded as REFUNDED!', type: 'success' });
       setShowCompleteInput(false);
-      await fetchDetails();
       if (onRefresh) onRefresh();
     } catch (err) {
       setFeedback({ text: err.message, type: 'error' });
