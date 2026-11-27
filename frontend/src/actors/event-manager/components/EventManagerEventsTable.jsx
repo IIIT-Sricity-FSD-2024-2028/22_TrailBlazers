@@ -30,7 +30,16 @@ export default function EventManagerEventsTable({ eventsList, onPrepareEvent, on
 
       {/* Operations Row List (Zero Overlap & Zero Side-scroll) */}
       <div className="space-y-3 pt-1">
-        {eventsList.slice(0, 7).map(evt => {
+        {eventsList.length === 0 ? (
+          <div className="p-8 text-center rounded-2xl bg-slate-50/70 border border-slate-200/70 space-y-2">
+            <Calendar className="w-8 h-8 text-purple-400 mx-auto" />
+            <h4 className="text-xs font-bold text-slate-700">No Assigned Events</h4>
+            <p className="text-[11px] text-slate-400">
+              You do not have any events assigned to you yet. Newly created accounts start with zero assigned events.
+            </p>
+          </div>
+        ) : (
+          eventsList.slice(0, 7).map(evt => {
           const readinessPct = evt.readinessPercent !== undefined ? evt.readinessPercent : (evt.operationalStatus === 'READY' || evt.operationalStatus === 'LIVE' ? 100 : 80);
           const coordinator = evt.coordinatorName || evt.onsiteCoordinatorName;
 
@@ -112,7 +121,7 @@ export default function EventManagerEventsTable({ eventsList, onPrepareEvent, on
               </div>
             </div>
           );
-        })}
+        }))}
       </div>
 
     </div>
