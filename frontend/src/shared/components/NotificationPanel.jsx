@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { 
   Bell, 
   CheckCheck, 
@@ -19,84 +20,33 @@ import {
   Trash2, 
   CheckCircle2 
 } from 'lucide-react';
+import {
+  fetchNotificationsData,
+  markNotificationReadAction,
+  markAllNotificationsReadAction,
+  clearAllNotificationsAction
+} from '../../store/notifications-actions';
 
 export default function NotificationPanel({ user, onNavigate, onClose }) {
-  const [notifications, setNotifications] = useState([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(true);
+  const dispatch = useDispatch();
+  const { notifications, unreadCount, loading: reduxLoading } = useSelector((state) => state.notifications);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchNotifications();
-    const interval = setInterval(fetchNotifications, 12000);
-    return () => clearInterval(interval);
+    dispatch(fetchNotificationsData());
   }, []);
 
-  const fetchNotifications = async () => {
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      if (!token) return;
-
-      const res = await fetch('/api/notifications', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.unreadCount || 0);
-      }
-    } catch (err) {
-      console.error('Error loading notifications:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleMarkAsRead = async (id, e) => {
+  const handleMarkAsRead = (id, e) => {
     if (e) e.stopPropagation();
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      await fetch(`/api/notifications/${id}/read`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: 1 } : n));
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (err) {
-      console.error('Error marking notification as read:', err);
-    }
+    dispatch(markNotificationReadAction(id));
   };
 
-  const handleMarkAllAsRead = async () => {
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      await fetch('/api/notifications/read-all', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: 1 })));
-      setUnreadCount(0);
-    } catch (err) {
-      console.error('Error marking all notifications as read:', err);
-    }
+  const handleMarkAllAsRead = () => {
+    dispatch(markAllNotificationsReadAction());
   };
 
-  const handleClearAll = async () => {
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/notifications/clear', {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setNotifications([]);
-        setUnreadCount(0);
-      } else {
-        alert('Unable to clear notifications. Please try again.');
-      }
-    } catch (err) {
-      console.error('Error clearing notifications:', err);
-      alert('Unable to clear notifications. Please try again.');
-    }
+  const handleClearAll = () => {
+    dispatch(clearAllNotificationsAction());
   };
 
   const handleNotificationClick = async (notif) => {
@@ -120,7 +70,7 @@ export default function NotificationPanel({ user, onNavigate, onClose }) {
       if (role === 'REVENUE') onNavigate && onNavigate('revenue-space');
       else if (role === 'DEPARTMENT_MANAGER') onNavigate && onNavigate('department-manager-space');
       else onNavigate && onNavigate('dashboard');
-    } else if (type === 'NEW_EVENT_REQUEST' || type === 'EVENT_READY_FOR_PREPARATION') {
+    } else if (type === 'NEW_EVENT_REQUEST' || type === 'EVENT_READY_FOR_PREPARATION' || type === 'EVENT_ESCALATED_TO_MANAGEMENT') {
       if (role === 'EVENT_MANAGER') onNavigate && onNavigate('event-manager-space');
       else if (role === 'DEPARTMENT_MANAGER') onNavigate && onNavigate('department-manager-space');
       else onNavigate && onNavigate('dashboard');
@@ -137,6 +87,8 @@ export default function NotificationPanel({ user, onNavigate, onClose }) {
 
   const getNotificationIcon = (type) => {
     switch (type) {
+      case 'EVENT_ESCALATED_TO_MANAGEMENT':
+        return <CheckSquare className="w-4 h-4 text-indigo-600" />;
       case 'QUOTATION_APPROVED':
         return <CheckCircle2 className="w-4 h-4 text-emerald-600" />;
       case 'QUOTATION_REJECTED':

@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { 
   Bell, 
   X, 
@@ -13,23 +14,23 @@ import {
   BarChart3,
   Sparkles
 } from 'lucide-react';
+import { fetchPendingToasts, autoExpireNotificationsAction } from '../../store/notifications-actions';
 
 export default function NotificationToastContainer({ user, onNavigate, onRefreshBadge }) {
+  const dispatch = useDispatch();
+  const reduxPending = useSelector((state) => state.notifications.pendingToasts);
   const [activeToasts, setActiveToasts] = useState([]);
-  const seenNotifIds = useRef(new Set());
-  const timerMap = useRef(new Map());
+  const [seenNotifIds, setSeenNotifIds] = useState(new Set());
 
   useEffect(() => {
     if (!user) {
       setActiveToasts([]);
-      seenNotifIds.current.clear();
-      timerMap.current.forEach(timer => clearTimeout(timer));
-      timerMap.current.clear();
+      setSeenNotifIds(new Set());
       return;
     }
 
     // Auto-expire any orphaned pending popups on load/refresh so no notifications are lost
-    autoExpireOrphaned();
+    dispatch(autoExpireNotificationsAction());
 
     // Poll for new POPUP_PENDING notifications
     pollPendingPopups();
@@ -37,67 +38,46 @@ export default function NotificationToastContainer({ user, onNavigate, onRefresh
 
     return () => {
       clearInterval(interval);
-      timerMap.current.forEach(timer => clearTimeout(timer));
     };
   }, [user]);
 
-  const autoExpireOrphaned = async () => {
-    try {
-      const token = localStorage.getItem('ffsd_token');
-      if (!token) return;
-      const res = await fetch('/api/notifications/auto-expire', {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.unreadCount !== undefined && onRefreshBadge) {
-        onRefreshBadge(data.unreadCount);
-      }
-    } catch (err) {
-      console.error('Error auto-expiring notifications:', err);
-    }
-  };
+  // Automatically dismiss the oldest active toast after 5 seconds
+  useEffect(() => {
+    if (activeToasts.length === 0) return;
+    const currentToastId = activeToasts[0].id;
+    const timer = setTimeout(() => {
+      handleExpire(currentToastId);
+    }, 5000);
+
+    return () => clearTimeout(timer);
+  }, [activeToasts]);
 
   const pollPendingPopups = async () => {
     try {
-      const token = localStorage.getItem('ffsd_token');
-      if (!token) return;
-
-      const res = await fetch('/api/notifications/pending', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-
-      if (res.ok && Array.isArray(data.pendingPopups)) {
-        for (const notif of data.pendingPopups) {
-          if (!seenNotifIds.current.has(notif.id)) {
-            seenNotifIds.current.add(notif.id);
-            enqueueToast(notif);
+      const pending = await dispatch(fetchPendingToasts());
+      if (Array.isArray(pending) && pending.length > 0) {
+        setSeenNotifIds((prevSeen) => {
+          const nextSeen = new Set(prevSeen);
+          const newToasts = [];
+          for (const notif of pending) {
+            if (!nextSeen.has(notif.id)) {
+              nextSeen.add(notif.id);
+              newToasts.push(notif);
+            }
           }
-        }
+          if (newToasts.length > 0) {
+            setActiveToasts((prev) => [...prev, ...newToasts]);
+          }
+          return nextSeen;
+        });
       }
     } catch (err) {
       console.error('Error polling pending popups:', err);
     }
   };
 
-  const enqueueToast = (notif) => {
-    setActiveToasts(prev => [...prev, notif]);
-
-    // Start 5-Second Expiration Timer (5000ms)
-    const timer = setTimeout(() => {
-      handleExpire(notif.id);
-    }, 5000);
-
-    timerMap.current.set(notif.id, timer);
-  };
-
   const removeToastState = (id) => {
-    if (timerMap.current.has(id)) {
-      clearTimeout(timerMap.current.get(id));
-      timerMap.current.delete(id);
-    }
-    setActiveToasts(prev => prev.filter(t => t.id !== id));
+    setActiveToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
   // 1. User Clicks "View / Action" (HANDLED)

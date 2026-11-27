@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { Wrench, X, Send, AlertCircle } from 'lucide-react';
+import { createTechnicalIssue } from '../../store/issues-actions';
 
 export default function ReportTechnicalIssueModal({ isOpen, onClose, onSubmitted }) {
+  const dispatch = useDispatch();
   if (!isOpen) return null;
 
   const [category, setCategory] = useState('Login / Password Access Problem');
@@ -21,25 +24,19 @@ export default function ReportTechnicalIssueModal({ isOpen, onClose, onSubmitted
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/hierarchy/issues/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
+      const res = await dispatch(
+        createTechnicalIssue({
           category,
           priority,
           description: description.trim(),
           issueType: 'TECHNICAL'
         })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to submit technical issue.');
+      );
+
+      if (!res.success) throw new Error(res.error || 'Failed to submit technical issue.');
 
       setDescription('');
-      if (onSubmitted) onSubmitted(data.issue);
+      if (onSubmitted) onSubmitted(res.data?.issue);
       onClose();
     } catch (err) {
       setError(err.message);
