@@ -1,14 +1,55 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { X, CheckCircle2, CreditCard, QrCode, Building2, ShieldCheck, Ticket, AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
+import { registerTicket } from '../../../store/tickets-actions';
 
-export default function PaymentModal({ event, isOpen, onClose, user, onPaymentComplete, onViewMyTickets, onExploreMore }) {
+export default function PaymentModal({
+  event,
+  isOpen,
+  onClose,
+  user,
+  onPaymentComplete,
+  onViewMyTickets,
+  onExploreMore,
+  initialInviteCode = ''
+}) {
+  const dispatch = useDispatch();
   const [quantity, setQuantity] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState('UPI');
-  const [inviteCodeInput, setInviteCodeInput] = useState('');
+  const [inviteCodeInput, setInviteCodeInput] = useState(initialInviteCode || '');
   const [inviteError, setInviteError] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [paymentSuccess, setPaymentSuccess] = useState(null);
+
+  const resetState = () => {
+    setQuantity(1);
+    setPaymentMethod('UPI');
+    setInviteCodeInput(initialInviteCode || '');
+    setInviteError('');
+    setLoading(false);
+    setError('');
+    setPaymentSuccess(null);
+  };
+
+  // Reset all registration & confirmation state when switching events
+  useEffect(() => {
+    resetState();
+  }, [event?.id]);
+
+  // Reset state when modal is closed, and sync inviteCode if opened with one
+  useEffect(() => {
+    if (!isOpen) {
+      resetState();
+    } else if (initialInviteCode) {
+      setInviteCodeInput(initialInviteCode);
+    }
+  }, [isOpen, initialInviteCode]);
+
+  const handleClose = () => {
+    resetState();
+    if (onClose) onClose();
+  };
 
   if (!isOpen || !event) return null;
 
@@ -31,6 +72,8 @@ export default function PaymentModal({ event, isOpen, onClose, user, onPaymentCo
     setError('');
     setInviteError('');
 
+    const requestEventId = event.id;
+
     try {
       if (event.type === 'CLOSED' && !inviteCodeInput.trim()) {
         setInviteError('Please enter your unique invitation code or token to access this private event.');
@@ -38,39 +81,31 @@ export default function PaymentModal({ event, isOpen, onClose, user, onPaymentCo
         return;
       }
 
-      const token = localStorage.getItem('ffsd_token');
-      const res = await fetch('/api/tickets/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          eventId: event.id,
+      const result = await dispatch(
+        registerTicket({
+          eventId: requestEventId,
           quantity,
           paymentMethod,
           inviteCode: inviteCodeInput.trim(),
-          invitationToken: inviteCodeInput.trim()
+          invitationToken: inviteCodeInput.trim(),
         })
-      });
+      );
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        const errorMsg = data.message || data.error || 'Failed to process registration.';
-        if (event.type === 'CLOSED' && (res.status === 403 || errorMsg.toLowerCase().includes('invitation'))) {
+      if (!result.success) {
+        const errorMsg = result.error || 'Failed to process registration.';
+        if (event.type === 'CLOSED' && errorMsg.toLowerCase().includes('invitation')) {
           setInviteError(errorMsg);
         } else {
           setError(errorMsg);
         }
-        setLoading(false);
         return;
       }
 
+      const data = result.data;
       setPaymentSuccess(data);
       if (onPaymentComplete) onPaymentComplete(data);
     } catch (err) {
-      setError(err.message);
+      setError(err.message || 'An error occurred during registration.');
     } finally {
       setLoading(false);
     }
@@ -84,7 +119,7 @@ export default function PaymentModal({ event, isOpen, onClose, user, onPaymentCo
         <div className="h-2.5 bg-gradient-to-r from-[#DAF0FB] via-[#FBE9F9] to-[#E8F9F5]" />
 
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="absolute top-5 right-5 p-2 rounded-full text-slate-400 hover:text-[#26334A] hover:bg-white/80 transition z-10"
         >
           <X className="w-5 h-5" />
@@ -281,7 +316,7 @@ export default function PaymentModal({ event, isOpen, onClose, user, onPaymentCo
 
               <div className="space-y-2 pt-2">
                 <button
-                  onClick={() => { onClose(); onViewMyTickets(); }}
+                  onClick={() => { handleClose(); onViewMyTickets(); }}
                   className="w-full py-3 px-4 rounded-xl bg-[#26334A] text-white font-bold text-sm hover:bg-slate-800 transition shadow-sm flex items-center justify-center gap-2"
                 >
                   <Ticket className="w-4 h-4 text-white" />
@@ -289,7 +324,7 @@ export default function PaymentModal({ event, isOpen, onClose, user, onPaymentCo
                 </button>
 
                 <button
-                  onClick={() => { onClose(); onExploreMore(); }}
+                  onClick={() => { handleClose(); onExploreMore(); }}
                   className="w-full py-2.5 px-4 rounded-xl bg-white text-[#26334A] border border-slate-200 font-bold text-xs hover:bg-slate-50 transition"
                 >
                   Explore More Events

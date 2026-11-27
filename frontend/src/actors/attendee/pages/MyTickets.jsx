@@ -1,38 +1,84 @@
-import React, { useState, useEffect } from 'react';
-import { Ticket, Calendar, MapPin, QrCode, Download, Eye, Sparkles, AlertCircle, Clock } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Ticket, Calendar, MapPin, QrCode, Download, Eye, Sparkles, AlertCircle, Clock, CheckCircle2, MessageSquare, RotateCcw, Check, ShieldCheck, XCircle, X } from 'lucide-react';
 import { StatusBadge } from '../../../shared/components/StatusBadge';
 import TicketModal from '../components/TicketModal';
+import CancelTicketModal from '../components/CancelTicketModal';
 import AttendeeFeedbackPanel from '../components/AttendeeFeedbackPanel';
+import { fetchMyTickets, fetchMyRefunds, claimTicketRefund, retainTicket } from '../../../store/tickets-actions';
+import { UIContext } from '../../../context/UIContext';
 
-export default function MyTickets({ user, onExplore }) {
-  const [tickets, setTickets] = useState([]);
-  const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' | 'past' | 'feedback'
-  const [loading, setLoading] = useState(true);
+const isTicketCheckedIn = (tkt) => {
+  if (!tkt) return false;
+  return Boolean(
+    tkt.checkedIn === 1 ||
+    tkt.checkedIn === true ||
+    tkt.checkedInAt ||
+    tkt.entryStatus === 'FULLY_CHECKED_IN' ||
+    tkt.entryStatus === 'PARTIALLY_CHECKED_IN' ||
+    tkt.entryStatus === 'ENTERED'
+  );
+};
+
+export default function MyTickets({ user: propsUser, onExplore: propOnExplore, onNavigate: propOnNavigate }) {
+  const dispatch = useDispatch();
+  const ui = useContext(UIContext);
+  const onExplore = propOnExplore || propOnNavigate || (() => ui?.navigate && ui.navigate('explore'));
+  const reduxUser = useSelector((state) => state.auth.user);
+  const user = propsUser || reduxUser;
+  const { tickets, refunds, loading } = useSelector((state) => state.tickets);
+
+  const [activeTab, setActiveTab] = useState('upcoming'); // 'upcoming' | 'ongoing' | 'past' | 'feedback' | 'refunds'
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [ticketToCancel, setTicketToCancel] = useState(null);
+  const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
+  const [actionMsg, setActionMsg] = useState('');
+  const [actionError, setActionError] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
 
   useEffect(() => {
-    fetchMyTickets();
-  }, [user]);
+    dispatch(fetchMyTickets());
+    dispatch(fetchMyRefunds());
+  }, [user, dispatch]);
 
-  const fetchMyTickets = async () => {
-    setLoading(true);
+  const handleClaimRefund = async (ticketId, refundId) => {
+    setActionLoading(true);
+    setActionMsg('');
+    setActionError('');
     try {
-      const token = localStorage.getItem('ffsd_token');
-      if (!token) return;
-
-      const res = await fetch('/api/tickets/my', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setTickets(data.tickets || []);
+      const res = await dispatch(claimTicketRefund(ticketId, 'Attendee requested 100% ticket refund'));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to submit refund claim.');
       }
+      setActionMsg('100% ticket refund request submitted successfully to the Revenue Team.');
     } catch (err) {
-      console.error('Error loading user tickets:', err);
+      setActionError(err.message || 'Error claiming refund.');
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
+  };
+
+  const handleRetainTicket = async (refundId) => {
+    setActionLoading(true);
+    setActionMsg('');
+    setActionError('');
+    try {
+      const res = await dispatch(retainTicket(refundId));
+      if (!res.success) {
+        throw new Error(res.error || 'Failed to retain ticket.');
+      }
+      setActionMsg('You have elected to retain your ticket for the rescheduled date. Your registration remains active!');
+    } catch (err) {
+      setActionError(err.message || 'Error retaining ticket.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleOpenCancelModal = (tkt) => {
+    setTicketToCancel(tkt);
+    setIsCancelModalOpen(true);
   };
 
   const parseEventDateTime = (dateStr, timeStr, defaultTime) => {
@@ -57,23 +103,36 @@ export default function MyTickets({ user, onExplore }) {
 
   const now = new Date();
 
-  // 1. UPCOMING: Event end date is in the future or active registration
+  // Helper: check if ticket has been cancelled or has an active refund in progress
+  const isTicketCancelledOrRefunded = (t) => {
+    if (t.registrationStatus === 'CANCELLED' || t.registrationStatus === 'REFUNDED') return true;
+    if (t.paymentStatus === 'REFUNDED') return true;
+    const hasActiveRefund = refunds.some(
+      (r) => r.ticketId === t.id && r.status !== 'REJECTED'
+    );
+    return hasActiveRefund;
+  };
+
+  // 1. UPCOMING: Event end date is in the future AND ticket is active (not cancelled/refunded)
   const upcomingTickets = tickets.filter(t => {
+    if (isTicketCancelledOrRefunded(t)) return false;
     const eventDate = t.eventDate || t.date;
     const endDate = parseEventDateTime(eventDate, t.endTime, '23:59');
     return now <= endDate;
   });
 
-  // 2. ONGOING: Event is running today
+  // 2. ONGOING: Event is running today AND ticket is active
   const ongoingTickets = tickets.filter(t => {
+    if (isTicketCancelledOrRefunded(t)) return false;
     const eventDate = t.eventDate || t.date;
     const startDate = parseEventDateTime(eventDate, t.startTime, '00:00');
     const endDate = parseEventDateTime(eventDate, t.endTime, '23:59');
     return now >= startDate && now <= endDate;
   });
 
-  // 3. PAST: Event end date has passed
+  // 3. PAST: Event end date has passed AND ticket is not cancelled/refunded
   const pastTickets = tickets.filter(t => {
+    if (isTicketCancelledOrRefunded(t)) return false;
     const eventDate = t.eventDate || t.date;
     const endDate = parseEventDateTime(eventDate, t.endTime, '23:59');
     return now > endDate;
@@ -151,11 +210,169 @@ export default function MyTickets({ user, onExplore }) {
         >
           Event Feedback 💬
         </button>
+
+        <button
+          onClick={() => setActiveTab('refunds')}
+          className={`px-5 py-2 text-xs font-bold rounded-xl transition flex items-center gap-1.5 ${
+            activeTab === 'refunds' ? 'bg-white text-amber-900 shadow-xs border border-white font-extrabold' : 'text-[#64748B] hover:text-[#26334A]'
+          }`}
+        >
+          <RotateCcw className="w-3.5 h-3.5 text-amber-600" />
+          <span>Refunds & Cancellations ({refunds.length})</span>
+        </button>
       </div>
 
-      {/* Rich Horizontal Ticket Cards or Feedback Panel */}
+      {actionMsg && (
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 font-bold text-xs flex items-center gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+          <span>{actionMsg}</span>
+        </div>
+      )}
+      {actionError && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-900 font-bold text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{actionError}</span>
+        </div>
+      )}
+
+      {/* Rich Horizontal Ticket Cards, Feedback Panel, or Refunds Panel */}
       {activeTab === 'feedback' ? (
         <AttendeeFeedbackPanel user={user} />
+      ) : activeTab === 'refunds' ? (
+        <div className="space-y-4">
+          <div className="p-5 rounded-3xl bg-amber-50/70 border border-amber-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="space-y-0.5">
+              <span className="font-black uppercase tracking-wider text-amber-900 text-[10px] flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+                <span>Wavevents Attendee 100% Refund Guarantee</span>
+              </span>
+              <p className="text-amber-900/90 font-medium">
+                When an event is cancelled by the organizer, attendees are guaranteed a 100% refund covering the full ticket price and platform booking fees.
+              </p>
+            </div>
+            <button
+              onClick={fetchMyRefunds}
+              className="px-3.5 py-1.5 rounded-xl bg-white border border-amber-200 text-amber-900 font-extrabold text-xs shrink-0 cursor-pointer shadow-2xs hover:bg-amber-100/50"
+            >
+              Refresh Status
+            </button>
+          </div>
+
+          {refunds.length === 0 ? (
+            <div className="p-12 text-center rounded-3xl bg-white border border-slate-200 space-y-3">
+              <RotateCcw className="w-10 h-10 text-slate-300 mx-auto" />
+              <h3 className="text-base font-extrabold text-slate-800">No Refunds or Cancellations</h3>
+              <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                None of your registered events have active cancellations or refund claims.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {refunds.map((ref) => (
+                <div
+                  key={ref.id}
+                  className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xs hover:shadow-md transition space-y-4"
+                >
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-xs font-black text-slate-800 bg-slate-100 px-2.5 py-0.5 rounded-lg">
+                          {ref.refundNumber}
+                        </span>
+                        <StatusBadge status={ref.status} />
+                        {ref.isPostponedEvent && (
+                          <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-extrabold border border-amber-200">
+                            Rescheduled Event
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="text-lg font-extrabold text-[#26334A]">{ref.eventName}</h3>
+                      <div className="text-xs text-slate-500 font-medium">
+                        Scheduled Date: <strong className="text-slate-700">{ref.eventDate || 'N/A'}</strong>
+                        {ref.ticketNumber && (
+                          <span> • Ticket: <strong className="font-mono text-slate-700">{ref.ticketNumber}</strong> ({ref.ticketQuantity || 1} pass)</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="text-left md:text-right space-y-0.5">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                        Guaranteed Refund
+                      </span>
+                      <div className="text-2xl font-black text-emerald-700 font-mono">
+                        ₹{Number(ref.refundableAmount || ref.originalPaymentAmount || 0).toLocaleString()}
+                      </div>
+                      <span className="text-[10px] text-slate-400 block font-medium">
+                        Original Paid: ₹{Number(ref.originalPaymentAmount || ref.totalPaidAmount || 0).toLocaleString()} (100% Refundable)
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Context & Reason Box */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                        Cancellation / Postponement Reason
+                      </span>
+                      <p className="text-slate-800 font-medium">
+                        "{ref.cancellationReason || 'Event cancelled by organizer per Wavevents terms.'}"
+                      </p>
+                    </div>
+
+                    <div className="p-3 rounded-2xl bg-slate-50 border border-slate-100 space-y-1">
+                      <span className="text-[10px] font-black uppercase text-slate-400 tracking-wider block">
+                        Settlement Details
+                      </span>
+                      {ref.refundTransactionId ? (
+                        <div className="space-y-0.5">
+                          <div className="text-emerald-800 font-bold">
+                            Settlement Ref: <span className="font-mono">{ref.refundTransactionId}</span>
+                          </div>
+                          <div className="text-[10px] text-slate-500">
+                            Disbursed via {ref.refundMethod || 'UPI/Card'} on {ref.refundedAt}
+                          </div>
+                        </div>
+                      ) : ref.status === 'REJECTED' ? (
+                        <div className="text-rose-700 font-medium">
+                          Rejected: {ref.rejectionReason || 'Claim declined per policy terms.'}
+                        </div>
+                      ) : (
+                        <p className="text-slate-500 font-medium">
+                          Managed by REVENUE Department. Transaction reference will appear here upon completion.
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Actions for Attendee */}
+                  {ref.status === 'ELIGIBLE' && (
+                    <div className="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-100">
+                      {ref.isPostponedEvent && (
+                        <button
+                          type="button"
+                          onClick={() => handleRetainTicket(ref.id)}
+                          disabled={actionLoading}
+                          className="px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs transition cursor-pointer"
+                        >
+                          Retain Ticket for New Date
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleClaimRefund(ref.ticketId, ref.id)}
+                        disabled={actionLoading}
+                        className="px-4 py-2 rounded-xl bg-gradient-to-r from-amber-600 to-indigo-600 hover:from-amber-700 hover:to-indigo-700 text-white font-extrabold text-xs transition shadow-xs cursor-pointer flex items-center gap-1.5"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Request 100% Refund (₹{Number(ref.refundableAmount).toLocaleString()})</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       ) : loading ? (
         <div className="p-12 text-center text-[#64748B] font-medium text-sm">
           Loading your ticket passes...
@@ -212,12 +429,61 @@ export default function MyTickets({ user, onExplore }) {
 
               {/* Status & Actions */}
               <div className="flex md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-4 pt-4 md:pt-0 border-t md:border-t-0 border-slate-200">
-                <StatusBadge status={tkt.registrationStatus || 'CONFIRMED'} />
+                <div className="flex items-center gap-2">
+                  <StatusBadge status={tkt.registrationStatus || 'CONFIRMED'} />
+                  {tkt.hasFeedbackSubmitted && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                      Feedback Submitted
+                    </span>
+                  )}
+                </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Cancel Ticket Option / Checked In Status for active upcoming tickets */}
+                  {activeTab === 'upcoming' && tkt.registrationStatus !== 'REFUNDED' && tkt.registrationStatus !== 'CANCELLED' && (
+                    isTicketCheckedIn(tkt) ? (
+                      <span
+                        className="py-2 px-2.5 rounded-xl bg-amber-50 text-amber-800 font-extrabold text-[11px] border border-amber-300 flex items-center gap-1 shadow-2xs"
+                        title="This ticket has already been used for event entry and cannot be cancelled."
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                        <span>Checked In – Cancellation Unavailable</span>
+                      </span>
+                    ) : tkt.maxCancellationsReached ? (
+                      <span
+                        className="py-2 px-2.5 rounded-xl bg-slate-100 text-slate-500 font-extrabold text-[10px] border border-slate-200 flex items-center gap-1"
+                        title="Cancellation limit reached. Max 2 cancellations allowed per event."
+                      >
+                        <AlertCircle className="w-3 h-3 text-slate-400" />
+                        <span>Cancel Limit (2/2)</span>
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleOpenCancelModal(tkt)}
+                        className="py-2.5 px-3 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 font-extrabold text-xs transition border border-rose-200 shadow-2xs flex items-center gap-1.5 cursor-pointer"
+                        title="Cancel this ticket pass and request refund"
+                      >
+                        <XCircle className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Cancel Ticket</span>
+                      </button>
+                    )
+                  )}
+
+                  {activeTab === 'past' && !tkt.hasFeedbackSubmitted && (
+                    <button
+                      onClick={() => setActiveTab('feedback')}
+                      className="py-2.5 px-3 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 font-extrabold text-xs transition border border-amber-200 shadow-2xs flex items-center gap-1.5"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Leave Feedback</span>
+                    </button>
+                  )}
+
                   <button
                     onClick={() => handleOpenTicket(tkt)}
-                    className="py-2.5 px-4 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition border border-purple-200 shadow-2xs flex items-center gap-1.5"
+                    className="py-2.5 px-4 rounded-xl bg-purple-100 hover:bg-purple-200 text-purple-900 font-extrabold text-xs transition border border-purple-200 shadow-2xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>View Ticket</span>
@@ -225,7 +491,7 @@ export default function MyTickets({ user, onExplore }) {
 
                   <button
                     onClick={() => handleOpenTicket(tkt)}
-                    className="p-2.5 rounded-xl bg-white text-[#26334A] hover:bg-slate-50 transition border border-slate-200 shadow-2xs"
+                    className="p-2.5 rounded-xl bg-white text-[#26334A] hover:bg-slate-50 transition border border-slate-200 shadow-2xs cursor-pointer"
                     title="Download Ticket"
                   >
                     <Download className="w-4 h-4 text-indigo-600" />
@@ -256,6 +522,26 @@ export default function MyTickets({ user, onExplore }) {
         ticket={selectedTicket}
         isOpen={isTicketModalOpen}
         onClose={() => setIsTicketModalOpen(false)}
+        onCancelTicket={selectedTicket?.registrationStatus !== 'REFUNDED' && selectedTicket?.registrationStatus !== 'CANCELLED' && !isTicketCheckedIn(selectedTicket) ? () => {
+          setIsTicketModalOpen(false);
+          handleOpenCancelModal(selectedTicket);
+        } : null}
+      />
+
+      {/* Cancel Ticket Confirmation Modal */}
+      <CancelTicketModal
+        ticket={ticketToCancel}
+        isOpen={isCancelModalOpen}
+        onClose={() => {
+          setIsCancelModalOpen(false);
+          setTicketToCancel(null);
+        }}
+        onSuccess={async () => {
+          setActionMsg('Ticket pass successfully cancelled. Your 100% refund claim is now queued with the Revenue Team.');
+          await fetchMyRefunds();
+          await fetchMyTickets();
+          setActiveTab('refunds');
+        }}
       />
 
     </div>
