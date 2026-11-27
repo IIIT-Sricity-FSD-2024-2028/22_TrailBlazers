@@ -1,6 +1,7 @@
 import {
   Injectable,
   BadRequestException,
+  NotFoundException,
   ConflictException,
   ForbiddenException,
 } from "@nestjs/common";
@@ -141,7 +142,29 @@ export class UsersService {
       throw new ForbiddenException('Unauthorized to create user accounts.');
     }
 
-    const cleanEmail = email.toLowerCase().trim();
+    const isStaffRole = [
+      'SUPER_ADMIN',
+      'ADMIN',
+      'DEPARTMENT_MANAGER',
+      'EVENT_MANAGER',
+      'REVENUE',
+      'ONSITE_COORDINATOR',
+      'IT_SUPPORT',
+    ].includes(normalizedRole);
+
+    let cleanEmail = email.toLowerCase().trim();
+    if (isStaffRole) {
+      if (!cleanEmail.endsWith('@wavevents.com')) {
+        const localPart = cleanEmail.split('@')[0];
+        cleanEmail = `${localPart}@wavevents.com`;
+      }
+    } else {
+      if (cleanEmail.endsWith('@wavevents.com')) {
+        const localPart = cleanEmail.split('@')[0];
+        cleanEmail = `${localPart}@gmail.com`;
+      }
+    }
+
     const existing = this.usersRepository.findByEmail(cleanEmail);
     if (existing) {
       throw new ConflictException(
@@ -160,9 +183,32 @@ export class UsersService {
       100000 + Math.random() * 900000,
     ).toString();
 
-    let targetDept = department ? department.trim() : null;
+    let targetDept = department ? department.trim().toUpperCase() : null;
     if (normalizedRole === 'IT_SUPPORT') {
       targetDept = 'IT_SUPPORT';
+    } else if (normalizedRole === 'REVENUE' && !targetDept) {
+      targetDept = 'REVENUE';
+    } else if ((normalizedRole === 'EVENT_MANAGER' || normalizedRole === 'ONSITE_COORDINATOR') && !targetDept) {
+      targetDept = 'EVENT_MANAGEMENT';
+    }
+
+    // Restriction: Exactly ONE Department Head per department.
+    // Prevent the creation or assignment of a second Department Head for the same department.
+    if (normalizedRole === 'DEPARTMENT_MANAGER') {
+      if (!targetDept) {
+        throw new BadRequestException('A valid department must be specified when creating a Department Head.');
+      }
+      const existingHead = this.store.findOne<any>(
+        'users',
+        (u) =>
+          (u.role || '').toUpperCase() === 'DEPARTMENT_MANAGER' &&
+          (u.department || '').toUpperCase() === targetDept,
+      );
+      if (existingHead) {
+        throw new ConflictException(
+          `Department '${targetDept}' already has an assigned Department Head (${existingHead.name}). Only ONE Department Head is permitted per department.`,
+        );
+      }
     }
 
     const createdUser = this.usersRepository.createUser({
@@ -190,7 +236,7 @@ export class UsersService {
     const updatedUser = this.usersRepository.findPublicById(userId);
 
     this.logger.log(
-      `User Management Provisioning: Account ${userId} (${cleanEmail}) created with role ${normalizedRole} by ${actorUser.email} (${actorRole})`,
+      `User Management Provisioning: Account ${userId} (${cleanEmail}) created with role ${normalizedRole} in department ${targetDept || 'NONE'} by ${actorUser.email} (${actorRole})`,
       'USERS_SERVICE',
     );
 
@@ -201,6 +247,155 @@ export class UsersService {
         status: 'ACTIVE',
       },
       initialPassword,
+    };
+  }
+
+  async updateUser(
+    id: string,
+    dto: { name?: string; email?: string; role?: string; department?: string; organization?: string; status?: string },
+    actorUser: any,
+  ) {
+    const actorRole = (actorUser?.role || '').toUpperCase();
+    if (actorRole !== 'SUPER_ADMIN' && actorRole !== 'ADMIN' && actorRole !== 'DEPARTMENT_MANAGER') {
+      throw new ForbiddenException('Unauthorized to update user accounts.');
+    }
+
+    const existingUser = this.store.findById<any>('users', id);
+    if (!existingUser) {
+      throw new NotFoundException(`User with ID '${id}' not found.`);
+    }
+
+    const patch: any = {};
+    if (dto.name && dto.name.trim()) patch.name = dto.name.trim();
+    if (dto.organization !== undefined) patch.organization = dto.organization ? dto.organization.trim() : null;
+
+    const newRole = dto.role ? dto.role.trim().toUpperCase() : (existingUser.role || '').toUpperCase();
+    const newDept = dto.department !== undefined ? (dto.department ? dto.department.trim().toUpperCase() : null) : (existingUser.department || null);
+
+    if (dto.email && dto.email.trim().toLowerCase() !== existingUser.email.toLowerCase()) {
+      let cleanEmail = dto.email.trim().toLowerCase();
+      const isStaffRole = [
+        'SUPER_ADMIN',
+        'ADMIN',
+        'DEPARTMENT_MANAGER',
+        'EVENT_MANAGER',
+        'REVENUE',
+        'ONSITE_COORDINATOR',
+        'IT_SUPPORT',
+      ].includes(newRole);
+
+      if (isStaffRole) {
+        if (!cleanEmail.endsWith('@wavevents.com')) {
+          const localPart = cleanEmail.split('@')[0];
+          cleanEmail = `${localPart}@wavevents.com`;
+        }
+      } else {
+        if (cleanEmail.endsWith('@wavevents.com')) {
+          const localPart = cleanEmail.split('@')[0];
+          cleanEmail = `${localPart}@gmail.com`;
+        }
+      }
+
+      const duplicate = this.usersRepository.findByEmail(cleanEmail);
+      if (duplicate && duplicate.id !== id) {
+        throw new ConflictException(`Email '${cleanEmail}' is already in use by another account.`);
+      }
+      patch.email = cleanEmail;
+    }
+
+    if (newRole && !VALID_ROLES.has(newRole)) {
+      throw new BadRequestException(`Invalid role '${dto.role}'.`);
+    }
+
+    // Prevent creation or assignment of a second Department Head for the same department
+    if (newRole === 'DEPARTMENT_MANAGER') {
+      const targetDept = newDept || existingUser.department;
+      if (!targetDept) {
+        throw new BadRequestException('A Department must be specified for a Department Head.');
+      }
+      const existingHead = this.store.findOne<any>(
+        'users',
+        (u) =>
+          u.id !== id &&
+          (u.role || '').toUpperCase() === 'DEPARTMENT_MANAGER' &&
+          (u.department || '').toUpperCase() === targetDept.toUpperCase(),
+      );
+      if (existingHead) {
+        throw new ConflictException(
+          `Department '${targetDept}' already has an assigned Department Head (${existingHead.name}). Only ONE Department Head is permitted per department.`,
+        );
+      }
+    }
+
+    if (dto.role) patch.role = newRole;
+    if (dto.department !== undefined) patch.department = newDept;
+    if (dto.status) patch.status = dto.status.trim().toUpperCase();
+
+    const updated = this.store.update<any>('users', id, patch);
+    return {
+      message: 'User updated successfully.',
+      user: this.usersRepository.findPublicById(id),
+    };
+  }
+
+  async deleteUser(id: string, actorUser: any) {
+    const actorRole = (actorUser?.role || '').toUpperCase();
+    if (actorRole !== 'SUPER_ADMIN' && actorRole !== 'ADMIN') {
+      throw new ForbiddenException('Only administrators can remove user accounts.');
+    }
+
+    const user = this.store.findById<any>('users', id);
+    if (!user) {
+      throw new NotFoundException(`User with ID '${id}' not found.`);
+    }
+
+    // Safety: Unassign user from event requests to avoid dangling relations
+    const allRequests = this.store.findAll<any>('event_requests');
+    for (const req of allRequests) {
+      let reqUpdated = false;
+      const patch: any = {};
+      if (req.eventManagerUserId === id || req.assignedManagerUserId === id) {
+        patch.eventManagerUserId = null;
+        patch.assignedManagerUserId = null;
+        patch.operationalStatus = 'AWAITING_ASSIGNMENT';
+        reqUpdated = true;
+      }
+      if (req.onsiteCoordinatorUserId === id) {
+        patch.onsiteCoordinatorUserId = null;
+        reqUpdated = true;
+      }
+      if (Array.isArray(req.onsiteCoordinatorUserIds) && req.onsiteCoordinatorUserIds.includes(id)) {
+        patch.onsiteCoordinatorUserIds = req.onsiteCoordinatorUserIds.filter((cid: string) => cid !== id);
+        reqUpdated = true;
+      }
+      if (req.assignedRevenueUserId === id) {
+        patch.assignedRevenueUserId = null;
+        reqUpdated = true;
+      }
+      if (reqUpdated) {
+        this.store.update<any>('event_requests', req.id, patch);
+      }
+    }
+
+    // Safety: Unassign user from operational issues
+    const allIssues = this.store.findAll<any>('event_operational_issues');
+    for (const iss of allIssues) {
+      if (iss.assignedUserId === id) {
+        this.store.update<any>('event_operational_issues', iss.id, {
+          assignedUserId: null,
+          assignedUserName: null,
+          status: 'OPEN',
+        });
+      }
+    }
+
+    // Delete user from store
+    this.store.delete('users', id);
+    this.logger.log(`User ${id} (${user.email}) deleted safely by ${actorUser.email}`, 'USERS_SERVICE');
+
+    return {
+      message: `User ${user.name} (${user.email}) removed successfully.`,
+      deletedUserId: id,
     };
   }
 }

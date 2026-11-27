@@ -41,8 +41,8 @@ export class EventManagerController {
   @Get('dashboard')
   @ApiOperation({ summary: 'Get Manager Dashboard Metrics', description: 'Retrieve event preparation stats, priority items, and readiness overview' })
   @ApiResponse({ status: 200, description: 'Dashboard metrics returned' })
-  async getDashboard() {
-    return this.service.getDashboard();
+  async getDashboard(@Req() req: any) {
+    return this.service.getDashboard(req.user);
   }
 
   @Get('events')
@@ -50,8 +50,8 @@ export class EventManagerController {
   @ApiQuery({ name: 'search', required: false, description: 'Search term' })
   @ApiQuery({ name: 'status', required: false, description: 'Status filter' })
   @ApiResponse({ status: 200, description: 'Assigned events list returned' })
-  async getEvents(@Query() query: any) {
-    return this.service.getEvents(query);
+  async getEvents(@Query() query: any, @Req() req: any) {
+    return this.service.getEvents(query, req.user);
   }
 
   @Get('events/:id')
@@ -99,8 +99,8 @@ export class EventManagerController {
   @ApiOperation({ summary: 'Get Operational Readiness', description: 'Calculate 6-item authoritative operational readiness checklist' })
   @ApiParam({ name: 'id', description: 'Event Request ID' })
   @ApiResponse({ status: 200, description: 'Readiness checklist breakdown returned' })
-  async getReadiness(@Param('id') id: string) {
-    return this.service.getReadiness(id);
+  async getReadiness(@Param('id') id: string, @Req() req: any) {
+    return this.service.getReadiness(id, req.user);
   }
 
   @Post('events/:id/ready')
@@ -130,16 +130,16 @@ export class EventManagerController {
   @ApiOperation({ summary: 'Revoke Invitation', description: 'Revoke a previously issued invitation code' })
   @ApiParam({ name: 'id', description: 'Invitation ID' })
   @ApiResponse({ status: 200, description: 'Invitation revoked' })
-  async revokeInvitation(@Param('id') id: string) {
-    return this.service.revokeInvitation(id);
+  async revokeInvitation(@Param('id') id: string, @Req() req: any) {
+    return this.service.revokeInvitation(id, req.user);
   }
 
   @Get('events/:id/sessions')
   @ApiOperation({ summary: 'Get Event Sessions', description: 'Retrieve list of agenda sessions for an event' })
   @ApiParam({ name: 'id', description: 'Event Request ID' })
   @ApiResponse({ status: 200, description: 'Sessions list returned' })
-  async getSessions(@Param('id') id: string) {
-    return this.service.getSessions(id);
+  async getSessions(@Param('id') id: string, @Req() req: any) {
+    return this.service.getSessions(id, req.user);
   }
 
   @Post('events/:id/sessions')

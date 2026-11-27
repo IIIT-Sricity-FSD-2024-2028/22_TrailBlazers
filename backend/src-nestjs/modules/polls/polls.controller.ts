@@ -29,6 +29,15 @@ import { Roles } from '../../common/decorators/roles.decorator';
 export class PollsController {
   constructor(private readonly pollsService: PollsService) {}
 
+  @Get('polls/my-active')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get Active Session Polls for Authenticated Attendee', description: 'Retrieve launched session polls for all events the user is registered for or owns' })
+  @ApiResponse({ status: 200, description: 'Active session polls returned' })
+  async getMyActivePolls(@Req() req: any) {
+    return this.pollsService.getMyActiveSessionPolls(req.user);
+  }
+
   @Get(':id/polls/active')
   @ApiOperation({ summary: 'Get Active Event Polls', description: 'Retrieve currently launched live polls and option choices for an event' })
   @ApiParam({ name: 'id', description: 'Event ID' })
@@ -39,7 +48,7 @@ export class PollsController {
 
   @Post('polls/session')
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('CLIENT', 'EVENT_MANAGER', 'ONSITE_COORDINATOR', 'SUPER_ADMIN', 'ADMIN')
+  @Roles('CLIENT', 'EVENT_MANAGER', 'ONSITE_COORDINATOR', 'SUPER_ADMIN', 'ADMIN', 'ATTENDEE')
   @HttpCode(HttpStatus.CREATED)
   @ApiBearerAuth()
   @ApiHeader({ name: 'x-role', required: false, description: 'User role (CLIENT, EVENT_MANAGER, ONSITE_COORDINATOR)' })

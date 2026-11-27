@@ -106,6 +106,19 @@ export class EventRequestsRepository {
 
     this.store.create('event_requests', entity);
 
+    // When an attendee requests/creates an event, automatically upgrade their role to CLIENT
+    const creatorUser = this.store.findById<any>('users', params.userId);
+    if (creatorUser && (creatorUser.role === 'ATTENDEE' || !creatorUser.role)) {
+      this.store.update<any>('users', params.userId, {
+        role: 'CLIENT',
+        organization: creatorUser.organization || params.organizationName.trim(),
+      });
+      this.logger.log(
+        `User ${params.userId} (${creatorUser.email}) automatically promoted from ATTENDEE to CLIENT after requesting event.`,
+        'EVENT_REQUESTS_REPOSITORY',
+      );
+    }
+
     this.logger.log(
       `Event request created in memory: ${params.id} (${params.requestId}) by ${params.userId}`,
       'EVENT_REQUESTS_REPOSITORY',

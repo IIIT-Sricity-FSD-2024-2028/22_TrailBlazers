@@ -589,6 +589,108 @@ export class HierarchyRepository {
       }));
   }
 
+  getDepartmentMetrics(dept: string) {
+    const memberIds = new Set(
+      this.store
+        .find<UserRow>(
+          'users',
+          (u) =>
+            u.department === dept &&
+            u.role !== 'DEPARTMENT_MANAGER' &&
+            u.role !== 'SUPER_ADMIN',
+        )
+        .map((u) => u.id),
+    );
+    const totalDepartmentMembers = memberIds.size;
+
+    let departmentWorkload = 0;
+    let completedTasks = 0;
+    let pendingTasks = 0;
+
+    if (dept === 'EVENT_MANAGEMENT') {
+      const allRequests = this.store.findAll<any>('event_requests');
+      for (const r of allRequests) {
+        const isAssigned =
+          (r.eventManagerUserId && memberIds.has(r.eventManagerUserId)) ||
+          (r.onsiteCoordinatorUserId &&
+            memberIds.has(r.onsiteCoordinatorUserId)) ||
+          (Array.isArray(r.onsiteCoordinatorUserIds) &&
+            r.onsiteCoordinatorUserIds.some((id: string) =>
+              memberIds.has(id),
+            ));
+        if (!isAssigned) continue;
+
+        if (r.operationalStatus === 'COMPLETED' || r.status === 'COMPLETED') {
+          completedTasks++;
+        } else if (
+          r.status !== 'REJECTED' &&
+          r.operationalStatus !== 'CANCELLED'
+        ) {
+          pendingTasks++;
+          departmentWorkload++;
+        }
+      }
+
+      const issues = this.store.find<IssueRow>(
+        'event_operational_issues',
+        (i) =>
+          i.department === 'EVENT_MANAGEMENT' ||
+          (i.assignedUserId && memberIds.has(i.assignedUserId)),
+      );
+      for (const issue of issues) {
+        if (issue.status === 'RESOLVED') {
+          completedTasks++;
+        } else {
+          pendingTasks++;
+          departmentWorkload++;
+        }
+      }
+    } else if (dept === 'REVENUE') {
+      const quotations = this.store.findAll<any>('quotations');
+      for (const q of quotations) {
+        const isAssigned =
+          (q.assignedRevenueUserId && memberIds.has(q.assignedRevenueUserId)) ||
+          (q.createdByUserId && memberIds.has(q.createdByUserId));
+        if (!isAssigned) continue;
+
+        if (q.status === 'ACCEPTED') {
+          completedTasks++;
+        } else if (q.status !== 'REJECTED') {
+          pendingTasks++;
+          departmentWorkload++;
+        }
+      }
+    } else if (dept === 'IT_SUPPORT') {
+      const issues = this.store.find<IssueRow>(
+        'event_operational_issues',
+        (i) =>
+          i.department === 'IT_SUPPORT' ||
+          i.issueType === 'TECHNICAL' ||
+          (i.assignedUserId && memberIds.has(i.assignedUserId)),
+      );
+      for (const issue of issues) {
+        if (issue.status === 'RESOLVED') {
+          completedTasks++;
+        } else {
+          pendingTasks++;
+          departmentWorkload++;
+        }
+      }
+    }
+
+    const totalTasks = completedTasks + pendingTasks;
+    const departmentPerformance =
+      totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+    return {
+      totalDepartmentMembers,
+      departmentWorkload,
+      completedTasks,
+      pendingTasks,
+      departmentPerformance,
+    };
+  }
+
   getIssuesForUser(role: string, userDept?: string, userId?: string): IssueRow[] {
     let issues = this.store.findAll<IssueRow>('event_operational_issues');
 

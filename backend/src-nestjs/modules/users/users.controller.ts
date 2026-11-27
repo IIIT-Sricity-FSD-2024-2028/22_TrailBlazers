@@ -2,6 +2,9 @@ import {
   Controller,
   Get,
   Post,
+  Put,
+  Delete,
+  Param,
   Body,
   Req,
   UseGuards,
@@ -55,5 +58,19 @@ export class UsersController {
   @ApiResponse({ status: 403, description: 'Forbidden. Requires IT_SUPPORT, DEPARTMENT_MANAGER, or Admin role' })
   async createUser(@Body() dto: CreateUserDto, @Req() req: any) {
     return this.usersService.createUser(dto, req.user);
+  }
+
+  @Put(':id')
+  @Roles('IT_SUPPORT', 'DEPARTMENT_MANAGER', 'SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Update User Account', description: 'Update an existing user account profile, role, or department' })
+  async updateUser(@Param('id') id: string, @Body() body: any, @Req() req: any) {
+    return this.usersService.updateUser(id, body, req.user);
+  }
+
+  @Delete(':id')
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Delete User Account', description: 'Safely remove a user account and unassign related records' })
+  async deleteUser(@Param('id') id: string, @Req() req: any) {
+    return this.usersService.deleteUser(id, req.user);
   }
 }

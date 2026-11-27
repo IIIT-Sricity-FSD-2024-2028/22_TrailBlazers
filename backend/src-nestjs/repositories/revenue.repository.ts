@@ -14,32 +14,60 @@ export class RevenueRepository {
     private readonly logger: NestLoggerService,
   ) {}
 
-  getDashboardMetrics() {
+  getDashboardMetrics(userId?: string, isDeptHeadOrAdmin = false) {
+    const isUserQuotation = (q: any) => {
+      if (isDeptHeadOrAdmin || !userId) return true;
+      return (
+        !q.assignedRevenueUserId ||
+        q.assignedRevenueUserId === userId ||
+        q.createdByUserId === userId
+      );
+    };
+
+    const isUserRequest = (r: any) => {
+      if (isDeptHeadOrAdmin || !userId) return true;
+      return !r.assignedRevenueUserId || r.assignedRevenueUserId === userId;
+    };
+
     const newRequests = this.store.count(
       'event_requests',
-      (r) => r.status === 'SUBMITTED' || r.status === 'NEW',
+      (r) => isUserRequest(r) && (r.status === 'SUBMITTED' || r.status === 'NEW'),
     );
 
     const underReview = this.store.count(
       'event_requests',
-      (r) => r.status === 'UNDER_REVIEW' || r.status === 'PRICING',
+      (r) => isUserRequest(r) && (r.status === 'UNDER_REVIEW' || r.status === 'PRICING'),
     );
 
     const pendingQuotes = this.store.count(
       'quotations',
-      (q) => q.status === 'DRAFT' || q.status === 'SENT' || q.status === 'CHANGE_REQUESTED',
+      (q) =>
+        isUserQuotation(q) &&
+        q.status !== 'ACCEPTED' &&
+        q.status !== 'REJECTED',
     );
 
     const acceptedQuotes = this.store.count(
       'quotations',
-      (q) => q.status === 'ACCEPTED',
+      (q) => isUserQuotation(q) && q.status === 'ACCEPTED',
     );
+
+    // Requirement 4: Revenue Department metrics
+    // Quotations Created, Quotations Approved, Quotations Pending, Revenue Generated
+    const quotationsCreated = this.store.count(
+      'quotations',
+      (q) => isUserQuotation(q),
+    );
+    const quotationsApproved = acceptedQuotes;
+    const quotationsPending = pendingQuotes;
 
     const allQuotations = this.store.findAll<any>('quotations');
     let totalQuotationValue = 0;
     let acceptedQuotationValue = 0;
+    let revenueGenerated = 0;
 
     for (const q of allQuotations) {
+      if (!isUserQuotation(q)) continue;
       const qv = this.store.findOne<any>(
         'quotation_versions',
         (v) => v.quotationId === q.id && Number(v.versionNumber) === Number(q.currentVersion),
@@ -50,38 +78,45 @@ export class RevenueRepository {
       }
       if (q.status === 'ACCEPTED') {
         acceptedQuotationValue += amt;
+        revenueGenerated += amt;
       }
     }
 
-    const allTickets = this.store.findAll<any>('tickets');
     let totalTicketSalesRevenue = 0;
     let totalTicketsSold = 0;
     let totalRefunds = 0;
 
-    for (const t of allTickets) {
-      const regStatus = (t.registrationStatus || t.status || '').toUpperCase();
-      const payStatus = (t.paymentStatus || '').toUpperCase();
+    if (isDeptHeadOrAdmin) {
+      const allTickets = this.store.findAll<any>('tickets');
+      for (const t of allTickets) {
+        const regStatus = (t.registrationStatus || t.status || '').toUpperCase();
+        const payStatus = (t.paymentStatus || '').toUpperCase();
 
-      if (regStatus === 'REFUNDED' || payStatus === 'REFUNDED') {
+        if (regStatus === 'REFUNDED' || payStatus === 'REFUNDED') {
+          const qty = Number(t.quantity) || 1;
+          const amt = Number(t.subtotal || t.totalAmount || (qty * (t.unitPrice || 0))) || 0;
+          totalRefunds += amt;
+          continue;
+        }
+
+        if (regStatus === 'CANCELLED' || payStatus === 'FAILED' || payStatus === 'PENDING') {
+          continue;
+        }
+
         const qty = Number(t.quantity) || 1;
         const amt = Number(t.subtotal || t.totalAmount || (qty * (t.unitPrice || 0))) || 0;
-        totalRefunds += amt;
-        continue;
+        totalTicketsSold += qty;
+        totalTicketSalesRevenue += amt;
       }
-
-      if (regStatus === 'CANCELLED' || payStatus === 'FAILED' || payStatus === 'PENDING') {
-        continue;
-      }
-
-      const qty = Number(t.quantity) || 1;
-      const amt = Number(t.subtotal || t.totalAmount || (qty * (t.unitPrice || 0))) || 0;
-      totalTicketsSold += qty;
-      totalTicketSalesRevenue += amt;
     }
 
     const netTicketSalesRevenue = Math.max(0, totalTicketSalesRevenue - totalRefunds);
 
     return {
+      quotationsCreated,
+      quotationsApproved,
+      quotationsPending,
+      revenueGenerated,
       newRequests,
       underReview,
       pendingQuotes,
@@ -205,8 +240,27 @@ export class RevenueRepository {
     };
   }
 
-  getPriorityRequests(limit = 10) {
-    const reqs = this.store.findAll<any>('event_requests');
+  getPriorityRequests(limit = 10, userId?: string, isDeptHeadOrAdmin = false) {
+    let reqs = this.store.findAll<any>('event_requests');
+
+    if (!isDeptHeadOrAdmin && userId) {
+      reqs = reqs.filter((r) => {
+        if (!r.assignedRevenueUserId) return true;
+        if (r.assignedRevenueUserId === userId) return true;
+        const q = this.store.findOne<any>(
+          'quotations',
+          (q) => q.eventRequestId === r.id || q.eventId === r.id,
+        );
+        if (
+          q &&
+          (!q.assignedRevenueUserId ||
+            q.assignedRevenueUserId === userId ||
+            q.createdByUserId === userId)
+        )
+          return true;
+        return false;
+      });
+    }
 
     const mapped = reqs.map((r) => {
       const revenueData = this.calculateEventRevenue(r);
@@ -228,8 +282,32 @@ export class RevenueRepository {
       .slice(0, limit);
   }
 
-  findEventRequests(filters: { search?: string; status?: string } = {}) {
+  findEventRequests(
+    filters: { search?: string; status?: string } = {},
+    userId?: string,
+    isDeptHeadOrAdmin = false,
+  ) {
     let reqs = this.store.findAll<any>('event_requests');
+
+    if (!isDeptHeadOrAdmin && userId) {
+      reqs = reqs.filter((r) => {
+        if (!r.assignedRevenueUserId) return true;
+        if (r.assignedRevenueUserId === userId) return true;
+        const q = this.store.findOne<any>(
+          'quotations',
+          (q) => q.eventRequestId === r.id || q.eventId === r.id,
+        );
+        if (
+          q &&
+          (!q.assignedRevenueUserId ||
+            q.assignedRevenueUserId === userId ||
+            q.createdByUserId === userId)
+        )
+          return true;
+        return false;
+      });
+    }
+
     const { search, status } = filters;
 
     if (search && search.trim()) {
@@ -289,15 +367,47 @@ export class RevenueRepository {
     };
   }
 
-  getAnalyticsStats() {
-    const totalRequests = this.store.count('event_requests');
-    const quotesCreated = this.store.count('quotations');
-    const quotesSent = this.store.count('quotation_versions', (v) => v.status === 'SENT');
-    const acceptedQuotes = this.store.count('quotation_versions', (v) => v.status === 'ACCEPTED');
-    const rejectedQuotes = this.store.count('quotation_versions', (v) => v.status === 'REJECTED');
-    const changeRequests = this.store.count('quotation_change_requests');
+  getAnalyticsStats(userId?: string, isDeptHeadOrAdmin = false) {
+    const isUserQuotation = (q: any) => {
+      if (isDeptHeadOrAdmin || !userId) return true;
+      return q.assignedRevenueUserId === userId || q.createdByUserId === userId;
+    };
 
-    const qvAll = this.store.findAll<any>('quotation_versions');
+    const isUserRequest = (r: any) => {
+      if (isDeptHeadOrAdmin || !userId) return true;
+      return r.assignedRevenueUserId === userId;
+    };
+
+    const totalRequests = this.store.count('event_requests', (r) => isUserRequest(r));
+    const quotesCreated = this.store.count('quotations', (q) => isUserQuotation(q));
+
+    const userQuoteIds = new Set(
+      this.store
+        .find<any>('quotations', (q) => isUserQuotation(q))
+        .map((q) => q.id),
+    );
+
+    const quotesSent = this.store.count(
+      'quotation_versions',
+      (v) => userQuoteIds.has(v.quotationId) && v.status === 'SENT',
+    );
+    const acceptedQuotes = this.store.count(
+      'quotation_versions',
+      (v) => userQuoteIds.has(v.quotationId) && v.status === 'ACCEPTED',
+    );
+    const rejectedQuotes = this.store.count(
+      'quotation_versions',
+      (v) => userQuoteIds.has(v.quotationId) && v.status === 'REJECTED',
+    );
+    const changeRequests = this.store.count(
+      'quotation_change_requests',
+      (cr) => userQuoteIds.has(cr.quotationId),
+    );
+
+    const qvAll = this.store.find<any>(
+      'quotation_versions',
+      (v) => userQuoteIds.has(v.quotationId),
+    );
     let totalQuotationValue = 0;
     let acceptedQuotationValue = 0;
     let acceptedCount = 0;

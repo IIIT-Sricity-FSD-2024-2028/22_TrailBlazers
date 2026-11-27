@@ -2,6 +2,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
 import { EventManagerRepository } from '../../repositories/event-manager.repository';
@@ -132,9 +133,23 @@ export class EventManagerService {
     return { percent, isReady, items, missingItems };
   }
 
-  getDashboard() {
-    const metrics = this.repository.getDashboardMetrics();
-    const priorityEvents = this.repository.getPriorityEvents(10);
+  private assertEventAccess(request: any, user: any, action = 'view') {
+    if (!request) {
+      throw new NotFoundException('Commercially approved event not found.');
+    }
+    const userRole = (user?.role || '').toUpperCase();
+    if (userRole === 'EVENT_MANAGER') {
+      const assignedId = request.eventManagerUserId || request.assignedManagerUserId;
+      if (!assignedId || assignedId !== user?.id) {
+        throw new ForbiddenException(`Access denied: You are only permitted to ${action} events assigned to you.`);
+      }
+    }
+  }
+
+  getDashboard(user?: any) {
+    const managerUserId = user?.id;
+    const metrics = this.repository.getDashboardMetrics(managerUserId);
+    const priorityEvents = this.repository.getPriorityEvents(10, managerUserId);
 
     const enrichedEvents = priorityEvents.map((evt) => {
       const invCount = this.repository.countInvitations(evt.id);
@@ -150,8 +165,9 @@ export class EventManagerService {
     return { metrics, priorityEvents: enrichedEvents };
   }
 
-  getEvents(filters: { search?: string; status?: string }) {
-    const events = this.repository.findEvents(filters);
+  getEvents(filters: { search?: string; status?: string }, user?: any) {
+    const managerUserId = user?.id;
+    const events = this.repository.findEvents(filters, managerUserId);
 
     const enrichedEvents = events.map((evt) => {
       const invCount = this.repository.countInvitations(evt.id);
@@ -173,40 +189,8 @@ export class EventManagerService {
       throw new NotFoundException('Commercially approved event not found.');
     }
 
-    // Auto-transition status to IN_PREPARATION when opened if still COMMERCIAL_APPROVED or unassigned
-    if (
-      !request.operationalStatus ||
-      request.operationalStatus === 'COMMERCIAL_APPROVED'
-    ) {
-      const isNewAssignment = !request.eventManagerUserId;
-      this.repository.autoAssignManager(id, user.id);
-      request.operationalStatus = 'IN_PREPARATION';
-      request.eventManagerUserId = user.id;
-
-      if (isNewAssignment && request.userId) {
-        try {
-          this.notificationHelper.createNotification({
-            recipientUserId: request.userId,
-            type: 'EVENT_MANAGER_ASSIGNED',
-            title: 'Event Manager Assigned',
-            message: `${user.name} (Event Manager) approved your event request and is now primary contact for "${request.eventName}".`,
-            entityType: 'EVENT_REQUEST',
-            entityId: id,
-            senderUserId: user.id,
-            senderName: user.name,
-            senderRole: 'Event Manager',
-            eventName: request.eventName,
-            deduplicate: true,
-          });
-        } catch (notifErr) {
-          this.logger.error(
-            'Failed to notify client of Event Manager assignment',
-            notifErr instanceof Error ? notifErr.stack : undefined,
-            'EVENT_MANAGER_SERVICE',
-          );
-        }
-      }
-    }
+    // Role-based data isolation: An Event Manager can only view events assigned to them
+    this.assertEventAccess(request, user, 'view');
 
     const quotation =
       this.quotationsRepository.findQuotationByEventRequestId(id);
@@ -249,22 +233,21 @@ export class EventManagerService {
     const actorUserId = user.id;
     const actorName = user.name || 'Event Manager';
 
+    const targetReq = this.repository.findEventDetailsById(id);
+    if (!targetReq) {
+      throw new NotFoundException('Event request not found.');
+    }
+
+    // Enforce workspace isolation
+    this.assertEventAccess(targetReq, user, 'configure');
+
     // Commercial Boundary Check: Reject any attempt to alter ticket price
     if (ticketPrice !== undefined) {
-      const existingReq = this.repository.findEventDetailsById(id);
-      if (
-        existingReq &&
-        Number(ticketPrice) !== Number(existingReq.ticketPrice)
-      ) {
+      if (Number(ticketPrice) !== Number(targetReq.ticketPrice)) {
         throw new BadRequestException(
           'Forbidden: Ticket price is commercially agreed and READ-ONLY for Event Managers. Price modifications must be processed through the Revenue Team quotation workflow.',
         );
       }
-    }
-
-    const targetReq = this.repository.findEventDetailsById(id);
-    if (!targetReq) {
-      throw new NotFoundException('Event request not found.');
     }
 
     const regStatus =
@@ -333,6 +316,15 @@ export class EventManagerService {
       throw new NotFoundException('Event request not found.');
     }
 
+    this.assertEventAccess(targetReq, user, 'assign coordinators to');
+
+    if (targetReq.operationalStatus === 'COMPLETED' || targetReq.status === 'COMPLETED') {
+      throw new BadRequestException('Cannot assign coordinators to a completed event.');
+    }
+    if (targetReq.operationalStatus === 'CANCELLED' || targetReq.status === 'CANCELLED') {
+      throw new BadRequestException('Cannot assign coordinators to a cancelled event.');
+    }
+
     const auditLogId = 'eolog_' + crypto.randomBytes(8).toString('hex');
     const coordinatorsSummary = validCoordinators.map(c => `${c.name} (${c.email})`).join(', ');
 
@@ -397,10 +389,14 @@ export class EventManagerService {
     };
   }
 
-  getReadiness(id: string) {
+  getReadiness(id: string, user?: any) {
     const request = this.repository.findEventDetailsById(id);
     if (!request) {
       throw new NotFoundException('Event request not found.');
+    }
+
+    if (user) {
+      this.assertEventAccess(request, user, 'view readiness for');
     }
 
     const invCount = this.repository.countInvitations(id);
@@ -417,6 +413,8 @@ export class EventManagerService {
     if (!request) {
       throw new NotFoundException('Event request not found.');
     }
+
+    this.assertEventAccess(request, user, 'manage');
 
     const invCount = this.repository.countInvitations(id);
     const readiness = this.calculateEventReadiness(request, invCount);
@@ -481,6 +479,8 @@ export class EventManagerService {
       throw new NotFoundException('Event request not found.');
     }
 
+    this.assertEventAccess(request, user, 'issue invitations for');
+
     const invId = 'inv_' + crypto.randomBytes(8).toString('hex');
     const tokenStr = 'inv_tok_' + crypto.randomBytes(12).toString('hex');
     const inviteCodeStr = 'INV-' + Math.floor(1000 + Math.random() * 9000);
@@ -506,10 +506,17 @@ export class EventManagerService {
     };
   }
 
-  revokeInvitation(id: string) {
+  revokeInvitation(id: string, user?: any) {
     const inv = this.repository.findInvitationById(id);
     if (!inv) {
       throw new NotFoundException('Invitation not found.');
+    }
+
+    if (user) {
+      const request = this.repository.findEventDetailsById(inv.eventId);
+      if (request) {
+        this.assertEventAccess(request, user, 'manage invitations for');
+      }
     }
 
     this.repository.revokeInvitation(id);
@@ -520,7 +527,14 @@ export class EventManagerService {
     };
   }
 
-  getSessions(eventId: string) {
+  getSessions(eventId: string, user?: any) {
+    if (user) {
+      const request = this.repository.findEventDetailsById(eventId);
+      if (request) {
+        this.assertEventAccess(request, user, 'view sessions for');
+      }
+    }
+
     const sessions = this.repository.findSessionsByEventId(eventId);
     return { sessions };
   }
@@ -531,6 +545,13 @@ export class EventManagerService {
     if (!title || !title.trim()) {
       throw new BadRequestException('Session title is required.');
     }
+
+    const request = this.repository.findEventDetailsById(eventId);
+    if (!request) {
+      throw new NotFoundException('Event request not found.');
+    }
+
+    this.assertEventAccess(request, user, 'add sessions to');
 
     const sessionId = 'sess_' + crypto.randomBytes(8).toString('hex');
 

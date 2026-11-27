@@ -19,25 +19,64 @@ export class RevenueService {
     private readonly store: InMemoryStore,
   ) {}
 
-  getDashboard() {
-    const metrics = this.revenueRepository.getDashboardMetrics();
-    const priorityRequests = this.revenueRepository.getPriorityRequests(10);
+  getDashboard(user?: any) {
+    const isDeptHeadOrAdmin =
+      user?.role === 'DEPARTMENT_MANAGER' ||
+      user?.role === 'SUPER_ADMIN' ||
+      user?.role === 'ADMIN';
+    const metrics = this.revenueRepository.getDashboardMetrics(
+      user?.id,
+      isDeptHeadOrAdmin,
+    );
+    const priorityRequests = this.revenueRepository.getPriorityRequests(
+      10,
+      user?.id,
+      isDeptHeadOrAdmin,
+    );
     return { metrics, priorityRequests };
   }
 
-  getEventRequests(filters: { search?: string; status?: string }) {
-    const requests = this.revenueRepository.findEventRequests(filters);
+  getEventRequests(filters: { search?: string; status?: string }, user?: any) {
+    const isDeptHeadOrAdmin =
+      user?.role === 'DEPARTMENT_MANAGER' ||
+      user?.role === 'SUPER_ADMIN' ||
+      user?.role === 'ADMIN';
+    const requests = this.revenueRepository.findEventRequests(
+      filters,
+      user?.id,
+      isDeptHeadOrAdmin,
+    );
     return { requests };
   }
 
-  getEventRequestDetails(id: string) {
+  getEventRequestDetails(id: string, user?: any) {
     const request = this.revenueRepository.findEventRequestDetailsById(id);
     if (!request) {
       throw new NotFoundException('Event request not found.');
     }
 
+    const isDeptHeadOrAdmin =
+      user?.role === 'DEPARTMENT_MANAGER' ||
+      user?.role === 'SUPER_ADMIN' ||
+      user?.role === 'ADMIN';
+
     const quotation =
       this.quotationsRepository.findQuotationByEventRequestId(id);
+
+    if (!isDeptHeadOrAdmin && user?.id) {
+      const isAssigned =
+        !request.assignedRevenueUserId ||
+        request.assignedRevenueUserId === user.id ||
+        (quotation &&
+          (!quotation.assignedRevenueUserId ||
+            quotation.assignedRevenueUserId === user.id ||
+            quotation.createdByUserId === user.id));
+      if (!isAssigned && request.assignedRevenueUserId) {
+        throw new ForbiddenException(
+          'Access denied. You can only view event requests assigned to you.',
+        );
+      }
+    }
     let activeVersion: any = null;
     let lineItems: any[] = [];
     let versionHistory: any[] = [];
@@ -69,12 +108,19 @@ export class RevenueService {
     };
   }
 
-  getAnalytics() {
-    const analytics = this.revenueRepository.getAnalyticsStats();
+  getAnalytics(user?: any) {
+    const isDeptHeadOrAdmin =
+      user?.role === 'DEPARTMENT_MANAGER' ||
+      user?.role === 'SUPER_ADMIN' ||
+      user?.role === 'ADMIN';
+    const analytics = this.revenueRepository.getAnalyticsStats(
+      user?.id,
+      isDeptHeadOrAdmin,
+    );
     return { analytics };
   }
 
-  getClients() {
+  getClients(user?: any) {
     const clients = this.revenueRepository.getClientPortfolio();
     return { clients };
   }

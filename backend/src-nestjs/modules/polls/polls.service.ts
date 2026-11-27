@@ -19,6 +19,58 @@ export class PollsService {
     return { polls: enriched };
   }
 
+  getMyActiveSessionPolls(user: any) {
+    const userId = user.id;
+    const tickets = this.pollsRepository.findTicketsByUserId(userId);
+    const reqs = this.pollsRepository.findEventRequestsByUserId(userId);
+
+    const eventIds = new Set<string>();
+    tickets.forEach((t: any) => { if (t.eventId) eventIds.add(t.eventId); });
+    reqs.forEach((r: any) => { if (r.id) eventIds.add(r.id); });
+
+    const allActivePolls = this.pollsRepository.findAllLaunchedPolls();
+    const relevantPolls = allActivePolls.filter((p) => {
+      if (eventIds.has(p.eventId)) return true;
+      const event = this.pollsRepository.findEventOrRequestById(p.eventId);
+      if (event) {
+        if (event.userId === userId || event.organizerUserId === userId) return true;
+        return tickets.some((t: any) => t.eventTitle === event.eventName || t.eventTitle === event.name);
+      }
+      return false;
+    });
+
+    const enriched = relevantPolls.map((p) => {
+      const options = this.pollsRepository.findPollOptionsByPollId(p.id);
+      const responses = this.pollsRepository.getPollResponsesByPollId(p.id);
+      const totalResponses = responses.length;
+      const myResponse = responses.find((r) => r.userId === userId);
+      const event = this.pollsRepository.findEventOrRequestById(p.eventId);
+      const session = this.pollsRepository.findSessionById(p.sessionId);
+
+      const enrichedOptions = options.map((opt) => {
+        const count = responses.filter((r) => r.optionId === opt.id).length;
+        const percentage = totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0;
+        return {
+          ...opt,
+          count,
+          percentage,
+        };
+      });
+
+      return {
+        ...p,
+        eventName: event?.eventName || event?.name || 'Live Event',
+        sessionTitle: session?.title || 'Main Session',
+        hasSubmitted: Boolean(myResponse),
+        submittedOptionId: myResponse?.optionId || null,
+        totalResponses,
+        options: enrichedOptions,
+      };
+    });
+
+    return { polls: enriched };
+  }
+
   respondToPoll(pollId: string, dto: RespondToPollDto, user: any) {
     if (!dto.optionId) {
       throw new BadRequestException('Option ID is required.');

@@ -17,11 +17,13 @@ export class LineItemDto {
 
   @ApiPropertyOptional({ description: 'Quantity of items or hours', example: 1 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   quantity?: number;
 
   @ApiPropertyOptional({ description: 'Unit price per item/hour', example: 2500 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   unitPrice?: number;
 }
@@ -41,11 +43,13 @@ export class CreateQuotationDto {
 
   @ApiPropertyOptional({ description: 'Discount amount', example: 200 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   discount?: number;
 
   @ApiPropertyOptional({ description: 'Tax percentage rate', example: 18 })
   @IsOptional()
+  @Type(() => Number)
   @IsNumber()
   taxPercent?: number;
 

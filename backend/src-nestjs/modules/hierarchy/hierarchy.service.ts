@@ -152,6 +152,8 @@ export class HierarchyService {
       this.hierarchyRepo.enrichMemberActivity(m),
     );
 
+    const deptMetrics = this.hierarchyRepo.getDepartmentMetrics(dept);
+
     const summary = {
       total: members.length,
       active: members.filter(
@@ -159,9 +161,20 @@ export class HierarchyService {
       ).length,
       available: members.filter((m) => m.status === 'AVAILABLE').length,
       escalated: members.filter((m) => m.status === 'ESCALATED').length,
+      // Requirement 4 Department Head dynamic metrics
+      totalDepartmentMembers: deptMetrics.totalDepartmentMembers,
+      departmentWorkload: deptMetrics.departmentWorkload,
+      completedTasks: deptMetrics.completedTasks,
+      pendingTasks: deptMetrics.pendingTasks,
+      departmentPerformance: deptMetrics.departmentPerformance,
     };
 
-    return { department: dept, summary, members };
+    return {
+      department: dept,
+      summary,
+      members,
+      metrics: deptMetrics,
+    };
   }
 
   getIssues(user: any) {

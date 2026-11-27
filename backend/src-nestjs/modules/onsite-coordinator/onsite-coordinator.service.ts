@@ -45,15 +45,35 @@ export class OnsiteCoordinatorService {
 
     const myEvents = this.repository.findAssignedEvents(coordinatorUserId);
 
+    let totalTicketsSold = 0;
+    let totalRegisteredMembers = 0;
+    let totalMembersInside = 0;
+    let totalMembersOutside = 0;
+    let totalMembersNotEntered = 0;
+    let totalGroupTickets = 0;
+    let allRecentActivities: any[] = [];
+
     const enrichedEvents = myEvents.map((evt: any) => {
       const stats = this.repository.getEventStats(evt.id);
+      const kpis = this.repository.getCoordinatorEventKpis(evt.id);
+      totalTicketsSold += kpis.totalTicketsSold;
+      totalRegisteredMembers += kpis.totalRegisteredMembers;
+      totalMembersInside += kpis.totalMembersInside;
+      totalMembersOutside += kpis.totalMembersOutside;
+      totalMembersNotEntered += kpis.totalMembersNotEntered;
+      totalGroupTickets += kpis.totalGroupTickets;
+      allRecentActivities = allRecentActivities.concat(kpis.recentActivities);
+
       return {
         ...evt,
         registered: stats.registered,
         checkedIn: stats.checkedIn,
         attendancePercent: stats.attendancePercent,
+        kpis,
       };
     });
+
+    allRecentActivities.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
 
     const upcomingEvent = enrichedEvents[0] || null;
 
@@ -63,6 +83,13 @@ export class OnsiteCoordinatorService {
         assignedEvents: metricsData.assignedEvents,
         checkedInAttendees: metricsData.checkedInAttendees,
         upcomingEventName: upcomingEvent ? upcomingEvent.eventName : 'None',
+        totalTicketsSold,
+        totalRegisteredMembers,
+        totalMembersInside,
+        totalMembersOutside,
+        totalMembersNotEntered,
+        totalGroupTickets,
+        recentActivities: allRecentActivities.slice(0, 15),
       },
       events: enrichedEvents,
       upcomingEvent,
@@ -79,11 +106,13 @@ export class OnsiteCoordinatorService {
 
     const enriched = events.map((evt: any) => {
       const stats = this.repository.getEventStats(evt.id);
+      const kpis = this.repository.getCoordinatorEventKpis(evt.id);
       return {
         ...evt,
         registered: stats.registered,
         checkedIn: stats.checkedIn,
         attendancePercent: stats.attendancePercent,
+        kpis,
       };
     });
 
@@ -100,13 +129,87 @@ export class OnsiteCoordinatorService {
     }
 
     const stats = this.repository.getEventStats(id);
+    const kpis = this.repository.getCoordinatorEventKpis(id);
     const recentCheckIns = this.repository.findRecentCheckIns(id, 10);
 
     return {
       event,
       stats,
+      kpis,
       recentCheckIns,
     };
+  }
+
+  verifyTicket(id: string, searchTerm: string, user: any) {
+    const coordinatorUserId = user.id;
+    this.assertEventAssignedToCoordinator(id, coordinatorUserId);
+
+    if (!searchTerm || !searchTerm.trim()) {
+      throw new BadRequestException(
+        'Ticket ID, Ticket Number, or QR data is required for verification.',
+      );
+    }
+
+    const detailed = this.repository.findTicketDetailed(searchTerm.trim(), id);
+    if (!detailed) {
+      throw new NotFoundException(
+        `Ticket "${searchTerm.trim()}" not found for this event.`,
+      );
+    }
+
+    if (detailed.ticket.eventId !== id) {
+      throw new BadRequestException(
+        `Ticket Mismatch: Ticket "${detailed.ticket.ticketNumber}" is registered for a different event.`,
+      );
+    }
+
+    const isCancelled =
+      detailed.ticket.registrationStatus === 'CANCELLED' ||
+      detailed.ticket.ticketStatus === 'CANCELLED';
+    const isPaid =
+      detailed.ticket.paymentStatus === 'CONFIRMED' ||
+      detailed.ticket.paymentStatus === 'SUCCESS';
+
+    return {
+      isValid: !isCancelled && isPaid,
+      validityReason: isCancelled
+        ? 'Ticket is CANCELLED. Venue entry prohibited.'
+        : !isPaid
+        ? 'Ticket payment is unconfirmed. Venue entry prohibited.'
+        : 'Valid & verified for entry.',
+      ...detailed,
+    };
+  }
+
+  recordMemberAction(
+    id: string,
+    dto: {
+      ticketId: string;
+      memberId: string;
+      action: 'ENTRY' | 'EXIT' | 'RE_ENTRY' | 'PERMANENT_EXIT';
+      notes?: string;
+    },
+    user: any,
+  ) {
+    const coordinatorUserId = user.id;
+    const coordinatorName = user.name || 'Onsite Coordinator';
+    this.assertEventAssignedToCoordinator(id, coordinatorUserId);
+
+    if (!dto.ticketId || !dto.memberId || !dto.action) {
+      throw new BadRequestException(
+        'ticketId, memberId, and action (ENTRY | EXIT | RE_ENTRY | PERMANENT_EXIT) are required.',
+      );
+    }
+
+    return this.repository.recordMemberAction({
+      eventId: id,
+      ticketId: dto.ticketId,
+      memberId: dto.memberId,
+      action: dto.action,
+      coordinatorId: coordinatorUserId,
+      coordinatorName,
+      notes: dto.notes,
+    });
   }
 
   checkInAttendee(id: string, dto: CheckInDto, user: any) {

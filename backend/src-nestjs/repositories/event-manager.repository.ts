@@ -9,32 +9,76 @@ export class EventManagerRepository {
     private readonly logger: NestLoggerService,
   ) {}
 
-  getDashboardMetrics() {
-    const approvedEvents = this.store.count(
-      'event_requests',
-      (r) => r.status === 'COMMERCIAL_APPROVED' || r.status === 'ACCEPTED',
-    );
+  getDashboardMetrics(managerUserId?: string) {
+    const isAssignedToManager = (r: any) => {
+      if (!managerUserId) return false;
+      return (
+        r.eventManagerUserId === managerUserId ||
+        r.assignedManagerUserId === managerUserId
+      );
+    };
 
-    const inPreparation = this.store.count(
-      'event_requests',
-      (r) => r.operationalStatus === 'IN_PREPARATION',
-    );
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const isPastEvent = (r: any) => {
+      const eventEndDate = r.endDate || r.eventDate || r.startDate || r.date;
+      return Boolean(eventEndDate && eventEndDate < todayStr);
+    };
 
-    const readyEvents = this.store.count(
-      'event_requests',
-      (r) => r.operationalStatus === 'READY',
-    );
+    const isCompleted = (r: any) =>
+      r.operationalStatus === 'COMPLETED' ||
+      r.status === 'COMPLETED' ||
+      (isPastEvent(r) && r.operationalStatus !== 'CANCELLED' && r.status !== 'CANCELLED');
 
-    const upcomingEvents = this.store.count(
+    // Requirement 4: Event Manager metrics
+    // Assigned Events, Ongoing Events, Completed Events, Pending Events
+    const assignedEvents = this.store.count(
       'event_requests',
       (r) =>
-        r.status === 'COMMERCIAL_APPROVED' ||
-        r.status === 'ACCEPTED' ||
-        r.operationalStatus === 'IN_PREPARATION' ||
-        r.operationalStatus === 'READY',
+        isAssignedToManager(r) &&
+        r.status !== 'REJECTED' &&
+        r.operationalStatus !== 'CANCELLED',
     );
 
+    const ongoingEvents = this.store.count(
+      'event_requests',
+      (r) =>
+        isAssignedToManager(r) &&
+        !isCompleted(r) &&
+        r.operationalStatus !== 'CANCELLED' &&
+        (r.operationalStatus === 'LIVE' || r.operationalStatus === 'IN_PREPARATION'),
+    );
+
+    const completedEvents = this.store.count(
+      'event_requests',
+      (r) => isAssignedToManager(r) && isCompleted(r),
+    );
+
+    const pendingEvents = this.store.count(
+      'event_requests',
+      (r) =>
+        isAssignedToManager(r) &&
+        !isCompleted(r) &&
+        r.operationalStatus !== 'CANCELLED' &&
+        r.status !== 'REJECTED',
+    );
+
+    // Backward-compatible fields scoped to authenticated manager
+    const approvedEvents = assignedEvents;
+    const inPreparation = this.store.count(
+      'event_requests',
+      (r) => isAssignedToManager(r) && !isCompleted(r) && r.operationalStatus === 'IN_PREPARATION',
+    );
+    const readyEvents = this.store.count(
+      'event_requests',
+      (r) => isAssignedToManager(r) && !isCompleted(r) && r.operationalStatus === 'READY',
+    );
+    const upcomingEvents = pendingEvents;
+
     return {
+      assignedEvents,
+      ongoingEvents,
+      completedEvents,
+      pendingEvents,
       approvedEvents,
       inPreparation,
       readyEvents,
@@ -58,8 +102,17 @@ export class EventManagerRepository {
     const coordinatorName = coordinators.length > 0 ? coordinators.map((c) => c.name).join(', ') : null;
     const coordinatorEmail = coordinators.length > 0 ? coordinators.map((c) => c.email).filter(Boolean).join(', ') : null;
 
+    // Check if event date has passed -> auto-complete if not cancelled
+    const todayStr = new Date().toISOString().substring(0, 10);
+    const eventEndDate = r.endDate || r.eventDate || r.startDate || r.date;
+    const isPast = Boolean(eventEndDate && eventEndDate < todayStr);
+    const operationalStatus = isPast && r.operationalStatus !== 'CANCELLED' && r.status !== 'CANCELLED'
+      ? 'COMPLETED'
+      : (r.operationalStatus || 'IN_PREPARATION');
+
     return {
       ...r,
+      operationalStatus,
       clientName: client ? client.name : null,
       clientEmail: client ? client.email : null,
       clientOrg: client ? client.organization : null,
@@ -71,14 +124,16 @@ export class EventManagerRepository {
     };
   }
 
-  getPriorityEvents(limit = 10) {
-    const reqs = this.store.find<any>(
+  getPriorityEvents(limit = 10, managerUserId?: string) {
+    let reqs = this.store.find<any>(
       'event_requests',
       (r) =>
-        r.status === 'COMMERCIAL_APPROVED' ||
-        r.status === 'ACCEPTED' ||
-        r.operationalStatus === 'IN_PREPARATION' ||
-        r.operationalStatus === 'READY',
+        Boolean(managerUserId && (r.eventManagerUserId === managerUserId || r.assignedManagerUserId === managerUserId)) &&
+        (r.status === 'COMMERCIAL_APPROVED' ||
+          r.status === 'ACCEPTED' ||
+          r.operationalStatus === 'IN_PREPARATION' ||
+          r.operationalStatus === 'READY' ||
+          r.operationalStatus === 'LIVE'),
     );
 
     const mapped = reqs.map((r) => this.mapEventWithCoordinators(r));
@@ -88,14 +143,13 @@ export class EventManagerRepository {
       .slice(0, limit);
   }
 
-  findEvents(filters: { search?: string; status?: string } = {}) {
+  findEvents(filters: { search?: string; status?: string } = {}, managerUserId?: string) {
     let reqs = this.store.find<any>(
       'event_requests',
       (r) =>
-        r.status === 'COMMERCIAL_APPROVED' ||
-        r.status === 'ACCEPTED' ||
-        r.operationalStatus === 'IN_PREPARATION' ||
-        r.operationalStatus === 'READY',
+        Boolean(managerUserId && (r.eventManagerUserId === managerUserId || r.assignedManagerUserId === managerUserId)) &&
+        r.status !== 'REJECTED' &&
+        r.operationalStatus !== 'CANCELLED',
     );
 
     const { search, status } = filters;

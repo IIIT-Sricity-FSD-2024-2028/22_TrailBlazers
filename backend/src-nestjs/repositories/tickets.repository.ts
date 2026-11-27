@@ -14,6 +14,39 @@ export class TicketsRepository {
     return u ? { emailVerified: u.emailVerified } : null;
   }
 
+  checkBookingRestrictions(userId: string, eventId: string): { allowed: boolean; message?: string } {
+    // 1. Rapid duplicate booking within 15 seconds for duplicate payment prevention
+    const recentTickets = this.store.find<any>(
+      'tickets',
+      (t) => t.userId === userId && t.eventId === eventId && t.registrationStatus === 'ACTIVE',
+    );
+    const nowMs = Date.now();
+    const hasRecent = recentTickets.some((t) => {
+      const createdMs = new Date(t.createdAt).getTime();
+      return nowMs - createdMs < 15000;
+    });
+    if (hasRecent) {
+      return {
+        allowed: false,
+        message: 'A booking for this event was just processed. Please wait a moment before booking again to prevent duplicate charges.',
+      };
+    }
+
+    // 2. High cancellation abuse (5+ cancellations across platform)
+    const overallCancellations = this.store.count(
+      'ticket_cancellations',
+      (tc) => tc.userId === userId,
+    );
+    if (overallCancellations >= 5) {
+      return {
+        allowed: false,
+        message: 'Ticket booking is temporarily restricted on this account due to repeated booking and cancellation activity. Please contact support.',
+      };
+    }
+
+    return { allowed: true };
+  }
+
   findEventById(eventId: string) {
     if (!eventId) return null;
     const event = this.store.findById<any>("events", eventId);
@@ -108,12 +141,41 @@ export class TicketsRepository {
 
     const nowStr = new Date().toISOString().replace("T", " ").substring(0, 19);
 
+    const user = this.store.findById<any>("users", userId);
+    const primaryName = user ? (user.name || user.email || 'Primary Attendee') : 'Primary Attendee';
+
     // 1. Insert Ticket
     this.store.create("tickets", {
       ...ticket,
+      totalMembers: quantity,
+      ticketStatus: 'ACTIVE',
+      entryStatus: 'NOT_ENTERED',
+      checkedIn: 0,
       createdAt: nowStr,
       updatedAt: nowStr,
     });
+
+    // 1.1 Insert individual Ticket Members for group/single tickets
+    for (let i = 1; i <= quantity; i++) {
+      const memberId = `tm_${ticket.id}_${i}`;
+      const memberName = i === 1 ? primaryName : `${primaryName} (Guest ${i})`;
+      this.store.create("ticket_members", {
+        id: memberId,
+        ticketId: ticket.id,
+        ticketNumber: ticket.ticketNumber,
+        eventId,
+        memberIndex: i,
+        memberName,
+        entryStatus: 'NOT_ENTERED',
+        firstEnteredAt: null,
+        lastActionAt: null,
+        lastAction: null,
+        coordinatorId: null,
+        coordinatorName: null,
+        createdAt: nowStr,
+        updatedAt: nowStr,
+      });
+    }
 
     // 2. Insert Payment
     this.store.create("payments", {
@@ -196,8 +258,22 @@ export class TicketsRepository {
         ),
       );
 
+      const cancellationCountForEvent = this.store.count(
+        'ticket_cancellations',
+        (tc) => tc.userId === userId && (tc.eventId === t.eventId || candidateIds.has(tc.eventId)),
+      );
+
+      const totalMembers = Number(t.totalMembers || t.quantity || 1);
+      const ticketStatus = t.ticketStatus || (t.registrationStatus === 'CANCELLED' ? 'CANCELLED' : 'ACTIVE');
+      const entryStatus = t.entryStatus || (t.checkedIn === 1 ? 'FULLY_CHECKED_IN' : 'NOT_ENTERED');
+
       return {
         ...t,
+        totalMembers,
+        ticketStatus,
+        entryStatus,
+        cancellationCountForEvent,
+        maxCancellationsReached: cancellationCountForEvent >= 2,
         eventName: e ? e.name || e.eventName : null,
         eventDate: e ? e.date || e.eventDate : null,
         startTime: e ? e.startTime : null,

@@ -49,9 +49,7 @@ export class UsersRepository {
   }
 
   findEventmanager(): any {
-    const users = this.store.findAll("users");
-    const result = users.find((user) => user.id == "usr_8258c42d5f598e40");
-    return result;
+    return this.store.findOne<UserEntity>("users", (user) => user.role === "EVENT_MANAGER");
   }
 
   findPublicById(id: string): PublicUserEntity | null {
@@ -71,10 +69,10 @@ export class UsersRepository {
     };
   }
 
-  userOrganization(): any[] {
-    const users = this.store.findAll("users");
-    const result = users.filter((user) => user.organization == "Google");
-    return result;
+  userOrganization(orgName?: string): any[] {
+    const users = this.store.findAll<UserEntity>("users");
+    if (!orgName) return users;
+    return users.filter((user) => (user.organization || "").toLowerCase() === orgName.toLowerCase());
   }
   createUser(params: {
     id: string;
@@ -114,6 +112,24 @@ export class UsersRepository {
   updateEmailVerified(userId: string): PublicUserEntity | null {
     this.store.update<UserEntity>("users", userId, {
       emailVerified: 1,
+      updatedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
+    });
+    return this.findPublicById(userId);
+  }
+
+  setResetCode(userId: string, code: string): void {
+    this.store.update<any>("users", userId, {
+      resetPasswordCode: code,
+      resetPasswordExpires: Date.now() + 15 * 60 * 1000,
+      updatedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
+    });
+  }
+
+  updatePassword(userId: string, passwordHash: string): PublicUserEntity | null {
+    this.store.update<any>("users", userId, {
+      passwordHash,
+      resetPasswordCode: null,
+      resetPasswordExpires: null,
       updatedAt: new Date().toISOString().replace("T", " ").substring(0, 19),
     });
     return this.findPublicById(userId);

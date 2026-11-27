@@ -68,9 +68,13 @@ export class QuotationsService {
 
     const existingQuotation =
       this.quotationsRepository.findQuotationByEventRequestId(eventRequestId);
-    if (existingQuotation && existingQuotation.status === 'FINALIZED') {
+    if (
+      existingQuotation &&
+      (existingQuotation.status === 'ACCEPTED' ||
+        eventReq.status === 'COMMERCIAL_APPROVED')
+    ) {
       throw new BadRequestException(
-        'This quotation is finalized and cannot be modified.',
+        'This quotation has already been accepted and cannot be modified.',
       );
     }
 

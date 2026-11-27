@@ -42,8 +42,8 @@ export class RevenueController {
   @Get('dashboard')
   @ApiOperation({ summary: 'Get Revenue Dashboard Metrics', description: 'Retrieve pipeline metrics, revenue totals, and pending pricing requests' })
   @ApiResponse({ status: 200, description: 'Revenue metrics returned' })
-  async getDashboard() {
-    return this.revenueService.getDashboard();
+  async getDashboard(@Req() req: any) {
+    return this.revenueService.getDashboard(req.user);
   }
 
   @Get('event-requests')
@@ -51,16 +51,16 @@ export class RevenueController {
   @ApiQuery({ name: 'search', required: false, description: 'Search by client or event name' })
   @ApiQuery({ name: 'status', required: false, description: 'Filter by quotation status' })
   @ApiResponse({ status: 200, description: 'Event requests list returned' })
-  async getEventRequests(@Query() query: any) {
-    return this.revenueService.getEventRequests(query);
+  async getEventRequests(@Query() query: any, @Req() req: any) {
+    return this.revenueService.getEventRequests(query, req.user);
   }
 
   @Get('event-requests/:id')
   @ApiOperation({ summary: 'Get Event Request Pricing Details', description: 'Retrieve full event request specification for quotation drafting' })
   @ApiParam({ name: 'id', description: 'Event Request ID' })
   @ApiResponse({ status: 200, description: 'Event request details returned' })
-  async getEventRequestDetails(@Param('id') id: string) {
-    return this.revenueService.getEventRequestDetails(id);
+  async getEventRequestDetails(@Param('id') id: string, @Req() req: any) {
+    return this.revenueService.getEventRequestDetails(id, req.user);
   }
 
   @Post('quotations')
@@ -84,15 +84,15 @@ export class RevenueController {
   @Get('analytics')
   @ApiOperation({ summary: 'Get Revenue Analytics', description: 'Retrieve commercial performance analytics and revenue reports' })
   @ApiResponse({ status: 200, description: 'Revenue analytics object returned' })
-  async getAnalytics() {
-    return this.revenueService.getAnalytics();
+  async getAnalytics(@Req() req: any) {
+    return this.revenueService.getAnalytics(req.user);
   }
 
   @Get('clients')
   @ApiOperation({ summary: 'Get Revenue Client Portfolio', description: 'Retrieve corporate client list and commercial order histories' })
   @ApiResponse({ status: 200, description: 'Client portfolio list returned' })
-  async getClients() {
-    return this.revenueService.getClients();
+  async getClients(@Req() req: any) {
+    return this.revenueService.getClients(req.user);
   }
 
   @Get('event-managers')

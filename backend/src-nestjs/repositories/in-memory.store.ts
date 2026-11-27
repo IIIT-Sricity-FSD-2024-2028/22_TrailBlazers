@@ -13,7 +13,18 @@ export class InMemoryStore {
 
   constructor() {
     // Persistent store directory: <project_root>/backend/data/store-data.json
-    this.dataDir = path.resolve(process.cwd(), 'data');
+    const rootBackendData = path.resolve(process.cwd(), 'backend', 'data');
+    const dirnameData = path.resolve(__dirname, '..', '..', 'data');
+    const localData = path.resolve(process.cwd(), 'data');
+
+    if (fs.existsSync(path.join(rootBackendData, 'store-data.json'))) {
+      this.dataDir = rootBackendData;
+    } else if (fs.existsSync(path.join(dirnameData, 'store-data.json'))) {
+      this.dataDir = dirnameData;
+    } else {
+      this.dataDir = localData;
+    }
+
     this.filePath = path.join(this.dataDir, 'store-data.json');
     this.tempFilePath = path.join(this.dataDir, 'store-data.json.tmp');
 
@@ -54,6 +65,11 @@ export class InMemoryStore {
       'analytics_audit_logs',
       'file_uploads',
       'event_analytics_reports',
+      'refunds',
+      'refund_audit_logs',
+      'ticket_members',
+      'ticket_entry_logs',
+      'ticket_cancellations',
     ];
 
     for (const name of defaultCollections) {

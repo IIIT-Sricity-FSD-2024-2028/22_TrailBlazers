@@ -24,6 +24,7 @@ import { NotificationsModule } from './modules/notifications/notifications.modul
 import { ChangeRequestsModule } from './modules/change-requests/change-requests.module';
 import { HierarchyModule } from './modules/hierarchy/hierarchy.module';
 import { UploadsModule } from './modules/uploads/uploads.module';
+import { RefundsModule } from './modules/refunds/refunds.module';
 import { RequestLoggingMiddleware } from './common/middleware/request-logging.middleware';
 import { MaintenanceModeMiddleware } from './common/middleware/maintenance-mode.middleware';
 import { RequestContextMiddleware } from './common/middleware/request-context.middleware';
@@ -62,6 +63,7 @@ import { ApiVersionMiddleware } from './common/middleware/api-version.middleware
     ChangeRequestsModule,
     HierarchyModule,
     UploadsModule,
+    RefundsModule,
   ],
   providers: [
     {

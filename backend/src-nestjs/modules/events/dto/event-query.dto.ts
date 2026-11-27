@@ -26,4 +26,14 @@ export class EventQueryDto {
   @IsOptional()
   @IsString()
   location?: string;
+
+  @ApiPropertyOptional({ example: 'today', description: 'Filter by timeline (today, upcoming)' })
+  @IsOptional()
+  @IsString()
+  timeline?: string;
+
+  @ApiPropertyOptional({ example: 'false', description: 'Whether to include past events' })
+  @IsOptional()
+  @IsString()
+  includePast?: string;
 }

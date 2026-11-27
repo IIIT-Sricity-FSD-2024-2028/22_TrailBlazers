@@ -81,6 +81,33 @@ export class OnsiteCoordinatorController {
     return this.service.checkInAttendee(id, dto, req.user);
   }
 
+  @Post('events/:id/verify-ticket')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify Ticket & Load Group Members', description: 'Look up ticket by ID or QR scan, verify validity, and retrieve individual member roster' })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Ticket verification data returned' })
+  async verifyTicket(
+    @Param('id') id: string,
+    @Body() body: { searchTerm?: string; ticketNumber?: string; ticketId?: string },
+    @Req() req: any,
+  ) {
+    const term = body.searchTerm || body.ticketNumber || body.ticketId || '';
+    return this.service.verifyTicket(id, term, req.user);
+  }
+
+  @Post('events/:id/member-action')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Process Member Entry, Exit, or Re-entry', description: 'Record entry status transitions (ENTRY, EXIT, RE_ENTRY, PERMANENT_EXIT) for an individual member' })
+  @ApiParam({ name: 'id', description: 'Event ID' })
+  @ApiResponse({ status: 200, description: 'Member status updated successfully' })
+  async recordMemberAction(
+    @Param('id') id: string,
+    @Body() body: { ticketId: string; memberId: string; action: 'ENTRY' | 'EXIT' | 'RE_ENTRY' | 'PERMANENT_EXIT'; notes?: string },
+    @Req() req: any,
+  ) {
+    return this.service.recordMemberAction(id, body, req.user);
+  }
+
   @Get('events/:id/attendees')
   @ApiOperation({ summary: 'Get Attendees List', description: 'Retrieve attendee check-in roster for the assigned event' })
   @ApiParam({ name: 'id', description: 'Event ID' })

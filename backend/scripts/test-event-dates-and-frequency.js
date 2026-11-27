@@ -42,7 +42,7 @@ async function runTests() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
     },
-    { email: 'siddu@wavevents.com', password: 'password123' }
+    { email: 'tarun@gmail.com', password: 'Password123!' }
   );
 
   if (loginRes.status !== 200 || !loginRes.data.token) {
@@ -188,7 +188,7 @@ async function runTests() {
   });
 
   console.log('Status code:', myRequestsRes.status);
-  const requests = myRequestsRes.data || [];
+  const requests = Array.isArray(myRequestsRes.data) ? myRequestsRes.data : (myRequestsRes.data?.requests || []);
   console.log(`Found ${requests.length} requests for client.`);
   
   const foundNew = requests.find((r) => r.id === created.id);

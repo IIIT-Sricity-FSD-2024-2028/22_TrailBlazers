@@ -38,6 +38,12 @@ export class TicketsService {
       );
     }
 
+    // 1.1 Booking restrictions & abuse protection
+    const restrictionCheck = this.repository.checkBookingRestrictions(userId, eventId);
+    if (!restrictionCheck.allowed) {
+      throw new BadRequestException(restrictionCheck.message);
+    }
+
     // 2. Lookup Event
     const event = this.repository.findEventById(eventId);
     if (!event) {

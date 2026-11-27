@@ -16,6 +16,7 @@ import { FeedbackRepository } from './feedback.repository';
 import { NotificationsRepository } from './notifications.repository';
 import { ChangeRequestsRepository } from './change-requests.repository';
 import { HierarchyRepository } from './hierarchy.repository';
+import { RefundsRepository } from './refunds.repository';
 
 @Global()
 @Module({
@@ -37,6 +38,7 @@ import { HierarchyRepository } from './hierarchy.repository';
     NotificationsRepository,
     ChangeRequestsRepository,
     HierarchyRepository,
+    RefundsRepository,
   ],
   exports: [
     InMemoryStore,
@@ -56,6 +58,7 @@ import { HierarchyRepository } from './hierarchy.repository';
     NotificationsRepository,
     ChangeRequestsRepository,
     HierarchyRepository,
+    RefundsRepository,
   ],
 })
 export class RepositoriesModule {}

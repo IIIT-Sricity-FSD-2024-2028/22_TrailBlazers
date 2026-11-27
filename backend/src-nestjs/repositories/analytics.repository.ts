@@ -30,9 +30,8 @@ export class AnalyticsRepository {
 
       if (role === 'EVENT_MANAGER') {
         return (
-          (r && r.eventManagerUserId === user.id) ||
-          !r ||
-          !r.eventManagerUserId
+          (r && (r.eventManagerUserId === user.id || r.assignedManagerUserId === user.id)) ||
+          e.eventManagerUserId === user.id
         );
       } else if (role === 'ATTENDEE') {
         return (r && r.userId === user.id) || e.organizerUserId === user.id;

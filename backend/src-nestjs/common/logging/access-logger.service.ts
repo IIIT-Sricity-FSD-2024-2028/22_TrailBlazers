@@ -125,6 +125,27 @@ STATUS: USER_CREATED
     this.appendAccessRecord(record);
   }
 
+  recordPasswordReset({ user, req }: { user: any; req?: any }) {
+    if (!user) return;
+    const timestamp = this.getISTTimestamp();
+    const ip = req?.ip || req?.socket?.remoteAddress || '127.0.0.1';
+    const userAgent = req?.headers?.['user-agent'] || 'Unknown Browser';
+
+    const record = `
+${timestamp}
+ACTION: PASSWORD_RESET
+USER_ID: ${user.id}
+NAME: ${user.name || 'N/A'}
+EMAIL: ${user.email}
+ROLE: ${user.role}
+DEPARTMENT: ${user.department || '-'}
+IP: ${ip}
+USER_AGENT: ${userAgent}
+STATUS: PASSWORD_RESET_SUCCESS
+    `;
+    this.appendAccessRecord(record);
+  }
+
   getRecentAccessEntries(limit: number = 30): Record<string, string>[] {
     if (!fs.existsSync(this.accessLogFile)) return [];
     try {

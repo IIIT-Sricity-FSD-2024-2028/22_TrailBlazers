@@ -18,11 +18,14 @@ export class EventsRepository {
       price?: string;
       type?: string;
       location?: string;
+      timeline?: string;
+      includePast?: boolean | string;
     } = {},
   ): any[] {
+    const todayStr = new Date().toISOString().substring(0, 10);
     const publishedEvents = this.store.find<any>(
       "events",
-      (e) => e.status === "PUBLISHED",
+      (e) => e.status === "PUBLISHED" || e.status === "COMMERCIAL_APPROVED",
     );
     const existingIds = new Set(
       this.store.findAll<any>("events").map((e) => e.id),
@@ -33,6 +36,8 @@ export class EventsRepository {
         "event_requests",
         (r) =>
           !existingIds.has(r.id) &&
+          r.status !== "CANCELLED" &&
+          r.status !== "REJECTED" &&
           (r.registrationStatus === "OPEN" ||
             r.operationalStatus === "READY" ||
             r.status === "COMMERCIAL_APPROVED" ||
@@ -63,6 +68,30 @@ export class EventsRepository {
       }));
 
     let events = [...publishedEvents, ...requestEvents];
+
+    // Filter out past events unless includePast is explicitly requested
+    const shouldIncludePast = filters.includePast === true || filters.includePast === "true";
+    if (!shouldIncludePast) {
+      events = events.filter((e) => {
+        if (e.status === "CANCELLED" || e.status === "COMPLETED") return false;
+        const end = e.endDate || e.startDate || e.eventDate || e.date;
+        if (end && end < todayStr) return false;
+        return true;
+      });
+    }
+
+    if (filters.timeline === "today") {
+      events = events.filter((e) => {
+        const start = e.startDate || e.eventDate || e.date;
+        const end = e.endDate || start;
+        return start && end && start <= todayStr && end >= todayStr;
+      });
+    } else if (filters.timeline === "upcoming") {
+      events = events.filter((e) => {
+        const start = e.startDate || e.eventDate || e.date;
+        return start && start > todayStr;
+      });
+    }
 
     const { search, category, price, type, location } = filters;
 

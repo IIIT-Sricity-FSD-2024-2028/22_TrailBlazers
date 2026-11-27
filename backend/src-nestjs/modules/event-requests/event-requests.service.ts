@@ -5,6 +5,7 @@ import { NotificationHelperService } from '../notifications/notification-helper.
 import { NestLoggerService } from '../../common/logging/logger.service';
 import { CreateEventRequestDto } from './dto/create-event-request.dto';
 import { AnalyticsService } from '../analytics/analytics.service';
+import { validateEventDateTimeRange } from '../../utils/date-time.util';
 
 @Injectable()
 export class EventRequestsService {
@@ -50,10 +51,15 @@ export class EventRequestsService {
       );
     }
 
-    if (startDate > endDate) {
-      throw new BadRequestException(
-        'Start Date must not be later than End Date (End Date must not be earlier than Start Date).',
-      );
+    const dateTimeValidation = validateEventDateTimeRange(
+      startDate,
+      endDate,
+      dto.startTime,
+      dto.endTime,
+    );
+
+    if (!dateTimeValidation.valid) {
+      throw new BadRequestException(dateTimeValidation.error);
     }
 
     const id = 'req_' + crypto.randomBytes(8).toString('hex');
