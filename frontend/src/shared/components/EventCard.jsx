@@ -6,6 +6,12 @@ import { EVENT_IMAGES } from '../utils/assets';
 export default function EventCard({ event, onSelect }) {
   const isFree = Number(event.ticketPrice) === 0;
 
+  // Determine if the event is happening today
+  const todayStr = new Date().toISOString().substring(0, 10);
+  const start = event.startDate || event.eventDate || event.date;
+  const end = event.endDate || start;
+  const isToday = Boolean(start && end && start <= todayStr && end >= todayStr);
+
   // Fallback category images if bannerUrl is missing
   const getEventImage = () => {
     if (event.bannerUrl) return event.bannerUrl;
@@ -40,6 +46,12 @@ export default function EventCard({ event, onSelect }) {
 
         {/* Floating Badges */}
         <div className="absolute top-3.5 left-3.5 flex items-center gap-2 flex-wrap z-10">
+          {isToday && (
+            <span className="px-3 py-1 rounded-full bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider shadow-lg border border-rose-300 flex items-center gap-1.5 animate-pulse">
+              <span className="w-1.5 h-1.5 rounded-full bg-white" />
+              Happening Today
+            </span>
+          )}
           <span className="px-3.5 py-1 rounded-full bg-white/90 backdrop-blur-md text-[11px] font-extrabold text-[#0F172A] shadow-md border border-white">
             {event.category}
           </span>
@@ -88,13 +100,19 @@ export default function EventCard({ event, onSelect }) {
           {/* Information Rows: Date & Location */}
           <div className="space-y-2.5 pt-3 border-t border-cyan-200/60">
             <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-xl bg-[#CFFAFE]/80 text-[#0891B2] flex items-center justify-center shrink-0 border border-[#A5F3FC] shadow-2xs font-bold">
+              <div className={`w-7 h-7 rounded-xl flex items-center justify-center shrink-0 border shadow-2xs font-bold ${
+                isToday ? 'bg-rose-100 text-rose-600 border-rose-300' : 'bg-[#CFFAFE]/80 text-[#0891B2] border-[#A5F3FC]'
+              }`}>
                 <Calendar className="w-3.5 h-3.5" />
               </div>
-              <span className="text-xs font-semibold text-[#1E293B]">
-                {event.endDate && event.endDate !== (event.startDate || event.date)
-                  ? `${event.startDate || event.date} to ${event.endDate}`
-                  : (event.startDate || event.date || event.eventDate)} • {event.startTime}
+              <span className={`text-xs ${isToday ? 'font-bold text-rose-700' : 'font-semibold text-[#1E293B]'}`}>
+                {isToday ? (
+                  <span>LIVE TODAY • {event.startTime}</span>
+                ) : event.endDate && event.endDate !== (event.startDate || event.date) ? (
+                  `${event.startDate || event.date} to ${event.endDate} • ${event.startTime}`
+                ) : (
+                  `${event.startDate || event.date || event.eventDate} • ${event.startTime}`
+                )}
               </span>
             </div>
 

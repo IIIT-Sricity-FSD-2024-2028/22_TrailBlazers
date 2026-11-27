@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useContext } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import Navbar from './shared/components/Navbar';
 import Footer from './shared/components/Footer';
 import AuthModal from './auth/AuthModal';
@@ -19,34 +20,35 @@ import ITSupportSpace from './actors/admin/pages/ITSupportSpace';
 import ReportTechnicalIssueModal from './shared/components/ReportTechnicalIssueModal';
 import PageTransition from './shared/components/PageTransition';
 import NotificationToastContainer from './shared/components/NotificationToastContainer';
-import { getDashboardForUser, isProtectedRoute, isStaffUser } from './shared/utils/roleRoutes';
+import { getDashboardForUser, isStaffUser } from './shared/utils/roleRoutes';
+import { fetchCurrentUser, logoutUser } from './store/auth-actions';
+import { authActions } from './store/auth-slice';
+import { fetchEventsData } from './store/events-actions';
+import { eventsActions } from './store/events-slice';
+import { UIContext } from './context/UIContext';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState('landing');
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('ffsd_token') || null);
-  const [events, setEvents] = useState([]);
-  const [eventsLoading, setEventsLoading] = useState(true);
-  const [eventsError, setEventsError] = useState(null);
-  const [selectedEvent, setSelectedEvent] = useState(null);
-  const [headerSearch, setHeaderSearch] = useState('');
-  const isFetchingEventsRef = useRef(false);
+  const dispatch = useDispatch();
+  const ui = useContext(UIContext);
 
-  // Modal & Auth Notice Controls
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [authInitialMode, setAuthInitialMode] = useState('login');
-  const [authNotice, setAuthNotice] = useState('');
-  const [pendingRedirect, setPendingRedirect] = useState(null);
-  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
-  const [initialInviteCode, setInitialInviteCode] = useState('');
-  const [isTechModalOpen, setIsTechModalOpen] = useState(false);
+  // Redux state
+  const { user, token } = useSelector((state) => state.auth);
+  const { events, loading: eventsLoading, error: eventsError, selectedEvent } = useSelector((state) => state.events);
+
+  // UI state from UIContext
+  const activeTab = ui?.activeTab || 'landing';
+  const setActiveTab = ui?.setActiveTab;
+  const navigate = ui?.navigate || ((tab) => {
+    if (setActiveTab) setActiveTab(tab);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
 
   useEffect(() => {
-    fetchEvents();
+    dispatch(fetchEventsData());
     if (token) {
-      fetchCurrentUser(token);
+      dispatch(fetchCurrentUser(token));
     }
-  }, []);
+  }, [dispatch, token]);
 
   // Enforce role-based route protection and automatic redirection
   useEffect(() => {
@@ -54,121 +56,67 @@ export default function App() {
       if (isStaffUser(user)) {
         // Staff and Admin users are never allowed on public landing or client space
         if (activeTab === 'landing' || activeTab === 'dashboard' || activeTab === 'my-space') {
-          setActiveTab(getDashboardForUser(user));
+          navigate(getDashboardForUser(user));
         }
       } else {
         // Client / Attendee users skip the landing home page and land directly on explore events
         if (activeTab === 'landing') {
-          setActiveTab('explore');
+          navigate('explore');
         }
       }
     }
-  }, [user, activeTab]);
+  }, [user, activeTab, navigate]);
 
   useEffect(() => {
     if (activeTab === 'explore' || activeTab === 'landing') {
-      fetchEvents();
+      dispatch(fetchEventsData());
     }
-  }, [activeTab]);
+  }, [activeTab, dispatch]);
 
   useEffect(() => {
     if (selectedEvent) {
       const updated = events.find((e) => e.id === selectedEvent.id);
       if (updated && (updated.availableTickets !== selectedEvent.availableTickets || updated.updatedAt !== selectedEvent.updatedAt)) {
-        setSelectedEvent(updated);
+        dispatch(eventsActions.setSelectedEvent(updated));
       }
     }
-  }, [events]);
-
-  const fetchEvents = async () => {
-    if (isFetchingEventsRef.current) return;
-    isFetchingEventsRef.current = true;
-    setEventsLoading((prev) => (events.length === 0 ? true : prev));
-    setEventsError(null);
-    try {
-      const res = await fetch('/api/events');
-      if (res.ok) {
-        const data = await res.json();
-        setEvents(data.events || []);
-        setEventsError(null);
-      } else {
-        setEventsError('Failed to load events. Please try again.');
-      }
-    } catch (err) {
-      console.error('Error fetching events:', err);
-      setEventsError('Network error while loading events.');
-    } finally {
-      setEventsLoading(false);
-      isFetchingEventsRef.current = false;
-    }
-  };
-
-  const fetchCurrentUser = async (authToken) => {
-    try {
-      const res = await fetch('/api/auth/me', {
-        headers: { 'Authorization': `Bearer ${authToken}` }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setUser(data.user);
-        if (isStaffUser(data.user)) {
-          if (activeTab === 'landing' || activeTab === 'dashboard' || activeTab === 'my-space') {
-            setActiveTab(getDashboardForUser(data.user));
-          }
-        }
-      } else {
-        handleLogout();
-      }
-    } catch (err) {
-      console.error('Error verifying user token:', err);
-      handleLogout();
-    }
-  };
+  }, [events, selectedEvent, dispatch]);
 
   const handleOpenAuth = (mode = 'login', noticeMsg = '', targetRedirect = null) => {
-    setAuthInitialMode(mode);
-    setAuthNotice(noticeMsg || '');
-    if (targetRedirect) setPendingRedirect(targetRedirect);
-    setIsAuthModalOpen(true);
+    if (ui?.openAuth) {
+      ui.openAuth(mode, noticeMsg, targetRedirect);
+    }
   };
 
   const handleAuthSuccess = (userData, authToken) => {
-    setUser(userData);
-    setToken(authToken);
-    localStorage.setItem('ffsd_token', authToken);
+    dispatch(authActions.loginSuccess({ user: userData, token: authToken }));
 
+    const redirect = ui?.authModal?.redirect;
     if (isStaffUser(userData)) {
-      setActiveTab(getDashboardForUser(userData));
+      navigate(getDashboardForUser(userData));
     } else {
-      if (pendingRedirect && (pendingRedirect === 'my-tickets' || pendingRedirect === 'explore')) {
-        setActiveTab(pendingRedirect);
+      if (redirect && (redirect === 'my-tickets' || redirect === 'explore')) {
+        navigate(redirect);
       } else {
-        setActiveTab(getDashboardForUser(userData));
+        navigate(getDashboardForUser(userData));
       }
     }
-    setPendingRedirect(null);
-    setAuthNotice('');
+    if (ui?.closeAuth) ui.closeAuth();
   };
 
   const handleVerifySuccess = (userData, authToken) => {
-    setUser(userData);
-    setToken(authToken);
-    localStorage.setItem('ffsd_token', authToken);
+    dispatch(authActions.loginSuccess({ user: userData, token: authToken }));
   };
 
   const handleLogout = () => {
-    setUser(null);
-    setToken(null);
-    localStorage.removeItem('ffsd_token');
-    setActiveTab('landing');
-    setPendingRedirect(null);
-    setAuthNotice('');
+    dispatch(logoutUser());
+    navigate('landing');
+    if (ui?.closeAuth) ui.closeAuth();
   };
 
   const handleSelectEvent = (evt) => {
-    setSelectedEvent(evt);
-    setActiveTab('event-details');
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    dispatch(eventsActions.setSelectedEvent(evt));
+    navigate('event-details');
   };
 
   const handleAttendClick = (evt, options = {}) => {
@@ -180,9 +128,10 @@ export default function App() {
       handleOpenAuth('verify');
       return;
     }
-    setSelectedEvent(evt);
-    setInitialInviteCode(options?.inviteCode || '');
-    setIsPaymentModalOpen(true);
+    dispatch(eventsActions.setSelectedEvent(evt));
+    if (ui?.openPaymentModal) {
+      ui.openPaymentModal(evt, options?.inviteCode || '');
+    }
   };
 
   return (
@@ -212,7 +161,7 @@ export default function App() {
               events={events}
               eventsLoading={eventsLoading}
               eventsError={eventsError}
-              onRetryEvents={fetchEvents}
+              onRetryEvents={() => dispatch(fetchEventsData())}
               onNavigate={(tab) => {
                 setActiveTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -356,6 +305,7 @@ export default function App() {
                   }}
                   onOpenAuth={handleOpenAuth}
                   onVerifyEmailPrompt={() => handleOpenAuth('verify')}
+                  onUserRefresh={() => dispatch(fetchCurrentUser(token))}
                 />
               )}
             </div>
@@ -365,10 +315,10 @@ export default function App() {
 
       {/* Auth & Payment Modals */}
       <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        initialMode={authInitialMode}
-        noticeMessage={authNotice}
+        isOpen={Boolean(ui?.authModal?.isOpen)}
+        onClose={() => ui?.closeAuth && ui.closeAuth()}
+        initialMode={ui?.authModal?.mode || 'login'}
+        noticeMessage={ui?.authModal?.notice || ''}
         onAuthSuccess={handleAuthSuccess}
         onVerifySuccess={handleVerifySuccess}
       />
@@ -376,33 +326,26 @@ export default function App() {
       <PaymentModal
         key={selectedEvent?.id || 'no-event'}
         event={selectedEvent}
-        isOpen={isPaymentModalOpen}
-        initialInviteCode={initialInviteCode}
-        onClose={() => {
-          setIsPaymentModalOpen(false);
-          setInitialInviteCode('');
-        }}
+        isOpen={Boolean(ui?.paymentModal?.isOpen)}
+        initialInviteCode={ui?.paymentModal?.inviteCode || ''}
+        onClose={() => ui?.closePaymentModal && ui.closePaymentModal()}
         user={user}
         onPaymentComplete={() => {
-          fetchEvents(); // Refresh available tickets count
+          dispatch(fetchEventsData()); // Refresh available tickets count
         }}
         onViewMyTickets={() => {
-          setIsPaymentModalOpen(false);
-          setInitialInviteCode('');
-          setActiveTab('my-tickets');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          if (ui?.closePaymentModal) ui.closePaymentModal();
+          navigate('my-tickets');
         }}
         onExploreMore={() => {
-          setIsPaymentModalOpen(false);
-          setInitialInviteCode('');
-          setActiveTab('explore');
-          window.scrollTo({ top: 0, behavior: 'smooth' });
+          if (ui?.closePaymentModal) ui.closePaymentModal();
+          navigate('explore');
         }}
       />
 
       <ReportTechnicalIssueModal
-        isOpen={isTechModalOpen}
-        onClose={() => setIsTechModalOpen(false)}
+        isOpen={Boolean(ui?.isTechModalOpen)}
+        onClose={() => ui?.closeTechModal && ui.closeTechModal()}
         onSubmitted={() => {
           alert('Technical issue logged! Routed to IT Support Team Queue.');
         }}

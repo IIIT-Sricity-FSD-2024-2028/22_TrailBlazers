@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, Clock, Lock, Unlock } from 'lucide-react';
+import { CheckCircle2, Clock, Lock, Unlock, AlertCircle, RotateCcw, XCircle, Check } from 'lucide-react';
 
 export function StatusBadge({ status }) {
   const styles = {
@@ -16,6 +16,16 @@ export function StatusBadge({ status }) {
     ACCEPTED: 'bg-[#E8F9F5]/90 text-emerald-900 border-white/90',
     FINALIZED: 'bg-indigo-50/90 text-indigo-900 border-indigo-200',
     AWAITING_ASSIGNMENT: 'bg-amber-50/90 text-amber-900 border-amber-300',
+    COMMERCIAL_APPROVED: 'bg-indigo-50/90 text-indigo-950 border-indigo-200',
+    IN_PREPARATION: 'bg-purple-50/90 text-purple-950 border-purple-200',
+    // Refund Specific Statuses
+    ELIGIBLE: 'bg-cyan-50/90 text-cyan-900 border-cyan-200',
+    REQUESTED: 'bg-amber-50/90 text-amber-900 border-amber-300',
+    PROCESSING: 'bg-purple-50/90 text-purple-900 border-purple-200',
+    REFUNDED: 'bg-emerald-50/90 text-emerald-900 border-emerald-300',
+    FAILED: 'bg-rose-50/90 text-rose-900 border-rose-300',
+    CANCELLED: 'bg-rose-50/90 text-rose-900 border-rose-200',
+    POSTPONED: 'bg-amber-50/90 text-amber-900 border-amber-200',
   };
 
   const formattedLabel = {
@@ -32,12 +42,25 @@ export function StatusBadge({ status }) {
     ACCEPTED: 'Accepted',
     FINALIZED: 'Finalized',
     AWAITING_ASSIGNMENT: 'Awaiting Staff',
+    COMMERCIAL_APPROVED: 'Quotation Accepted — Awaiting Event Management Assignment',
+    IN_PREPARATION: 'In Preparation',
+    // Refund Specific Labels
+    ELIGIBLE: 'Eligible for Refund',
+    REQUESTED: 'Refund Requested',
+    PROCESSING: 'Processing Refund',
+    REFUNDED: 'Refunded',
+    FAILED: 'Refund Failed',
+    CANCELLED: 'Cancelled',
+    POSTPONED: 'Postponed',
   };
 
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold border shadow-2xs backdrop-blur-md ${styles[status] || 'bg-white/90 text-slate-800 border-white/90'}`}>
-      {(status === 'UNDER_REVIEW' || status === 'UNDER_NEGOTIATION' || status === 'AWAITING_ASSIGNMENT') && <Clock className="w-3.5 h-3.5 text-amber-600" />}
-      {(status === 'ACTIVE' || status === 'CONFIRMED' || status === 'APPROVED' || status === 'ACCEPTED') && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+      {(status === 'UNDER_REVIEW' || status === 'UNDER_NEGOTIATION' || status === 'AWAITING_ASSIGNMENT' || status === 'COMMERCIAL_APPROVED' || status === 'REQUESTED') && <Clock className="w-3.5 h-3.5 text-amber-600" />}
+      {(status === 'ACTIVE' || status === 'CONFIRMED' || status === 'APPROVED' || status === 'ACCEPTED' || status === 'IN_PREPARATION' || status === 'REFUNDED') && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+      {status === 'PROCESSING' && <RotateCcw className="w-3.5 h-3.5 text-purple-600 animate-spin" />}
+      {status === 'ELIGIBLE' && <AlertCircle className="w-3.5 h-3.5 text-cyan-600" />}
+      {(status === 'REJECTED' || status === 'FAILED' || status === 'CANCELLED') && <XCircle className="w-3.5 h-3.5 text-rose-600" />}
       {status === 'CLOSED' && <Lock className="w-3 h-3 text-purple-700" />}
       {status === 'OPEN' && <Unlock className="w-3 h-3 text-indigo-600" />}
       <span>{formattedLabel[status] || status}</span>
