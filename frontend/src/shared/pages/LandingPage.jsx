@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useContext } from "react";
 import {
   Sparkles,
   Calendar,
@@ -19,15 +19,30 @@ import {
 } from "lucide-react";
 import EventCard from "../components/EventCard";
 import { EVENT_IMAGES } from "../utils/assets";
+import { UIContext } from "../../context/UIContext";
 
 export default function LandingPage({
   events = [],
-  onNavigate,
+  eventsLoading = false,
+  eventsError = null,
+  onRetryEvents,
+  onNavigate: propOnNavigate,
   onSelectEvent,
-  onOpenAuth,
+  onOpenAuth: propOnOpenAuth,
   user,
 }) {
+  const ui = useContext(UIContext);
+  const onNavigate = propOnNavigate || ui?.navigate;
+  const onOpenAuth = propOnOpenAuth || ui?.openAuth;
+
   const featuredEvents = events.slice(0, 3);
+
+  // Self-healing fallback: trigger fetch if events are empty and not loading
+  useEffect(() => {
+    if ((!events || events.length === 0) && onRetryEvents && !eventsLoading) {
+      onRetryEvents();
+    }
+  }, [events, eventsLoading, onRetryEvents]);
 
   return (
     <div className="w-full text-[#26334A]">
@@ -59,35 +74,6 @@ export default function LandingPage({
           }}
         />
 
-        {/* Hero Top Bar: Translucent Glass Badges */}
-        <div className="relative z-10 flex items-center justify-between w-full mx-auto max-w-7xl">
-          {/* Top Pill Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md text-xs font-extrabold text-white border border-white/30 shadow-md">
-            <Sparkles className="w-4 h-4 text-purple-300 animate-pulse" />
-            <span>Next-Generation Event Platform</span>
-          </div>
-
-          {/* Floating Live Badge Card Top Right */}
-          <div className="items-center hidden gap-3 p-3 text-white border shadow-lg sm:flex rounded-2xl bg-white/20 backdrop-blur-md border-white/30">
-            <div className="flex items-center justify-center w-8 h-8 border rounded-xl bg-white/20 border-white/30 shadow-2xs">
-              <Sparkles className="w-4 h-4 text-purple-300" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 text-xs font-extrabold">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                <span className="text-[11px] text-emerald-400 uppercase tracking-wider font-extrabold">
-                  LIVE NOW
-                </span>
-              </div>
-              <div className="text-xs font-extrabold text-white">
-                Tech Summit 2026
-              </div>
-              <div className="text-[10px] text-slate-300 font-medium">
-                • 2,534 watching
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Hero Central Content Box */}
         <div className="relative z-10 max-w-3xl py-8 mx-auto space-y-5 text-center sm:py-10">
@@ -134,22 +120,7 @@ export default function LandingPage({
             </button>
           </div>
 
-          {/* Video Trigger Bar */}
-          <div className="flex items-center justify-center pt-1">
-            <div className="inline-flex items-center gap-3 px-5 py-2 text-left text-white transition border rounded-full shadow-md cursor-pointer bg-white/20 backdrop-blur-md border-white/30 hover:bg-white/30">
-              <div className="flex items-center justify-center w-6 h-6 text-white bg-indigo-500 rounded-full shadow-xs">
-                <Play className="w-3 h-3 fill-current ml-0.5" />
-              </div>
-              <div>
-                <div className="text-xs font-extrabold text-white">
-                  See Wavevents in Action
-                </div>
-                <div className="text-[10px] text-slate-300">
-                  Watch how we transform event experiences
-                </div>
-              </div>
-            </div>
-          </div>
+
         </div>
 
         {/* Hero Bottom Section: 4 Statistics Cards Placed Directly On The Hero Stage Image */}
@@ -294,17 +265,62 @@ export default function LandingPage({
                 onClick={() => onNavigate("explore")}
                 className="flex items-center gap-2 px-4 py-2 text-xs font-extrabold transition border rounded-full bg-white/10 hover:bg-white/20 border-purple-400/40 text-cyan-300 hover:text-white shadow-2xs group cursor-pointer"
               >
-                <span>Browse Catalogue ({events.length} Available)</span>
+                <span>Browse Catalogue {eventsLoading ? "(Loading...)" : `(${events.length} Available)`}</span>
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
               </button>
             </div>
 
-            {/* Level 3 Light Sea-Blue Glass Event Cards Grid */}
-            <div className="grid items-stretch grid-cols-1 gap-6 md:grid-cols-3">
-              {featuredEvents.map((evt) => (
-                <EventCard key={evt.id} event={evt} onSelect={onSelectEvent} />
-              ))}
-            </div>
+            {/* Event Cards Grid / Loading / Error / Empty States */}
+            {eventsLoading && featuredEvents.length === 0 ? (
+              <div className="grid items-stretch grid-cols-1 gap-6 md:grid-cols-3">
+                {[1, 2, 3].map((i) => (
+                  <div
+                    key={i}
+                    className="rounded-3xl border border-white/25 p-5 space-y-4 animate-pulse h-96 flex flex-col justify-between"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(232, 248, 250, 0.4) 0%, rgba(221, 243, 246, 0.3) 100%)',
+                      backdropFilter: 'blur(20px)',
+                    }}
+                  >
+                    <div className="h-44 w-full bg-white/20 rounded-2xl" />
+                    <div className="space-y-2.5">
+                      <div className="h-4 w-3/4 bg-white/25 rounded-md" />
+                      <div className="h-3 w-1/2 bg-white/20 rounded-md" />
+                    </div>
+                    <div className="flex items-center justify-between pt-4 border-t border-white/10">
+                      <div className="h-4 w-1/3 bg-white/20 rounded-md" />
+                      <div className="h-8 w-24 bg-white/25 rounded-full" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : eventsError ? (
+              <div className="p-8 text-center rounded-2xl bg-white/10 border border-rose-300/30 space-y-3">
+                <p className="text-sm font-semibold text-rose-200">{eventsError}</p>
+                {onRetryEvents && (
+                  <button
+                    onClick={onRetryEvents}
+                    className="px-4 py-2 text-xs font-bold rounded-full bg-white/20 hover:bg-white/30 text-white border border-white/30 transition cursor-pointer"
+                  >
+                    Retry Loading Events
+                  </button>
+                )}
+              </div>
+            ) : featuredEvents.length > 0 ? (
+              <div className="grid items-stretch grid-cols-1 gap-6 md:grid-cols-3">
+                {featuredEvents.map((evt) => (
+                  <EventCard key={evt.id} event={evt} onSelect={onSelectEvent} />
+                ))}
+              </div>
+            ) : (
+              <div className="p-10 text-center rounded-3xl bg-white/10 border border-white/20 space-y-2 text-white">
+                <Calendar className="w-10 h-10 text-purple-300 mx-auto opacity-70" />
+                <h3 className="text-base font-bold">No featured events available right now</h3>
+                <p className="text-xs text-slate-300 max-w-sm mx-auto">
+                  New upcoming conferences, workshops, and summits will be featured here soon.
+                </p>
+              </div>
+            )}
           </section>
 
           {/* 3. WHY CHOOSE WAVEVENTS FEATURE CARDS (TRANSLUCENT SOFT LAV دستER GLASS PANEL) */}
